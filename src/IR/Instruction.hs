@@ -1,6 +1,7 @@
 module IR.Instruction where
 
 import IR.Type
+import Data.Maybe
 
 newtype LineNumber = LineNumber Int
 data OpCode =
@@ -13,7 +14,10 @@ data OpCode =
   ARRAY_STORE | ARRAY_LOAD |
   LABEL
 
-data OperandInfo = OperandInfo { name :: String, parent :: Instruction }
+data OperandInfo = OperandInfo
+ { name :: String
+ , parent :: Maybe Instruction
+ }
 
 -- TODO: Check if necessary.
 -- Annoying unfortunately, due to structure from starter code
