@@ -35,9 +35,9 @@ parseType = parseIntType
 parseVariable :: Type -> Parsec' Variable
 parseVariable tp = nonArray <|> array
   where
-    nonArray = many1 alphaNum >>= \s -> return $ Variable s tp
+    nonArray = notFollowedBy digit >> many1 (alphaNum <|> char '_') >>= \s -> return $ Variable s tp
     array = do
-      name <- many1 alphaNum
+      name <- notFollowedBy digit >> many1 (alphaNum <|> char '_')
       char '['
       count <- read <$> many1 digit
       char ']'
