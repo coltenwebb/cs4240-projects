@@ -4,9 +4,9 @@ import IR.Instruction
 import IR.Type
 
 data Function = Function
-  { name :: String
+  { name :: FunctionName
   , returnType :: Type
-  , parameters :: [VarOperand]
-  , variables :: [VarOperand]
+  , parameters :: [Variable]
+  , variables :: [Variable]
   , instruction :: [Instruction]
-  }
+  } deriving Show

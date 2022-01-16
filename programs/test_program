@@ -1,0 +1,8 @@
+#start_function
+int subtract_and_reset(int[2] x):
+int-list: t0, t1, t2, s
+float-list: x
+    array_store, t0, x, 0
+    sub, t2, t0, t1
+    return, s
+#end_function

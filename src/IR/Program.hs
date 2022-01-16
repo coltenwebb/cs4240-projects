@@ -2,4 +2,4 @@ module IR.Program where
 
 import IR.Function
 
-data Program = Program [Function]
+newtype Program = Program [Function] deriving Show
