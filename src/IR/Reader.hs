@@ -1,22 +1,3 @@
-<<<<<<< HEAD
-module IR.Reader where
-
-import Text.Parsec
-import Text.Parsec.Char
-import IR.Type
-import IR.Function
-import IR.Instruction
-
-type Parsec' = Parsec String ()
-
-data Variable = Variable { name :: String, varType :: Type }
-
-parseStartFunc :: Parsec' ()
-parseStartFunc = string "#start_function" >> return ()
-
-parseEndFunc :: Parsec' ()
-parseEndFunc = string "#end_function" >> return ()
-=======
 {-# LANGUAGE FlexibleContexts #-}
 module IR.Reader where
 
@@ -108,21 +89,11 @@ parseFunctionSignature = do
 parseIdentifier :: Parsec' String
 parseIdentifier = notFollowedBy digit >> many1 (alphaNum <|> char '_')
   <?> "identifer (var name, function name, etc.)"
->>>>>>> Added program IR parser logic
 
 parseType :: Parsec' Type
 parseType = parseIntType
   <|> parseFloatType
   <|> parseVoidType
-<<<<<<< HEAD
-  <|> parseArrayType
-  where
-    parseIntType = string "int" >> return IntType
-    parseFloatType = string "float" >> return FloatType
-    parseVoidType = string "void" >> return VoidType
-    parseArrayType = do
-      tp <- parseType
-=======
   where
     parseIntType = do
       string "int"
@@ -135,25 +106,11 @@ parseType = parseIntType
     parseVoidType = string "void" >> return VoidType
 
     parseArray tp = do
->>>>>>> Added program IR parser logic
       char '['
       sz <- read <$> many1 digit
       char ']'
       return $ ArrayType (ArraySize sz) tp
 
-<<<<<<< HEAD
-parseVariable :: Type -> Parsec' Variable
-parseVariable tp = nonArray <|> array
-  where
-    nonArray = notFollowedBy digit >> many1 (alphaNum <|> char '_') >>= \s -> return $ Variable s tp
-    array = do
-      name <- notFollowedBy digit >> many1 (alphaNum <|> char '_')
-      char '['
-      count <- read <$> many1 digit
-      char ']'
-      let arrtp = ArrayType (ArraySize count) tp
-      return $ Variable name arrtp
-=======
 parseParameter :: Parsec' Variable
 parseParameter = do
   tp <- parseType
@@ -177,24 +134,10 @@ parseVariable tp = do
       char ']'
       let var = Variable n (ArrayType (ArraySize count) tp)
       return var
->>>>>>> Added program IR parser logic
 
 parseVariableLists :: Parsec' [Variable]
 parseVariableLists = do
   v1 <- i
-<<<<<<< HEAD
-  newline
-  v2 <- f
-  return $ v1 ++ v2
-  where
-    k t = (spaces >> parseVariable t) `sepBy` (char ',')
-    i = string "int-list:" >> k IntType
-    f = string "float-list:" >> k FloatType
-
--- TODO: For Luke
-parseInstruction :: Parsec' Instruction
-parseInstruction = undefined
-=======
   skipMany1 newline
   v2 <- f
   return $ v1 ++ v2
@@ -481,4 +424,3 @@ parseFunctionOperand = do
       t <- S.member name . funcSet <$> getState
       if t then return $ FunctionOperand name
         else fail $ "Undefined function `" ++ show name ++ "`"
->>>>>>> Added program IR parser logic

@@ -9,4 +9,12 @@ data Function = Function
   , parameters :: [Variable]
   , variables :: [Variable]
   , instruction :: [Instruction]
-  } deriving Show
+  }
+
+instance Show Function where
+  show(Function fn rt ps vs is) =
+    "#start_function\n"
+    ++ show rt ++ " " ++ show fn
+    ++ "(" ++ show ps ++ "):\n"
+    ++ concatMap (\ins -> "    " ++ show ins ++ "\n") is
+    ++ "#end_function"

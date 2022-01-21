@@ -4,7 +4,10 @@ import IR.Type
 import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
 
-newtype LineNumber = LineNumber Int deriving (Show)
+newtype LineNumber = LineNumber Int
+
+instance Show LineNumber where
+  show (LineNumber ln) = "(L" ++ show ln ++ ")"
 
 data OpCode =
   ASSIGN |
@@ -54,7 +57,16 @@ data Operand = LabelOperand LabelName
   | FunctionOperand FunctionName
   | VariableOperand Variable
   | ConstantOperand ConstantValue Type
-  deriving (Eq, Show)-- TODO: prevent invalid types
+  deriving Eq -- TODO: prevent invalid types
+
+instance Show Operand where
+  show oprnd = case oprnd of
+    LabelOperand (LabelName s) -> "(label: " ++ s ++ ")"
+    FunctionOperand (FunctionName s) -> "(fn: " ++ s ++ ")"
+    VariableOperand (Variable (VariableName s) vt) ->
+      "(var " ++ show vt ++ ": " ++ s ++ ")"
+    ConstantOperand (ConstantValue s) tp ->
+      "(const " ++ show tp ++ ": " ++ s ++ ")"
 
 arrayIndexOutofBound :: Operand -> Integer -> Bool
 arrayIndexOutofBound operand i =
@@ -117,4 +129,9 @@ data Instruction = Instruction
   { opcode :: OpCode
   , operands :: [Operand]
   , lineNum :: LineNumber
-  } deriving Show
+  }
+
+instance Show Instruction where
+  show (Instruction op oprnds ln) =
+    show ln ++ " [" ++ show op ++ "]"
+    ++ concatMap (\x -> ", " ++ show x) oprnds
