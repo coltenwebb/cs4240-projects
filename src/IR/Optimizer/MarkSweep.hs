@@ -9,7 +9,23 @@ import qualified Data.Map as M
 type WriteMap = M.Map Variable Instruction
 
 isCritical :: Instruction -> Bool
-isCritical = undefined
+isCritical Instruction {opcode=GOTO} = True
+isCritical Instruction {opcode=BREQ} = True
+isCritical Instruction {opcode=BRNEQ} = True
+isCritical Instruction {opcode=BRLT} = True
+isCritical Instruction {opcode=BRGT} = True
+isCritical Instruction {opcode=BRLEQ} = True
+isCritical Instruction {opcode=BRGEQ} = True
+isCritical Instruction {opcode=RETURN} = True
+isCritical Instruction {opcode=CALL} = True
+isCritical Instruction {opcode=CALLR} = True
+
+-- not certain whether array stuff should be critical
+-- array_store maybe since it may be accessed outside the function
+isCritical Instruction {opcode=ARRAY_STORE} = True
+--isCritical Instruction {opcode=ARRAY_LOAD} = True
+
+isCritical _ = False
 
 genWriteMap :: Function -> WriteMap
 genWriteMap = undefined
