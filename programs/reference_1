@@ -1,0 +1,32 @@
+#start_function
+int subtract_and_reset(int[2] x):
+int-list: t0, t1, t2, s
+float-list:
+    array_load, t0, x, 0
+    array_load, t1, x, 1
+    sub, t2, t0, t1
+    assign, s, t2
+    array_store, 0, x, 0
+    array_store, 0, x, 1
+    return, s
+#end_function
+
+#start_function
+void main():
+int-list: p[2], t0, t1
+float-list: f0
+    callr, t0, geti
+    callr, t1, geti
+    callr, f0, getf
+    array_store, t0, p, 0
+    array_store, t1,p, 1
+    callr, t0, subtract_and_reset, p
+    call, puti, t0
+    array_load, t1, p, 0
+    call, puti, t1
+    call, putc, 10
+    brleq, if_label0, t0, 0
+    call, putf, f0
+    call, putc, 10
+if_label0:
+#end_function

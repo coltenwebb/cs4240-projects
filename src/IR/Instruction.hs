@@ -15,7 +15,7 @@ data OpCode =
   GOTO |
   BREQ | BRNEQ | BRLT | BRGT | BRLEQ | BRGEQ |
   RETURN |
-  CALLR | CALL | -- CALLR must come before CALL due to parsec prefix matching
+  CALLR | CALL |
   ARRAY_STORE | ARRAY_LOAD |
   LABEL
   deriving (Enum, Bounded, Eq)

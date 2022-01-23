@@ -40,7 +40,7 @@ intrinsicFuncs = S.fromList . map FunctionName $
   ["geti", "getf", "getc", "puti", "putf", "putc"]
 
 initParseState :: ParseState
-initParseState = ParseState mempty mempty mempty
+initParseState = ParseState mempty intrinsicFuncs mempty
 
 insertVariable :: Variable -> Parsec' ()
 insertVariable (Variable name tp) = do
@@ -68,7 +68,11 @@ insertLabel label = do
 
 
 parseStartFunc :: Parsec' ()
-parseStartFunc = void (string "#start_function" >> putState initParseState)
+parseStartFunc = do
+  string "#start_function"
+  ps <- getState 
+  -- function declarations are global
+  putState $ ps { varMap = mempty, labelSet = mempty }
 
 parseEndFunc :: Parsec' ()
 parseEndFunc = void (string "#end_function")
@@ -380,7 +384,7 @@ parseInt = read <$> many1 digit
 
 genOpCodeParser :: OpCode -> Parsec' OpCode
 genOpCodeParser op = try (string (show op))
-  >> notFollowedBy alphaNum
+  >> lookAhead (spaces >> char ',')
   >> return op
 
 parseOpCode :: Parsec' OpCode
