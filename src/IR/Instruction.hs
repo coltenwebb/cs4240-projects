@@ -157,10 +157,3 @@ usedVars inst
 
 defVars :: Instruction -> [Variable]
 defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
-
-testInst = Instruction ADD [
-    VariableOperand (Variable (VariableName "a") IntType),
-    VariableOperand (Variable (VariableName "b") IntType),
-    --VariableOperand (Variable (VariableName "c") IntType),
-    ConstantOperand (ConstantValue "123198") IntType
-  ] (LineNumber 5)
