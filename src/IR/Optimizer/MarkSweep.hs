@@ -6,8 +6,11 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Foldable (Foldable(toList))
 
+import Data.List
+--import Data.Set
+
 -- Map: Variable -> Instructions which write to said Variable
-type WriteMap = M.Map Variable Instruction
+type WriteMap = M.Map Variable [Instruction]
 
 isCritical :: Instruction -> Bool
 isCritical Instruction {opcode=GOTO} = True
@@ -29,7 +32,10 @@ isCritical Instruction {opcode=ARRAY_STORE} = True
 isCritical _ = False
 
 genWriteMap :: Function -> WriteMap
-genWriteMap = undefined
+genWriteMap f = M.fromListWith (++) allVarInstPairs
+  where
+  varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
+  allVarInstPairs = concat (map varInstPairs (instruction f))
 -- M.fromList
 
 uses :: Instruction -> [Variable]
@@ -51,11 +57,11 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
       | otherwise = bfs worklist' marked'
         where
           worklist' = tail worklist
-                        ++ map lookupWmap (uses (head worklist))
+                        ++ concat (map lookupWmap (usedVars (head worklist)))
 
-          lookupWmap :: Variable -> Instruction
+          lookupWmap :: Variable -> [Instruction]
           lookupWmap v = case M.lookup v wmap of
-                          Nothing -> Instruction ASSIGN [] (LineNumber 1)
+                          Nothing -> []
                           Just i -> i
 
           marked' :: S.Set LineNumber
@@ -86,3 +92,4 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
 --             look into genWriteMap, for each instr in writemap[v]
 --             we add instruction into workqueue.
 --             bfs ((drop 1 worklist) ++ wmap[v]) (marked ++ line number of v)
+
