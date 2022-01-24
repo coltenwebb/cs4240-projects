@@ -4,6 +4,8 @@ import IR.Type
 import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
 
+import Data.List
+
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
 
@@ -136,3 +138,29 @@ instance Show Instruction where
   show (Instruction op oprnds ln) =
     show ln ++ " [" ++ show op ++ "]"
     ++ concatMap (\x -> ", " ++ show x) oprnds
+
+isVarOp (VariableOperand var) = Just var
+isVarOp _ = Nothing
+
+usedVars :: Instruction -> [Variable]
+usedVars inst
+  -- any variable not in the first operand is used
+  | opcode inst `elem` [
+      ASSIGN, ADD, SUB, MULT, DIV, AND, OR,
+      BREQ, BRNEQ, BRLT, BRGT, BRGEQ, BRLEQ, CALLR, CALL, ARRAY_LOAD
+    ] = mapMaybe isVarOp (drop 1 (operands inst ))
+  -- only the variable in the first operand is used (if it is a variable)
+  | opcode inst `elem` [
+      RETURN, ARRAY_STORE
+    ] = mapMaybe isVarOp (take 1 (operands inst ))
+  | otherwise = []
+
+defVars :: Instruction -> [Variable]
+defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
+
+testInst = Instruction ADD [
+    VariableOperand (Variable (VariableName "a") IntType),
+    VariableOperand (Variable (VariableName "b") IntType),
+    --VariableOperand (Variable (VariableName "c") IntType),
+    ConstantOperand (ConstantValue "123198") IntType
+  ] (LineNumber 5)
