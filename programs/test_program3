@@ -1,0 +1,23 @@
+#start_function
+void main():
+int-list: x, y, i, _____hello, __[1], add, X[20]
+float-list: 
+  assign, _____hello, 10
+  call, puti, _____hello
+  call            ,            putc,        10
+  array_store, _____hello, __, 0
+  assign, add, 10
+  assign, X, 10, 1
+  assign, i, 0
+  array_load, y, X, i 
+  call, puti, y
+  add, i, i, 1
+  brlt, LOOP, i, 20
+  assign, i, 0
+  call, putc, 10
+  assign, X, 5, 3
+  array_load, y, X, i 
+  call, puti, y
+  add, i, i, 1
+  brlt, LOOP2, i, 20
+#end_function

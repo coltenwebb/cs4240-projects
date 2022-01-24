@@ -5,6 +5,7 @@ import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
 
 newtype LineNumber = LineNumber Int
+  deriving (Ord, Eq)
 
 instance Show LineNumber where
   show (LineNumber ln) = "(L" ++ show ln ++ ")"
