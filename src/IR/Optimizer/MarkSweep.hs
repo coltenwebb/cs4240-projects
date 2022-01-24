@@ -10,7 +10,23 @@ import Data.Foldable (Foldable(toList))
 type WriteMap = M.Map Variable Instruction
 
 isCritical :: Instruction -> Bool
-isCritical = undefined
+isCritical Instruction {opcode=GOTO} = True
+isCritical Instruction {opcode=BREQ} = True
+isCritical Instruction {opcode=BRNEQ} = True
+isCritical Instruction {opcode=BRLT} = True
+isCritical Instruction {opcode=BRGT} = True
+isCritical Instruction {opcode=BRLEQ} = True
+isCritical Instruction {opcode=BRGEQ} = True
+isCritical Instruction {opcode=RETURN} = True
+isCritical Instruction {opcode=CALL} = True
+isCritical Instruction {opcode=CALLR} = True
+
+-- not certain whether array stuff should be critical
+-- array_store maybe since it may be accessed outside the function
+isCritical Instruction {opcode=ARRAY_STORE} = True
+--isCritical Instruction {opcode=ARRAY_LOAD} = True
+
+isCritical _ = False
 
 genWriteMap :: Function -> WriteMap
 genWriteMap = undefined
@@ -19,7 +35,7 @@ genWriteMap = undefined
 uses :: Instruction -> [Variable]
 uses = undefined
 
--- TODO: Test the heck out of it
+-- TODO: Test it
 simpleMarkSweep :: Function -> Function
 simpleMarkSweep fn = buildFuncFromLineNumbers
   where
@@ -70,7 +86,3 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
 --             look into genWriteMap, for each instr in writemap[v]
 --             we add instruction into workqueue.
 --             bfs ((drop 1 worklist) ++ wmap[v]) (marked ++ line number of v)
-
--- 1. get inst from fn
--- 2. find all side Effect inst (isCritical) and add to worklist
--- 3. for i in worklist, if i is output sideeffect inst, look up var in wmap, add inst to worklist
