@@ -32,9 +32,6 @@ genWriteMap :: Function -> WriteMap
 genWriteMap = undefined
 -- M.fromList
 
-uses :: Instruction -> [Variable]
-uses = undefined
-
 -- TODO: Test it
 simpleMarkSweep :: Function -> Function
 simpleMarkSweep fn = buildFuncFromLineNumbers
@@ -42,8 +39,8 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
     wmap :: WriteMap
     wmap = genWriteMap fn
 
-    criticals :: Function -> [Instruction]
-    criticals = undefined -- TODO: find all side-effect functions
+    criticals :: [Instruction]
+    criticals = filter isCritical $ instruction fn
 
     bfs :: [Instruction] -> S.Set LineNumber -> S.Set LineNumber
     bfs worklist marked
@@ -64,7 +61,7 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
     buildFuncFromLineNumbers :: Function
     buildFuncFromLineNumbers = Function fnName fnRetType fnParams fnVars fnInstructions
       where 
-        lineNumbers = toList $ bfs (criticals fn) mempty 
+        lineNumbers = toList $ bfs criticals mempty 
         fnName = name fn 
         fnRetType = returnType fn
         fnParams = parameters fn 

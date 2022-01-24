@@ -4,6 +4,17 @@ import IR.Type
 import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
 
+data Instruction = Instruction
+  { opcode :: OpCode
+  , operands :: [Operand]
+  , lineNum :: LineNumber
+  }
+
+instance Show Instruction where
+  show (Instruction op oprnds ln) =
+    show ln ++ " [" ++ show op ++ "]"
+    ++ concatMap (\x -> ", " ++ show x) oprnds
+
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
 
@@ -44,6 +55,28 @@ instance Show OpCode where
     ARRAY_LOAD -> "array_load"
     LABEL -> "label"
 
+uses :: Instruction -> [Variable]
+uses inst@(Instruction opcode operands linenum)
+  | opcode `elem` noUses = []
+  | null operands = error $ "Found instruction with empty operands list on line " ++ show linenum
+  | otherwise = operandsToVars operands
+  where 
+    noUses = [ASSIGN, GOTO, RETURN, CALL, CALLR, ARRAY_STORE, ARRAY_LOAD, LABEL]
+    
+    operandsToVars :: [Operand] -> [Variable]
+    operandsToVars operands = map operandToVar $ filter isVariable operands
+    
+    isVariable :: Operand -> Bool 
+    isVariable (VariableOperand v) = True 
+    isVariable _ = False
+
+    operandToVar :: Operand -> Variable
+    operandToVar (VariableOperand v) = v 
+    operandToVar v = error $
+      "Found non-variable operand " ++ show v ++ " in line " ++ show (lineNum inst) 
+      ++ " while converting operand to variable." ++ " `Check if isVariable function is functioning."
+
+
 newtype FunctionName = FunctionName String deriving (Eq, Ord, Show)
 newtype LabelName = LabelName String deriving (Eq, Ord, Show)
 newtype VariableName = VariableName String deriving (Eq, Ord, Show)
@@ -68,6 +101,7 @@ instance Show Operand where
       "(var " ++ show vt ++ ": " ++ s ++ ")"
     ConstantOperand (ConstantValue s) tp ->
       "(const " ++ show tp ++ ": " ++ s ++ ")"
+
 
 arrayIndexOutofBound :: Operand -> Integer -> Bool
 arrayIndexOutofBound operand i =
@@ -103,7 +137,7 @@ arrayElementTypeMatches arr o2 =
     && (getType o2 == arrBasicType)
   where
     arrBasicType = (geElementType . getType) arr
-    
+
     geElementType :: Type -> Type
     geElementType tp = case tp of
       ArrayType _ et -> et
@@ -125,14 +159,3 @@ isArrayType :: Type -> Bool
 isArrayType tp = case tp of
   ArrayType _ _ -> True
   _ -> False
-
-data Instruction = Instruction
-  { opcode :: OpCode
-  , operands :: [Operand]
-  , lineNum :: LineNumber
-  }
-
-instance Show Instruction where
-  show (Instruction op oprnds ln) =
-    show ln ++ " [" ++ show op ++ "]"
-    ++ concatMap (\x -> ", " ++ show x) oprnds
