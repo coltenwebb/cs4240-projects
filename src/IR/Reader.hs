@@ -171,7 +171,7 @@ parseFunction = do
     spaces' = notFollowedBy newline >> spaces
 
 parseProgram :: Parsec' Program
-parseProgram = Program <$> parseFunction `sepBy` skipMany1 newline
+parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 newline
 
 parseInstruction :: Parsec' Instruction
 parseInstruction = try labelOp <|> do
@@ -404,7 +404,7 @@ parseFloatOperand :: Parsec' Operand
 parseFloatOperand = do
   val <- many1 digit
   char '.'
-  precision <- many1 digit
+  precision <- many digit
   return (ConstantOperand (ConstantValue (val ++ "." ++ precision)) FloatType)
 
 parseConstOrVarOperand :: Parsec' Operand

@@ -3,17 +3,7 @@ module IR.Instruction where
 import IR.Type
 import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
-
-data Instruction = Instruction
-  { opcode :: OpCode
-  , operands :: [Operand]
-  , lineNum :: LineNumber
-  }
-
-instance Show Instruction where
-  show (Instruction op oprnds ln) =
-    show ln ++ " [" ++ show op ++ "]"
-    ++ concatMap (\x -> ", " ++ show x) oprnds
+import Data.List
 
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
@@ -54,28 +44,6 @@ instance Show OpCode where
     ARRAY_STORE -> "array_store"
     ARRAY_LOAD -> "array_load"
     LABEL -> "label"
-
-uses :: Instruction -> [Variable]
-uses inst@(Instruction opcode operands linenum)
-  | opcode `elem` noUses = []
-  | null operands = error $ "Found instruction with empty operands list on line " ++ show linenum
-  | otherwise = operandsToVars operands
-  where 
-    noUses = [ASSIGN, GOTO, RETURN, CALL, CALLR, ARRAY_STORE, ARRAY_LOAD, LABEL]
-    
-    operandsToVars :: [Operand] -> [Variable]
-    operandsToVars operands = map operandToVar $ filter isVariable operands
-    
-    isVariable :: Operand -> Bool 
-    isVariable (VariableOperand v) = True 
-    isVariable _ = False
-
-    operandToVar :: Operand -> Variable
-    operandToVar (VariableOperand v) = v 
-    operandToVar v = error $
-      "Found non-variable operand " ++ show v ++ " in line " ++ show (lineNum inst) 
-      ++ " while converting operand to variable." ++ " `Check if isVariable function is functioning."
-
 
 newtype FunctionName = FunctionName String deriving (Eq, Ord, Show)
 newtype LabelName = LabelName String deriving (Eq, Ord, Show)
@@ -159,3 +127,33 @@ isArrayType :: Type -> Bool
 isArrayType tp = case tp of
   ArrayType _ _ -> True
   _ -> False
+
+data Instruction = Instruction
+  { opcode :: OpCode
+  , operands :: [Operand]
+  , lineNum :: LineNumber
+  }
+
+instance Show Instruction where
+  show (Instruction op oprnds ln) =
+    show ln ++ " [" ++ show op ++ "]"
+    ++ concatMap (\x -> ", " ++ show x) oprnds
+
+isVarOp (VariableOperand var) = Just var
+isVarOp _ = Nothing
+
+usedVars :: Instruction -> [Variable]
+usedVars inst
+  -- any variable not in the first operand is used
+  | opcode inst `elem` [
+      ASSIGN, ADD, SUB, MULT, DIV, AND, OR,
+      BREQ, BRNEQ, BRLT, BRGT, BRGEQ, BRLEQ, CALLR, CALL, ARRAY_LOAD
+    ] = mapMaybe isVarOp (drop 1 (operands inst ))
+  -- only the variable in the first operand is used (if it is a variable)
+  | opcode inst `elem` [
+      RETURN, ARRAY_STORE
+    ] = mapMaybe isVarOp (take 1 (operands inst ))
+  | otherwise = []
+
+defVars :: Instruction -> [Variable]
+defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
