@@ -30,7 +30,7 @@ genWriteMap f = M.fromListWith (++) allVarInstPairs
   where
   varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
   allVarInstPairs = concatMap varInstPairs (instruction f)
--- M.fromList
+
 
 -- TODO: Make sure to add labels in the optimization
 simpleMarkSweep :: Function -> Function

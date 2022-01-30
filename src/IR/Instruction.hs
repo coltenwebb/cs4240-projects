@@ -4,6 +4,7 @@ import IR.Type
 import Data.Maybe
 import Data.Data (ConstrRep(FloatConstr))
 import Data.List
+import qualified Data.Map as M
 
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
@@ -132,8 +133,13 @@ data Instruction = Instruction
   { opcode :: OpCode
   , operands :: [Operand]
   , lineNum :: LineNumber
-  }
+  } 
 
+instance Eq Instruction where 
+  (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
+
+instance Ord Instruction where 
+  compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
 instance Show Instruction where
   show (Instruction op oprnds ln) =
     show ln ++ " [" ++ show op ++ "]"
@@ -157,3 +163,12 @@ usedVars inst
 
 defVars :: Instruction -> [Variable]
 defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
+
+defOpcodes :: [OpCode]
+defOpcodes = [ASSIGN, ADD, SUB, MULT, DIV, AND, OR, CALLR, ARRAY_LOAD]
+
+branchOpcodes :: [OpCode]
+branchOpcodes = [BREQ, BRGEQ, BRGT, BRLEQ, BRLT, BRNEQ]
+
+lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction 
+lineNumberMap insts = M.fromList (map (\i -> (lineNum i, i)) insts)
