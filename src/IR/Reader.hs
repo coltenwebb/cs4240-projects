@@ -17,6 +17,7 @@ import IR.Function
 import IR.Instruction
 import IR.Program
 import Text.ParserCombinators.Parsec.Prim (parseFromFile)
+import Text.Parsec.Token (GenTokenParser(comma))
 
 type VariableMap = M.Map VariableName Type
 type FunctionSet = S.Set FunctionName
@@ -30,6 +31,8 @@ type Parsec' = Parsec String ParseState
 
 lexer = Tok.makeTokenParser emptyDef
 
+-- TODO:
+--  1) Allow trailing whitespace
 readProgramFile :: FilePath -> IO (Either ParseError Program)
 readProgramFile fp = do
   input <- readFile fp
@@ -83,7 +86,7 @@ parseFunctionSignature = do
   spaces
   name <- FunctionName <$> parseIdentifier
   char '('
-  params <- parseParameter `sepBy` spaces
+  params <- parseParameter `sepBy` commaSep
   string "):"
 
   insertFunction name
@@ -92,7 +95,7 @@ parseFunctionSignature = do
 
 parseIdentifier :: Parsec' String
 parseIdentifier = notFollowedBy digit >> many1 (alphaNum <|> char '_')
-  <?> "identifer (var name, function name, etc.)"
+  <?> "identifier (var name, function name, etc.)"
 
 parseType :: Parsec' Type
 parseType = parseIntType
@@ -121,15 +124,12 @@ parseParameter = do
   spaces
   name <- VariableName <$> parseIdentifier
   let var = Variable name tp
-  insertVariable var
   return var
 
 parseVariable :: Type -> Parsec' Variable
 parseVariable tp = do
   name <- VariableName <$> parseIdentifier
-  var <- array name <|> nonArray name
-  insertVariable var
-  return var
+  array name <|> nonArray name
   where
     nonArray n = return $ Variable n tp
     array n = do
@@ -139,6 +139,9 @@ parseVariable tp = do
       let var = Variable n (ArrayType (ArraySize count) tp)
       return var
 
+spacesNoNewline :: Parsec' ()
+spacesNoNewline = skipMany $ notFollowedBy newline >> space
+
 parseVariableLists :: Parsec' [Variable]
 parseVariableLists = do
   v1 <- i
@@ -146,10 +149,12 @@ parseVariableLists = do
   v2 <- f
   return $ v1 ++ v2
   where
-    spaces' = notFollowedBy newline >> spaces
-    k t = (spaces' >> parseVariable t) `sepBy` char ','
-    i = string "int-list:" >> k IntType
-    f = string "float-list:" >> k FloatType
+    k t = parseVariable t `sepBy` commaSep
+    i = string "int-list:" >> spacesNoNewline >> k IntType
+    f = string "float-list:" >> spacesNoNewline >> k FloatType
+
+commaSep :: Parsec' ()
+commaSep = spacesNoNewline >> char ',' >> spacesNoNewline
 
 parseFunction :: Parsec' Function
 parseFunction = do
@@ -161,14 +166,15 @@ parseFunction = do
   skipMany1 newline
   vars <- parseVariableLists
 
+  mapM_ insertVariable params
+  mapM_ insertVariable vars
+
   skipMany1 newline
-  ins <- (spaces' >> parseInstruction) `sepEndBy` skipMany1 newline
+  ins <- (spacesNoNewline >> parseInstruction) `sepEndBy` skipMany1 newline
 
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
   return $ Function fname tp params vars ins
-  where
-    spaces' = notFollowedBy newline >> spaces
 
 parseProgram :: Parsec' Program
 parseProgram = Program <$> parseFunction `sepBy` skipMany1 newline
@@ -177,9 +183,7 @@ parseInstruction :: Parsec' Instruction
 parseInstruction = try labelOp <|> do
   ln <- LineNumber . sourceLine <$> getPosition
   op <- parseOpCode
-  spaces
-  char ','
-  spaces
+  commaSep
   operands <- case op of
     ASSIGN ->       try assignmentOp <|> arrayAssignOp
     ADD ->          binaryOp
@@ -220,7 +224,7 @@ parseInstruction = try labelOp <|> do
     -- Section 7.1
     assignmentOp = do
       o1 <- parseConstOrVarOperand
-      spaces >> char ',' >> spaces
+      commaSep
       o2 <- parseConstOrVarOperand
 
       -- "The first operand must be a variable."
@@ -237,9 +241,9 @@ parseInstruction = try labelOp <|> do
     -- Section 7.2
     binaryOp = do
       o1 <- parseConstOrVarOperand
-      spaces >> char ',' >> spaces
+      commaSep
       o2 <- parseConstOrVarOperand
-      spaces >> char ',' >> spaces
+      commaSep
       o3 <- parseConstOrVarOperand
 
       -- "The first operand must be a variable."
@@ -261,9 +265,9 @@ parseInstruction = try labelOp <|> do
     -- Section 7.4
     branchOp = do
       o1 <- LabelOperand . LabelName <$> parseIdentifier
-      spaces >> char ',' >> spaces
+      commaSep
       o2 <- parseConstOrVarOperand
-      spaces >> char ',' >> spaces
+      commaSep
       o3 <- parseConstOrVarOperand
 
       -- "The last two operands must be of the same basic type."
@@ -289,7 +293,7 @@ parseInstruction = try labelOp <|> do
       func <- parseFunctionOperand
 
       args <- try (do
-        spaces >> char ',' >> spaces
+        commaSep
         (spaces >> parseConstOrVarOperand) `sepBy` char ',')
         <|> return [] -- in the case of no args
 
@@ -299,11 +303,11 @@ parseInstruction = try labelOp <|> do
     callrOp = do
       ret <- parseVariableOperand
 
-      spaces >> char ',' >> spaces
+      commaSep
       func <- parseFunctionOperand
 
       args <- try (do
-        spaces >> char ',' >> spaces
+        commaSep
         (spaces >> parseConstOrVarOperand) `sepBy` char ',')
         <|> return [] -- in the case of no args
 
@@ -314,12 +318,15 @@ parseInstruction = try labelOp <|> do
       -- Differs from array_load in that first operand can be const.
       op1 <- parseConstOrVarOperand
 
-      spaces >> char ',' >> spaces
+      commaSep
       arr <- parseVariableOperand
 
+      commaSep
+      index <- parseConstOrVarOperand
+
       -- "The type of the third operand must be int."
-      spaces >> char ',' >> spaces
-      index <- parseIntOperand
+      unless (operandIsIntBasicType  index) $ fail $
+        show index ++ " is not of basic type int"
 
       -- "The second operand must be an array."
       unless (operandIsArrayType arr) $ fail $ show arr ++ " is not an array."
@@ -337,15 +344,19 @@ parseInstruction = try labelOp <|> do
       -- "The first operand must be a variable."
       val <- parseVariableOperand
 
-      spaces >> char ',' >> spaces
+      commaSep
       arr <- parseVariableOperand
 
+      commaSep
+      index <- parseConstOrVarOperand
+
       -- "The type of the third operand must be int."
-      spaces >> char ',' >> spaces
-      index <- parseIntOperand
+      unless (operandIsIntBasicType  index) $ fail $
+        show index ++ " is not of basic type int"
 
       -- "The second operand must be an array."
       unless (operandIsArrayType arr) $ fail $ show arr ++ " is not an array."
+
 
       -- "The type of the first operand must be the same as the element"
       -- "type of the second operand."
@@ -362,10 +373,10 @@ parseInstruction = try labelOp <|> do
     arrayAssignOp = do
       arr <- parseVariableOperand
 
-      spaces >> char ',' >> spaces
+      commaSep
       count <- parseIntOperand
 
-      spaces >> char ',' >> spaces
+      commaSep
       val <- parseIntOperand
 
       unless (operandIsArrayType arr) $ fail $ show arr ++ " is not an array."
