@@ -172,3 +172,13 @@ branchOpcodes = [BREQ, BRGEQ, BRGT, BRLEQ, BRLT, BRNEQ]
 
 lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction 
 lineNumberMap insts = M.fromList (map (\i -> (lineNum i, i)) insts)
+
+isBranching :: Instruction -> Bool
+isBranching inst
+  | opcode inst `elem` [
+      BREQ, BRNEQ, BRLT, BRGT, BRGEQ, BRLEQ, GOTO, RETURN
+    ] = True
+  | otherwise = False
+
+isLabel :: Instruction -> Bool
+isLabel = (== LABEL) . opcode

@@ -1,9 +1,11 @@
 module IR.Optimizer.ReachingDefs where
 
 import IR.Instruction
+import IR.Optimizer.MarkSweep
+
 import qualified Data.Map as M
 import qualified Data.Set as S
-import IR.Optimizer.MarkSweep
+import Data.List (foldl')
 
 -- so we need a way to represent the cfg
 -- we will have a list of basic blocks
@@ -11,14 +13,6 @@ import IR.Optimizer.MarkSweep
 --
 -- the textbook gives pseudocode pg 241
 
-data BasicBlock = BasicBlock {
-  unBasicBlock :: [Instruction]
-, inSet :: S.Set Instruction
-, outSet :: S.Set Instruction
-, genSet :: S.Set Instruction
-, killSet :: S.Set Instruction
-, blockId :: Int
-}
 
 instance Show BasicBlock where
   show bb =
@@ -33,16 +27,22 @@ insertEveryOther :: Show a => [Char] -> [a] -> [Char]
 insertEveryOther _ [] = []
 insertEveryOther i (x:xs) = show x ++ i ++ insertEveryOther i xs
 
+isBranching :: Instruction -> Bool
 isBranching inst
   | opcode inst `elem` [
       BREQ, BRNEQ, BRLT, BRGT, BRGEQ, BRLEQ, GOTO, RETURN
     ] = True
   | otherwise = False
 
-isLabel inst = opcode inst == LABEL
 
 createBasicBlocks :: [Instruction] -> [BasicBlock]
-createBasicBlocks insts = assignBlockId 0 (split insts)
+createBasicBlocks = g . foldl' f ([], [])
+  where
+    g = undefined
+    
+    f (currBlk, res) ins
+      | null currBlk 
+--createBasicBlocks insts = assignBlockId 0 (split insts)
 
 split :: [Instruction] -> [BasicBlock]
 split insts = foldl handle [] insts
@@ -99,8 +99,6 @@ successor :: BasicBlock -> [[Int]] -> [BasicBlock]
 successor bb m = undefined
 
 
-
-
 pprint blks = concatMap (\blk -> show blk ++ "\n") blks
 
 genGenSets :: [BasicBlock] -> [BasicBlock]
@@ -125,7 +123,8 @@ genInOutSets [] = []
 genInOutSets blocks@(bb:bbx) = bb { inSet = i', outSet = o'} : genInOutSets bbx
   where
     i' :: S.Set Instruction
-    i' = S.unions $ map outSet $ successor bb
+    --i' = S.unions $ map outSet $ successor bb
+    i' = undefined 
     o' :: S.Set Instruction
     o' = (genSet bb) `S.union` (i' `S.difference` (killSet bb))
 
