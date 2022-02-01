@@ -167,6 +167,9 @@ defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
 defOpcodes :: [OpCode]
 defOpcodes = [ASSIGN, ADD, SUB, MULT, DIV, AND, OR, CALLR, ARRAY_LOAD]
 
+isDefOpcode :: OpCode -> Bool
+isDefOpcode = (`elem` defOpcodes)
+
 branchOpcodes :: [OpCode]
 branchOpcodes = [BREQ, BRGEQ, BRGT, BRLEQ, BRLT, BRNEQ]
 

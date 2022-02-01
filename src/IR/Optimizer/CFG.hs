@@ -20,10 +20,11 @@ newtype BlockId = BlockId Int
   deriving (Eq, Ord)
 
 type CfgAdjMap = M.Map BlockId (S.Set BlockId)
+newtype RevCfg = RevCfg CfgAdjMap
 data CFG = CFG
   { blockLookup :: M.Map BlockId BasicBlock
   , adjMap :: CfgAdjMap
-  , revAdjMap :: CfgAdjMap
+  , revAdjMap :: RevCfg
   }
 
 getLeader :: BasicBlock -> Instruction
@@ -62,7 +63,7 @@ splitIntoBasicBlocks (x:xs) = g . foldl f (x :| [] , [], 0) $ xs
 
 
 makeCFG :: [Instruction] -> CFG
-makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
+makeCFG ins = CFG blkLookup adjMap ((RevCfg . transposeMap) adjMap)
   where
     blks = splitIntoBasicBlocks ins
 
@@ -96,14 +97,20 @@ makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
 
     transposeMap :: CfgAdjMap -> CfgAdjMap
     transposeMap cfg =
-      M.unionsWith S.mappend
-        [M.singleton v (S.singleton k) | (k, s) <- M.toList cfg, v <- S.toList s]
+      M.fromListWith S.mappend
+        [(v, S.singleton k) | (k, s) <- M.toList cfg, v <- S.toList s]
 
 successors :: BasicBlock -> CFG -> [BasicBlock]
-successors bb (CFG blkLookup adjMap adjMapT) =
+successors bb (CFG blkLookup adjMap _) =
   case blockId bb `M.lookup` adjMap of
     Nothing -> []
     Just ids -> mapMaybe (`M.lookup` blkLookup) . S.toList $ ids
+
+predecessors :: BasicBlock -> CFG -> [BasicBlock]
+predecessors bb (CFG blockLookup _ (RevCfg revAdj)) =
+  case blockId bb `M.lookup` revAdj of
+    Nothing -> []
+    Just ids -> mapMaybe (`M.lookup` blockLookup) . S.toList $ ids
 
 labelMap :: [BasicBlock] -> M.Map LabelName BasicBlock
 labelMap = foldl handle M.empty

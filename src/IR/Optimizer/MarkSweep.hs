@@ -25,11 +25,11 @@ isCritical inst
     ] = True
   | otherwise = False
 
-genWriteMap :: Function -> WriteMap
-genWriteMap f = M.fromListWith (++) allVarInstPairs
+genWriteMap :: [Instruction] -> WriteMap
+genWriteMap ins = M.fromListWith (++) allVarInstPairs
   where
   varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
-  allVarInstPairs = concatMap varInstPairs (instruction f)
+  allVarInstPairs = concatMap varInstPairs ins
 
 
 -- TODO: Make sure to add labels in the optimization
@@ -37,7 +37,7 @@ simpleMarkSweep :: Function -> Function
 simpleMarkSweep fn = buildFuncFromLineNumbers
   where
     wmap :: WriteMap
-    wmap = genWriteMap fn
+    wmap = genWriteMap (instruction fn)
 
     criticals :: [Instruction]
     criticals = filter isCritical $ instruction fn
