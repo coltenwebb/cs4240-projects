@@ -3,6 +3,8 @@ module IR.Optimizer.MarkSweep where
 
 import IR.Instruction
 import IR.Function
+import IR.Optimizer.ReachingDefs
+
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Foldable (Foldable(toList))
@@ -12,7 +14,6 @@ import Data.List
 --import Data.Set
 
 -- Map: Variable -> Instructions which write to said Variable
-type WriteMap = M.Map Variable [Instruction]
 
 isCritical :: Instruction -> Bool
 isCritical inst
@@ -25,22 +26,16 @@ isCritical inst
     ] = True
   | otherwise = False
 
-genWriteMap :: [Instruction] -> WriteMap
-genWriteMap ins = M.fromListWith (++) allVarInstPairs
-  where
-  varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
-  allVarInstPairs = concatMap varInstPairs ins
-
 
 -- TODO: Make sure to add labels in the optimization
 simpleMarkSweep :: Function -> Function
 simpleMarkSweep fn = buildFuncFromLineNumbers
   where
     wmap :: WriteMap
-    wmap = genWriteMap (instruction fn)
+    wmap = genWriteMap (instrs fn)
 
     criticals :: [Instruction]
-    criticals = filter isCritical $ instruction fn
+    criticals = filter isCritical $ instrs fn
 
     bfs :: [Instruction] -> S.Set LineNumber -> S.Set LineNumber -> S.Set LineNumber
     bfs worklist marked visited

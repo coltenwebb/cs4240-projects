@@ -2,7 +2,6 @@
 module IR.Optimizer.ReachingDefs where
 
 import IR.Instruction
-import IR.Optimizer.MarkSweep
 import IR.Optimizer.CFG
 
 import qualified Data.Map as M
@@ -19,10 +18,10 @@ import Control.Monad.Reader
 -- each basic block will be a list of instructions itself
 --
 -- the textbook gives pseudocode pg 241
-newtype GenSet  = GenSet  { unGenSet  :: S.Set Instruction }
-newtype KillSet = KillSet { unKillSet :: S.Set Instruction }
-newtype InSet   = InSet   { unInSet   :: S.Set Instruction } deriving Eq
-newtype OutSet  = OutSet  { unOutSet  :: S.Set Instruction } deriving Eq
+newtype GenSet  = GenSet  { unGenSet  :: S.Set Instruction } deriving Show
+newtype KillSet = KillSet { unKillSet :: S.Set Instruction } deriving Show
+newtype InSet   = InSet   { unInSet   :: S.Set Instruction } deriving (Eq, Show)
+newtype OutSet  = OutSet  { unOutSet  :: S.Set Instruction } deriving (Eq, Show)
 
 type GenSets  = M.Map BlockId GenSet
 type KillSets = M.Map BlockId KillSet
@@ -44,8 +43,9 @@ data ReachDefResult = ReachDefResult
   , outSets  :: M.Map BlockId OutSet
   , genSets  :: M.Map BlockId GenSet
   , killSets :: M.Map BlockId KillSet
-  }
+  } deriving Show
 
+type WriteMap = M.Map Variable [Instruction]
 --initSets :: CFG -> GenSets -> KillSets -> State ReachDefSets ()
 --initSets :: (MonadReader Env m, MonadState ReachDefSets m) => m ()
 --initSets = do
@@ -162,6 +162,11 @@ iterGenInOutSetSingleBlock bb cfg gens kills
 
     nxtState = ReachDefSets nxtInSets nxtOutSets hasChanged
 
+genWriteMap :: [Instruction] -> WriteMap
+genWriteMap ins = M.fromListWith (++) allVarInstPairs
+  where
+  varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
+  allVarInstPairs = concatMap varInstPairs ins
 
 
 --genGenSets :: [BasicBlock] -> [BasicBlock]

@@ -10,7 +10,7 @@ data Function = Function
   , returnType :: Type
   , parameters :: [Variable]
   , variables :: [Variable]
-  , instruction :: [Instruction]
+  , instrs :: [Instruction]
   }
 
 instance Show Function where
@@ -24,6 +24,6 @@ instance Show Function where
 -- lineNumToInst :: Function -> M.Map LineNumber Instruction 
 getInstructionByLineNum :: Function -> LineNumber -> Instruction
 getInstructionByLineNum fn num = 
-  case L.find (\i -> lineNum i == num) (instruction fn) of
+  case L.find (\i -> lineNum i == num) (instrs fn) of
     Nothing -> error $ "Cannot find valid Instruction for line number " ++ show num
     Just i -> i 

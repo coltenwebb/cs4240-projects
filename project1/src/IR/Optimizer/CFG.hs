@@ -15,17 +15,17 @@ data BasicBlock = BasicBlock
   { instrs :: NonEmpty Instruction
   , lastIns :: Instruction
   , blockId :: BlockId
-  }
+  } deriving Show
 newtype BlockId = BlockId Int
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 type CfgAdjMap = M.Map BlockId (S.Set BlockId)
-newtype RevCfg = RevCfg CfgAdjMap
+newtype RevCfg = RevCfg CfgAdjMap deriving Show
 data CFG = CFG
   { blockLookup :: M.Map BlockId BasicBlock
   , adjMap :: CfgAdjMap
   , revAdjMap :: RevCfg
-  }
+  } deriving Show
 
 getLeader :: BasicBlock -> Instruction
 getLeader = NE.head . instrs
@@ -65,7 +65,7 @@ splitIntoBasicBlocks (x:xs) = g . foldl f (x :| [] , [], 0) $ xs
 
 
 makeCFG :: [Instruction] -> CFG
-makeCFG ins = CFG blkLookup adjMap ((RevCfg . transposeMap) adjMap)
+makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
   where
     blks = splitIntoBasicBlocks ins
 
@@ -97,9 +97,9 @@ makeCFG ins = CFG blkLookup adjMap ((RevCfg . transposeMap) adjMap)
                                               Nothing -> [] -- If not GOTO or BRANCH
                                               Just bb -> [blockId bb]
 
-    transposeMap :: CfgAdjMap -> CfgAdjMap
+    transposeMap :: CfgAdjMap -> RevCfg
     transposeMap cfg =
-      M.fromListWith S.mappend
+      RevCfg $ M.fromListWith S.mappend
         [(v, S.singleton k) | (k, s) <- M.toList cfg, v <- S.toList s]
 
 successors :: BasicBlock -> CFG -> [BasicBlock]
