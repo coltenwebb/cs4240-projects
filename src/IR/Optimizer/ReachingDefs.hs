@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module IR.Optimizer.ReachingDefs where
 
 import IR.Instruction
@@ -11,6 +12,7 @@ import Data.List (foldl')
 import Data.Maybe (mapMaybe)
 
 import Control.Monad.State.Lazy
+import Control.Monad.Reader
 
 -- so we need a way to represent the cfg
 -- we will have a list of basic blocks
@@ -26,42 +28,81 @@ type GenSets  = M.Map BlockId GenSet
 type KillSets = M.Map BlockId KillSet
 
 data ReachDefSets = ReachDefSets
-  { currInSets :: M.Map BlockId InSet
+  { currInSets  :: M.Map BlockId InSet
   , currOutSets :: M.Map BlockId OutSet
   , setsChanged :: Bool
   }
 
-type ReachDefState = State ReachDefSets
+data Env = Env
+  { cfg   :: CFG
+  , gens  :: M.Map BlockId GenSet
+  , kills :: M.Map BlockId KillSet
+  }
 
--- Lecture 3. pg 30
-initSets :: CFG -> GenSets -> KillSets -> State ReachDefSets ()
-initSets cfg gens kills = put $ ReachDefSets i o False
-  where
-    i = undefined
-    o = undefined
+data ReachDefResult = ReachDefResult
+  { inSets   :: M.Map BlockId InSet
+  , outSets  :: M.Map BlockId OutSet
+  , genSets  :: M.Map BlockId GenSet
+  , killSets :: M.Map BlockId KillSet
+  }
 
-updateInAndOuts
-  :: CFG
-  -> GenSets
-  -> KillSets
-  -> State ReachDefSets ()
-updateInAndOuts cfg g k = do
-  s <- get
-  -- TODO: should be iterating over every single basic block
-  --forM (M.value)
-  --let nxtState = iterGenInOutSetSingleBlock bb cfg g k s
-  --put nxtState
+--initSets :: CFG -> GenSets -> KillSets -> State ReachDefSets ()
+--initSets :: (MonadReader Env m, MonadState ReachDefSets m) => m ()
+--initSets = do
+--  Env cfg' gens kills <- ask
+--  let bbs = getBasicBlocks cfg'
+--      i = M.fromList . map (\bb -> (blockId bb, InSet  mempty)) $ bbs
+--      o = M.fromList . map (\bb -> (blockId bb, OutSet mempty)) $ bbs
+--  
+--  put $ ReachDefSets i o True
+--
+--      --g = M.fromList . map (\bb -> (blockId bb, genGenSet bb))  $ bbs
+--      --k = M.fromList . map (\bb -> (blockId bb, genKillSet bb)) $ bbs
+--
+--initSets cfg gens kills = put $ ReachDefSets i o False
+--  where
+--    i = undefined
+--    o = undefined
+
+updateInAndOuts :: (MonadReader Env m, MonadState ReachDefSets m) => m ()
+updateInAndOuts = do
+  Env cfg' gens kills <- ask
+  let bbs = getBasicBlocks cfg'
+  forM_ bbs $
+    \bb -> modify $ iterGenInOutSetSingleBlock bb cfg' gens kills
 
 reachingDefAlgorithm
-  :: BasicBlock
-  -> CFG
-  -> State ReachDefSets ()
-reachingDefAlgorithm = undefined
--- 1) init sets
--- 2) loop until setsChanged = False
--- 3) exit
+  :: (MonadReader Env m, MonadState ReachDefSets m)
+  => m ReachDefResult
+reachingDefAlgorithm = do
+  loopUntilFixedPoint updateInAndOuts
 
+  Env _ g k <- ask
+  ReachDefSets i o _ <- get
+  return $ ReachDefResult i o g k
+  where
+    loopUntilFixedPoint m = do
+      m
+      fixedPointsReached <- not . setsChanged <$> get
+      unless fixedPointsReached $ do
+        modify $ \s -> s { setsChanged = False }
+        m
 
+runReachingDefAlgorithm :: CFG -> ReachDefResult
+runReachingDefAlgorithm cfg' = evalState (runReaderT reachingDefAlgorithm env) initState
+  where
+    bbs = getBasicBlocks cfg'
+
+    -- Lecture 3, pg. 17, by definition of Gen[S] and Kill[S]
+    g = M.fromList . map (\bb -> (blockId bb, genGenSet  bb))      $ bbs
+    k = M.fromList . map (\bb -> (blockId bb, genKillSet bb cfg')) $ bbs
+    
+    -- Lecture 3. pg 30, re: how to initialize in & outs
+    i = M.fromList . map (\bb -> (blockId bb, InSet  mempty))      $ bbs
+    o = M.fromList . map (\bb -> (blockId bb, OutSet mempty))      $ bbs
+
+    env = Env cfg' g k
+    initState = ReachDefSets i o True
 
 genGenSet :: BasicBlock -> GenSet
 genGenSet bb = GenSet $ S.fromList [k | k <- ins, isDefOpcode (opcode k)]
@@ -108,6 +149,8 @@ iterGenInOutSetSingleBlock bb cfg gens kills
     genB, killB, nxtInB, nxtOutB :: S.Set Instruction
     genB  = maybe mempty unGenSet  (M.lookup blkId gens)
     killB = maybe mempty unKillSet (M.lookup blkId kills)
+
+    -- Lecture 3, pg 17.
     nxtInB = S.unions . map unOutSet $ mapMaybe (`M.lookup` prevOuts) predIds
     nxtOutB = genB `S.union` (nxtInB S.\\ killB)
 
@@ -117,7 +160,7 @@ iterGenInOutSetSingleBlock bb cfg gens kills
     nxtInSets  = M.insert blkId (InSet nxtInB) prevIns
     nxtOutSets = M.insert blkId (OutSet nxtOutB) prevOuts
 
-    nxtState = ReachDefSets nxtInSets nxtOutSets setsChanged
+    nxtState = ReachDefSets nxtInSets nxtOutSets hasChanged
 
 
 

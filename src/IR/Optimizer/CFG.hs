@@ -36,6 +36,8 @@ getLeader = NE.head . instrs
   -- , killSet :: S.Set Instruction
   -- }
 
+getBasicBlocks :: CFG -> [BasicBlock]
+getBasicBlocks = M.elems . blockLookup
 
 splitIntoBasicBlocks :: [Instruction] -> [BasicBlock]
 splitIntoBasicBlocks [] = []
