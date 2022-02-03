@@ -118,6 +118,9 @@ operandIsBasicType = isBasicType . getType
 operandIsArrayType :: Operand -> Bool
 operandIsArrayType = isArrayType . getType
 
+operandIsIntBasicType :: Operand -> Bool
+operandIsIntBasicType = (== IntType) . getType
+
 isBasicType :: Type -> Bool
 isBasicType tp = case tp of
   IntType -> True
