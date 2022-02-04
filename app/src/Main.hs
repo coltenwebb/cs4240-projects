@@ -8,8 +8,10 @@ import IR.Reader (readProgramFile)
 import IR.Function as F
 import IR.Program
 import IR.Optimizer.CFG
-import IR.Optimizer.ReachingDefs (ReachDefSets(ReachDefSets), runReachingDefAlgorithm)
+import IR.Optimizer.ReachingDefs
 import IR.Optimizer.MarkSweep
+
+import qualified Data.Map as M
 
 main :: IO ()
 main = do
@@ -37,9 +39,21 @@ main = do
   let f1 = head (functions prog)
       ins1 = F.instrs f1
       f1' = markSweepWithReachDef f1
+      f1'' = simpleMarkSweep f1
+      cfg' = makeCFG (F.instrs f1)
+      rdRes = runReachingDefAlgorithm cfg'
 
   putStrLn "After mark sweep with reach def (!!11!1111): "
   print f1'
-
-  --putStrLn "Resulting sets: "
-  --print rdRes
+  putStrLn "Statistics:"
+  putStrLn $ "og ins cnt: " ++ (show . length . F.instrs) f1
+  putStrLn $ "opt ins cnt (reach def): " ++ (show . length . F.instrs) f1'
+  putStrLn $ "og ins cnt (simple): " ++ (show . length . F.instrs) f1''
+--
+----      putStrLn $ "Original instruction count: " ++ (show . length . F.instrs)  f1
+----      putStrLn $ "Optimized instruction count reach def: " ++ (show . length . F.instrs) f1'
+----      putStrLn $ "Optimized instruction count simple: " ++ (show . length . F.instrs) f1''
+----
+  putStrLn "Resulting sets: "
+  print $ M.lookup (BlockId 1) (inSets rdRes)
+--

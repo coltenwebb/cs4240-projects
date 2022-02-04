@@ -42,11 +42,13 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
 
     optimizedInstrs :: [Instruction]
     optimizedInstrs =
-      let marked = bfs (SE.fromList criticals) mempty
+      let marked = bfs (SE.fromList criticals) (S.fromList (lineNum <$> criticals))
       in filter ((`S.member` marked) . lineNum) (F.instrs fn)
 
     criticals :: [Instruction]
-    criticals = [ins | bb <- bbs, ins <- NE.toList (C.instrs bb), isCritical ins]
+    criticals = trace (show k) k
+      where
+        k = [ins | bb <- bbs, ins <- NE.toList (C.instrs bb), isCritical ins]
 
     lineNumberLookup :: LineNumber -> BasicBlock
     lineNumberLookup ln = fromMaybe (error "unpossible") (M.lookup ln t)
@@ -65,8 +67,6 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
       SE.EmptyL -> marked
       currIns SE.:< wl ->
         let
-          marked' = marked <> S.singleton (lineNum currIns)
-
           uses :: [Variable]
           uses = usedVars currIns
 
@@ -91,10 +91,12 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
           -- Each var may have multiple defs that reach the uses in currIns
           -- Reaches from outside the block (in set)
           interBlockReaches :: M.Map Variable (S.Set Instruction)
-          interBlockReaches = M.fromListWith mappend
-            [(v, S.singleton i) | i <- S.toList (unInSet currInSet),
-                                  v <- defVars i,
-                                  v `elem` uses]
+          interBlockReaches = trace ("inter block: " ++ show k) k
+            where
+              k = M.fromListWith mappend
+                [(v, S.singleton i) | i <- S.toList (unInSet currInSet),
+                                      v <- defVars i,
+                                      v `elem` uses]
 
           -- Condition 2 + reaching defs in the same block, we replace
           -- an existing potential reaching def with the def that killed it
@@ -105,15 +107,16 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
               f p instr =
                 let dv = defVars instr
                 -- `M.union` is left-biased, prefers first arg. in conflict
-                in (M.fromList [(v, S.singleton instr) | v <- dv]) `M.union` p
+                in (M.fromList [(v, S.singleton instr) | v <- dv, v `elem` uses]) `M.union` p
+
+          lns = lineNum <$> (M.elems reachingDefs >>= S.toList)
+          unmarked = filter (not . (`S.member` marked)) lns
+          unmarkedIns = map lineNumberInsLookup unmarked
 
           worklist' = wl SE.>< SE.fromList unmarkedIns
-            where
-              lns = lineNum <$> (M.elems reachingDefs >>= S.toList)
-              unmarked = filter (not . (`S.member` marked')) lns
-              unmarkedIns = map lineNumberInsLookup unmarked
+          marked' = marked <> S.fromList (lineNum <$> unmarkedIns)
 
-          in bfs worklist' marked'
+          in trace ("!: " ++ show (lineNum currIns) ++ (show (lineNum <$> unmarkedIns))) $ bfs worklist' marked'
 
 
 -- TODO: Make sure to add labels in the optimization
