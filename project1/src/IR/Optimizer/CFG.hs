@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingVia #-}
+
 module IR.Optimizer.CFG where
 
 import IR.Instruction
@@ -5,7 +7,7 @@ import IR.Instruction
 import Data.List as L (foldl', reverse, head)
 import Data.List.NonEmpty as NE hiding (map)
 import Data.Maybe (mapMaybe)
-
+import Test.QuickCheck
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Monoid as S
@@ -18,6 +20,7 @@ data BasicBlock = BasicBlock
   } deriving Show
 newtype BlockId = BlockId Int
   deriving (Eq, Ord, Show)
+
 
 type CfgAdjMap = M.Map BlockId (S.Set BlockId)
 newtype RevCfg = RevCfg CfgAdjMap deriving Show
