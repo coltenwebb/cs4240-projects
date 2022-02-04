@@ -9,6 +9,7 @@ import IR.Function as F
 import IR.Program
 import IR.Optimizer.CFG
 import IR.Optimizer.ReachingDefs (ReachDefSets(ReachDefSets), runReachingDefAlgorithm)
+import IR.Optimizer.MarkSweep
 
 main :: IO ()
 main = do
@@ -35,8 +36,10 @@ main = do
 
   let f1 = head (functions prog)
       ins1 = F.instrs f1
-      cfg' = makeCFG ins1
-      rdRes = runReachingDefAlgorithm cfg'
+      f1' = markSweepWithReachDef f1
 
-  putStrLn "Resulting sets: "
-  print rdRes
+  putStrLn "After mark sweep with reach def (!!11!1111): "
+  print f1'
+
+  --putStrLn "Resulting sets: "
+  --print rdRes
