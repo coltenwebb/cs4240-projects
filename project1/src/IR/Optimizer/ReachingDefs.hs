@@ -116,7 +116,8 @@ genKillSet bb@(BasicBlock ins _ blkId) (CFG lkup _ _) = killS
 
     otherIns = [ins | (bId, bb) <- M.toList lkup,
                       bId /= blkId,
-                      ins <- NE.toList (instrs bb)]
+                      ins <- NE.toList (instrs bb),
+                      isDefOpcode (opcode ins)]
 
     -- Could be more efficient by only adding
     -- `defs` in the current basic block instead of all defs.

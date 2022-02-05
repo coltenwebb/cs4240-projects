@@ -10,7 +10,7 @@ import Data.Maybe (mapMaybe)
 import Test.QuickCheck
 import qualified Data.Map as M
 import qualified Data.Set as S
-import qualified Data.Monoid as S
+import Data.Monoid
 
 -- TODO: switch to non-empty list
 data BasicBlock = BasicBlock
@@ -102,7 +102,7 @@ makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
 
     transposeMap :: CfgAdjMap -> RevCfg
     transposeMap cfg =
-      RevCfg $ M.fromListWith S.mappend
+      RevCfg $ M.fromListWith mappend
         [(v, S.singleton k) | (k, s) <- M.toList cfg, v <- S.toList s]
 
 successors :: BasicBlock -> CFG -> [BasicBlock]
