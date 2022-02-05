@@ -14,7 +14,7 @@ import Data.Monoid
 import Data.Foldable (Foldable(toList))
 import qualified Data.Sequence as SE
 
-import Debug.Trace
+-- import Debug.Trace
 
 import Data.List
 import Data.Maybe (catMaybes, fromMaybe)
@@ -46,9 +46,7 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
       in filter ((`S.member` marked) . lineNum) (F.instrs fn)
 
     criticals :: [Instruction]
-    criticals = trace (show k) k
-      where
-        k = [ins | bb <- bbs, ins <- NE.toList (C.instrs bb), isCritical ins]
+    criticals = [ins | bb <- bbs, ins <- NE.toList (C.instrs bb), isCritical ins]
 
     lineNumberLookup :: LineNumber -> BasicBlock
     lineNumberLookup ln = fromMaybe (error "unpossible") (M.lookup ln t)
@@ -91,12 +89,10 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
           -- Each var may have multiple defs that reach the uses in currIns
           -- Reaches from outside the block (in set)
           interBlockReaches :: M.Map Variable (S.Set Instruction)
-          interBlockReaches = trace ("inter block: " ++ show k) k
-            where
-              k = M.fromListWith mappend
-                [(v, S.singleton i) | i <- S.toList (unInSet currInSet),
-                                      v <- defVars i,
-                                      v `elem` uses]
+          interBlockReaches = M.fromListWith mappend
+            [(v, S.singleton i) | i <- S.toList (unInSet currInSet),
+                                  v <- defVars i,
+                                  v `elem` uses]
 
           -- Condition 2 + reaching defs in the same block, we replace
           -- an existing potential reaching def with the def that killed it
@@ -116,8 +112,8 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
           worklist' = wl SE.>< SE.fromList unmarkedIns
           marked' = marked <> S.fromList (lineNum <$> unmarkedIns)
 
-          in trace ("!: " ++ show (lineNum currIns) ++ (show (lineNum <$> unmarkedIns))) $ bfs worklist' marked'
-
+    --      in trace ("!: " ++ show (lineNum currIns) ++ (show (lineNum <$> unmarkedIns))) $ bfs worklist' marked'
+          in bfs worklist' marked'
 
 -- TODO: Make sure to add labels in the optimization
 simpleMarkSweep :: Function -> Function

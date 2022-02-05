@@ -98,7 +98,7 @@ genLabels n = replicateM n $ LabelOperand . LabelName <$> identifier
 insertRandomLabels :: GeneratedVars -> [Instruction] -> Q.Gen [Instruction]
 insertRandomLabels gv insts = do
   linenumbers <- sort <$> (replicateM c $ (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i <= k))
-  let labels'' = traceShowId $ zip linenumbers labels'
+  let labels'' = zip linenumbers labels'
   let (xs, _, res) = foldl' f (labels'', 0, []) insts
   return $ res ++ map (\(_, operand) -> Instruction LABEL [operand] (LineNumber (-1))) xs
   where
@@ -119,14 +119,20 @@ genRandomFunc = do
   labels <- genLabels 5
   instCount <- randPositiveInt
 
-  let generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
-      intVars       = filter (\v -> variableType v == IntType) variables
-      floatVars     = filter (\v -> variableType v == FloatType) variables
-      intArrVars    = filter (\v -> elemType (variableType v) == IntType) variables
-      floatArrVars  = filter (\v -> elemType (variableType v) == FloatType) variables
+  let variables'    = int1 : float1 : intArr1 : floatArr1 : variables
+      generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
+      intVars       = filter (\v -> variableType v == IntType) variables'
+      floatVars     = filter (\v -> variableType v == FloatType) variables'
+      intArrVars    = filter (\v -> elemType (variableType v) == IntType) variables'
+      floatArrVars  = filter (\v -> elemType (variableType v) == FloatType) variables'
 
   ins <- replicateM instCount $ genInst generatedVars
   insertRandomLabels generatedVars ins
+  where
+    int1 = Variable (VariableName "etuhteuh") IntType
+    float1 = Variable (VariableName "tnoehtnuh") FloatType
+    intArr1 = Variable (VariableName "") (ArrayType (ArraySize 1) IntType)
+    floatArr1 = Variable (VariableName "") (ArrayType (ArraySize 1) FloatType)
 
 
 

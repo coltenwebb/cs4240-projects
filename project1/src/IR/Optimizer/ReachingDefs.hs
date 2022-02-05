@@ -13,6 +13,8 @@ import Data.Maybe (mapMaybe)
 import Control.Monad.State.Lazy
 import Control.Monad.Reader
 
+import Debug.Trace
+
 -- so we need a way to represent the cfg
 -- we will have a list of basic blocks
 -- each basic block will be a list of instructions itself
@@ -86,7 +88,7 @@ reachingDefAlgorithm = do
       fixedPointsReached <- not . setsChanged <$> get
       unless fixedPointsReached $ do
         modify $ \s -> s { setsChanged = False }
-        m
+        loopUntilFixedPoint m
 
 runReachingDefAlgorithm :: CFG -> ReachDefResult
 runReachingDefAlgorithm cfg' = evalState (runReaderT reachingDefAlgorithm env) initState

@@ -30,6 +30,7 @@ library
     IR.Type
     IR.Reader
     IR.Printer
+    Fuzz.Test
     IR.Optimizer.MarkSweep
     IR.Optimizer.ReachingDefs
     IR.Optimizer.CFG
