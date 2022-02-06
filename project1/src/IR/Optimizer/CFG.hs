@@ -7,7 +7,6 @@ import IR.Instruction
 import Data.List as L (foldl', reverse, head)
 import Data.List.NonEmpty as NE hiding (map)
 import Data.Maybe (mapMaybe)
-import Test.QuickCheck
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Monoid
