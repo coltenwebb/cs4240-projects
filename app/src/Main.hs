@@ -10,6 +10,7 @@ import IR.Program
 import IR.Optimizer.CFG
 import IR.Optimizer.ReachingDefs
 import IR.Optimizer.MarkSweep
+import IR.Printer
 
 import qualified Data.Map as M
 
@@ -21,9 +22,16 @@ main = do
 
   when (null args) $ do
     error $ "Expected usage: " ++ mainProgName ++ " [program file]"
+  
+  --case head args of
+    --"-t" -> testMain $ args!!1
+    --"-r" -> rawMain $ args!!1
+  rawMain $ head args
 
-  let progPath = head args
 
+
+--testMain :: String => IO()
+testMain progPath = do
   eitherProg <- readProgramFile progPath
   prog <- case eitherProg of
     Left e -> error $
@@ -57,3 +65,15 @@ main = do
   putStrLn "Resulting sets: "
   print $ M.lookup (BlockId 1) (inSets rdRes)
 --
+
+
+--rawMain :: String => IO ()
+rawMain progPath = do
+  eitherProg <- readProgramFile progPath
+  prog <- case eitherProg of
+    Left e -> error $ "Parse failed:\n" ++ show e
+    Right prog -> return prog
+
+  putStrLn $ pr $ optimizeProgram prog
+    where
+      optimizeProgram (Program fns) = Program $ map markSweepWithReachDef fns

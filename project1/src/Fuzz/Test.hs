@@ -111,7 +111,7 @@ insertRandomLabels gv insts = do
     c = length labels'
 
 -- LineNumber doesn't matter since we will be transforming instructions to IR
-genRandomFunc :: Q.Gen [Instruction]
+genRandomFunc :: Q.Gen Function
 genRandomFunc = do
   varCount <- randPositiveInt
   labelCount <- (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i < 10)
@@ -127,12 +127,13 @@ genRandomFunc = do
       floatArrVars  = filter (\v -> elemType (variableType v) == FloatType) variables'
 
   ins <- replicateM instCount $ genInst generatedVars
-  insertRandomLabels generatedVars ins
+  inst <- insertRandomLabels generatedVars ins
+  return (Function (FunctionName "main") VoidType [] variables' inst)
   where
     int1 = Variable (VariableName "etuhteuh") IntType
     float1 = Variable (VariableName "tnoehtnuh") FloatType
-    intArr1 = Variable (VariableName "") (ArrayType (ArraySize 1) IntType)
-    floatArr1 = Variable (VariableName "") (ArrayType (ArraySize 1) FloatType)
+    intArr1 = Variable (VariableName "intArr1") (ArrayType (ArraySize 1) IntType)
+    floatArr1 = Variable (VariableName "floatArr1") (ArrayType (ArraySize 1) FloatType)
 
 
 
@@ -141,4 +142,12 @@ genRandomFunc = do
 -- 2. constant varaibles
 -- 3. assign operations
 
+
+-- so we want to write this to a bunch of files
+writeToFile = do
+  sequence $ map (\fp -> wf ("test"++show fp)) [1..3]
+  where
+    wf path = do
+      func <- Q.generate genRandomFunc
+      writeFile path $ pr func
 

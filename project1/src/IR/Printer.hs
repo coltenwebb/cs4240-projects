@@ -58,7 +58,7 @@ instance Print Function where
         otherwise -> s
 
 instance Print Program where
-  pr (Program fns) = intercalate "\n" (map pr fns)
+  pr (Program fns) = intercalate "\n\n" (map pr fns)
 
 {-
 testInst = Instruction ADD [

@@ -1,0 +1,38 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], ahHDd2r, u4n, p9_, S__0w, R_p__2_V_, c[22], _aDc_F_3R8_[18], j, u, oCu2L_o_VUg, _M_MI, _9PQg__0S_W[30], _[10], n_T
+float-list: tnoehtnuh, floatArr1[1], r5_4_2_lj4y_r7_, f, _[3], e4_, h_t6W2Ap_, u6_WpPs_w[13], Q[12], _, Q[19], e6sv_, _
+    brgt, yo_gO_c, S__0w, R_p__2_V_
+    brleq, _6o, _, r5_4_2_lj4y_r7_
+    and, e6sv_, _, r5_4_2_lj4y_r7_
+    goto, _zH0_4_
+    sub, f, r5_4_2_lj4y_r7_, _
+    sub, R_p__2_V_, n_T, n_T
+_zH0_4_:
+    sub, _, e4_, e6sv_
+Z_s:
+    sub, e4_, e6sv_, f
+    add, ahHDd2r, j, S__0w
+    div, _, _, f
+    goto, u2z3W_edO3__Y
+    sub, _, h_t6W2Ap_, _
+    sub, e6sv_, r5_4_2_lj4y_r7_, h_t6W2Ap_
+    goto, u2z3W_edO3__Y
+    div, ahHDd2r, _M_MI, oCu2L_o_VUg
+    goto, _6o
+_6o:
+    and, u, R_p__2_V_, u
+    goto, _zH0_4_
+    div, r5_4_2_lj4y_r7_, _, f
+    add, u, _M_MI, u4n
+yo_gO_c:
+    add, S__0w, ahHDd2r, etuhteuh
+    div, u4n, _M_MI, _M_MI
+u2z3W_edO3__Y:
+    breq, Z_s, n_T, ahHDd2r
+    and, etuhteuh, S__0w, oCu2L_o_VUg
+    add, j, ahHDd2r, n_T
+    or, u, _M_MI, ahHDd2r
+    goto, _6o
+    and, r5_4_2_lj4y_r7_, r5_4_2_lj4y_r7_, f
+#end_function
