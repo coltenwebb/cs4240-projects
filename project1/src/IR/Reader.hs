@@ -1,31 +1,31 @@
 {-# LANGUAGE FlexibleContexts #-}
+
 module IR.Reader where
 
+import Control.Monad (unless, void, when)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Control.Monad (void, unless, when)
-
-import System.IO (readFile)
-
-import Text.Parsec
-import Text.Parsec.Char ()
-import Text.Parsec.Language
-import qualified Text.Parsec.Token as Tok
-
-import IR.Type
 import IR.Function
 import IR.Instruction
 import IR.Program
+import IR.Type
+import System.IO (readFile)
+import Text.Parsec
+import Text.Parsec.Char ()
+import Text.Parsec.Language
+import Text.Parsec.Token (GenTokenParser (comma))
+import qualified Text.Parsec.Token as Tok
 import Text.ParserCombinators.Parsec.Prim (parseFromFile)
-import Text.Parsec.Token (GenTokenParser(comma))
 
 type VariableMap = M.Map VariableName Type
+
 type FunctionSet = S.Set FunctionName
+
 type LabelSet = S.Set LabelName
 
 data ParseState = ParseState
-  { varMap :: VariableMap, funcSet :: FunctionSet, labelSet :: LabelSet }
-  deriving Show
+  {varMap :: VariableMap, funcSet :: FunctionSet, labelSet :: LabelSet}
+  deriving (Show)
 
 type Parsec' = Parsec String ParseState
 
@@ -39,8 +39,9 @@ readProgramFile fp = do
   return (runParser parseProgram initParseState fp input)
 
 intrinsicFuncs :: S.Set FunctionName
-intrinsicFuncs = S.fromList . map FunctionName $
-  ["geti", "getf", "getc", "puti", "putf", "putc"]
+intrinsicFuncs =
+  S.fromList . map FunctionName $
+    ["geti", "getf", "getc", "puti", "putf", "putc"]
 
 initParseState :: ParseState
 initParseState = ParseState mempty intrinsicFuncs mempty
@@ -51,7 +52,7 @@ insertVariable (Variable name tp) = do
   let vm = varMap s
   case M.lookup name vm of
     Just var -> error $ "Redefinition of variable `" ++ show var ++ "`"
-    Nothing -> putState $ s { varMap = M.insert name tp vm }
+    Nothing -> putState $ s {varMap = M.insert name tp vm}
 
 insertFunction :: FunctionName -> Parsec' ()
 insertFunction fn = do
@@ -59,7 +60,7 @@ insertFunction fn = do
   let fs = funcSet s
   if fn `S.member` fs
     then error $ "Redefinition of function `" ++ show fs ++ "`"
-    else putState $ s { funcSet = fn `S.insert` fs }
+    else putState $ s {funcSet = fn `S.insert` fs}
 
 insertLabel :: LabelName -> Parsec' ()
 insertLabel label = do
@@ -67,15 +68,14 @@ insertLabel label = do
   let ls = labelSet s
   if label `S.member` ls
     then error $ "Redefinition of label `" ++ show label ++ "`"
-    else putState $ s { labelSet = label `S.insert` ls }
-
+    else putState $ s {labelSet = label `S.insert` ls}
 
 parseStartFunc :: Parsec' ()
 parseStartFunc = do
   string "#start_function"
   ps <- getState
   -- function declarations are global
-  putState $ ps { varMap = mempty, labelSet = mempty }
+  putState $ ps {varMap = mempty, labelSet = mempty}
 
 parseEndFunc :: Parsec' ()
 parseEndFunc = void (string "#end_function")
@@ -94,13 +94,15 @@ parseFunctionSignature = do
   return (tp, name, params)
 
 parseIdentifier :: Parsec' String
-parseIdentifier = notFollowedBy digit >> many1 (alphaNum <|> char '_')
-  <?> "identifier (var name, function name, etc.)"
+parseIdentifier =
+  notFollowedBy digit >> many1 (alphaNum <|> char '_')
+    <?> "identifier (var name, function name, etc.)"
 
 parseType :: Parsec' Type
-parseType = parseIntType
-  <|> parseFloatType
-  <|> parseVoidType
+parseType =
+  parseIntType
+    <|> parseFloatType
+    <|> parseVoidType
   where
     parseIntType = do
       string "int"
@@ -180,36 +182,36 @@ parseProgram :: Parsec' Program
 parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 newline
 
 parseInstruction :: Parsec' Instruction
-parseInstruction = try labelOp <|> do
-  ln <- LineNumber . sourceLine <$> getPosition
-  op <- parseOpCode
-  commaSep
-  operands <- case op of
-    ASSIGN ->       try assignmentOp <|> arrayAssignOp
-    ADD ->          binaryOp
-    SUB ->          binaryOp
-    MULT ->         binaryOp
-    DIV ->          binaryOp
-    AND ->          binaryOp
-    OR ->           binaryOp
-    GOTO ->         gotoOp
-    BREQ ->         branchOp
-    BRNEQ ->        branchOp
-    BRLT ->         branchOp
-    BRGT ->         branchOp
-    BRLEQ ->        branchOp
-    BRGEQ ->        branchOp
-    RETURN ->       returnOp
-    CALL ->         callOp
-    CALLR ->        callrOp
-    ARRAY_STORE ->  arrayStoreOp
-    ARRAY_LOAD ->   arrayLoadOp
+parseInstruction =
+  try labelOp <|> do
+    ln <- LineNumber . sourceLine <$> getPosition
+    op <- parseOpCode
+    commaSep
+    operands <- case op of
+      ASSIGN -> try assignmentOp <|> arrayAssignOp
+      ADD -> binaryOp
+      SUB -> binaryOp
+      MULT -> binaryOp
+      DIV -> binaryOp
+      AND -> binaryOp
+      OR -> binaryOp
+      GOTO -> gotoOp
+      BREQ -> branchOp
+      BRNEQ -> branchOp
+      BRLT -> branchOp
+      BRGT -> branchOp
+      BRLEQ -> branchOp
+      BRGEQ -> branchOp
+      RETURN -> returnOp
+      CALL -> callOp
+      CALLR -> callrOp
+      ARRAY_STORE -> arrayStoreOp
+      ARRAY_LOAD -> arrayLoadOp
+      -- Edge case since labels are represented as a pseudo-opcode,
+      -- handled with `labelOp`
+      LABEL -> error "Invalid opcode `label`"
 
-    -- Edge case since labels are represented as a pseudo-opcode,
-    -- handled with `labelOp`
-    LABEL -> error "Invalid opcode `label`"
-
-  return $ Instruction op operands ln
+    return $ Instruction op operands ln
   where
     labelOp = do
       spaces
@@ -220,7 +222,6 @@ parseInstruction = try labelOp <|> do
 
       return $ Instruction LABEL [LabelOperand name] ln
 
-    -- ** NOTE: Quotations in this section reference spec Tiger-IR.pdf **
     -- Section 7.1
     assignmentOp = do
       o1 <- parseConstOrVarOperand
@@ -228,13 +229,17 @@ parseInstruction = try labelOp <|> do
       o2 <- parseConstOrVarOperand
 
       -- "The first operand must be a variable."
-      unless (isVariableOperand  o1) $ error $
-        "Expected variable operand for assignment op, instead got `" ++ show o1 ++ "`"
+      unless (isVariableOperand o1) $
+        error $
+          "Expected variable operand for assignment op, instead got `" ++ show o1 ++ "`"
 
       -- "The operands must be of the same basic type."
-      unless (basicTypeMatches o1 o2) $ error $
-        "Non-matching basic types for constant operands `" ++ show o1
-        ++ "` and `" ++ show o2 ++ "`"
+      unless (basicTypeMatches o1 o2) $
+        error $
+          "Non-matching basic types for constant operands `" ++ show o1
+            ++ "` and `"
+            ++ show o2
+            ++ "`"
 
       return [o1, o2]
 
@@ -247,13 +252,19 @@ parseInstruction = try labelOp <|> do
       o3 <- parseConstOrVarOperand
 
       -- "The first operand must be a variable."
-      unless (isVariableOperand o1) $ error $
-        "Expected variable operand for binary op, instead got `" ++ show o1 ++ "`"
+      unless (isVariableOperand o1) $
+        error $
+          "Expected variable operand for binary op, instead got `" ++ show o1 ++ "`"
 
       -- "The operands must be of the same basic type."
-      unless (basicTypeMatches o1 o2 && basicTypeMatches o2 o3)  $ error $
-        "Non-matching basic types for constant operands `" ++ show o1
-        ++ "`, `" ++ show o2 ++ "`, and `" ++ show o3 ++ "`"
+      unless (basicTypeMatches o1 o2 && basicTypeMatches o2 o3) $
+        error $
+          "Non-matching basic types for constant operands `" ++ show o1
+            ++ "`, `"
+            ++ show o2
+            ++ "`, and `"
+            ++ show o3
+            ++ "`"
 
       return [o1, o2, o3]
 
@@ -271,9 +282,12 @@ parseInstruction = try labelOp <|> do
       o3 <- parseConstOrVarOperand
 
       -- "The last two operands must be of the same basic type."
-      unless (basicTypeMatches o2 o3) $ error $
-        "Non-matching basic types in branch op `" ++ show o2
-        ++ "` and `" ++ show o3 ++ "`"
+      unless (basicTypeMatches o2 o3) $
+        error $
+          "Non-matching basic types in branch op `" ++ show o2
+            ++ "` and `"
+            ++ show o3
+            ++ "`"
 
       return [o1, o2, o3]
 
@@ -283,8 +297,9 @@ parseInstruction = try labelOp <|> do
 
       -- "The operand must be of a basic type. There is no empty return instruction.
       -- A function with no return value should not contain a return instruction."
-      unless (operandIsBasicType  o1) $ error $
-        "Unexpected non-basic type in return op `" ++ show o1 ++ "`"
+      unless (operandIsBasicType o1) $
+        error $
+          "Unexpected non-basic type in return op `" ++ show o1 ++ "`"
 
       return [o1]
 
@@ -292,11 +307,13 @@ parseInstruction = try labelOp <|> do
     callOp = do
       func <- parseFunctionOperand
 
-      args <- try (do
-        commaSep
-        (spaces >> parseConstOrVarOperand) `sepBy` char ',')
-        <|> return [] -- in the case of no args
-
+      args <-
+        try
+          ( do
+              commaSep
+              (spaces >> parseConstOrVarOperand) `sepBy` char ','
+          )
+          <|> return [] -- in the case of no args
       return (func : args)
 
     -- Section 7.7
@@ -306,11 +323,13 @@ parseInstruction = try labelOp <|> do
       commaSep
       func <- parseFunctionOperand
 
-      args <- try (do
-        commaSep
-        (spaces >> parseConstOrVarOperand) `sepBy` char ',')
-        <|> return [] -- in the case of no args
-
+      args <-
+        try
+          ( do
+              commaSep
+              (spaces >> parseConstOrVarOperand) `sepBy` char ','
+          )
+          <|> return [] -- in the case of no args
       return (ret : func : args)
 
     -- Section 7.8
@@ -325,17 +344,20 @@ parseInstruction = try labelOp <|> do
       index <- parseConstOrVarOperand
 
       -- "The type of the third operand must be int."
-      unless (operandIsIntBasicType  index) $ error $
-        show index ++ " is not of basic type int"
+      unless (operandIsIntBasicType index) $
+        error $
+          show index ++ " is not of basic type int"
 
       -- "The second operand must be an array."
       unless (operandIsArrayType arr) $ error $ show arr ++ " is not an array."
 
       -- "The type of the first operand must be the same as the element"
       -- "type of the second operand."
-      unless (arrayElementTypeMatches arr op1)
-        $ error $ "Cannot store value of type " ++ show (getType op1)
-        ++ " to an array of type " ++ show (elemType (getType arr))
+      unless (arrayElementTypeMatches arr op1) $
+        error $
+          "Cannot store value of type " ++ show (getType op1)
+            ++ " to an array of type "
+            ++ show (elemType (getType arr))
 
       return [op1, arr, index]
 
@@ -351,18 +373,20 @@ parseInstruction = try labelOp <|> do
       index <- parseConstOrVarOperand
 
       -- "The type of the third operand must be int."
-      unless (operandIsIntBasicType  index) $ error $
-        show index ++ " is not of basic type int"
+      unless (operandIsIntBasicType index) $
+        error $
+          show index ++ " is not of basic type int"
 
       -- "The second operand must be an array."
       unless (operandIsArrayType arr) $ error $ show arr ++ " is not an array."
 
-
       -- "The type of the first operand must be the same as the element"
       -- "type of the second operand."
-      unless (arrayElementTypeMatches arr val)
-        $ error $ "Cannot store value of type " ++ show (getType val)
-        ++ " to an array of type " ++ show (elemType (getType arr))
+      unless (arrayElementTypeMatches arr val) $
+        error $
+          "Cannot store value of type " ++ show (getType val)
+            ++ " to an array of type "
+            ++ show (elemType (getType arr))
 
       -- NOTE: Not sure if it's our job to check for index errors. Is that interpreter's job?
       -- when (arrayIndexOutofBound arr i) $ error $ "Array index out of bound: " ++ show arr
@@ -384,9 +408,11 @@ parseInstruction = try labelOp <|> do
       -- Not our job? for now
       -- when (arrayIndexOutofBound arr count) $ error $ "Array index out of bound: " ++ show arr
 
-      unless (basicTypeMatches arr val)
-        $ error $ "Cannot store value of type " ++ show (getType val)
-        ++ " to an array of type " ++ show (elemType (getType arr))
+      unless (basicTypeMatches arr val) $
+        error $
+          "Cannot store value of type " ++ show (getType val)
+            ++ " to an array of type "
+            ++ show (elemType (getType arr))
 
       return [arr, count, val]
 
@@ -394,34 +420,37 @@ parseInt :: Parsec' Int
 parseInt = read <$> many1 digit
 
 genOpCodeParser :: OpCode -> Parsec' OpCode
-genOpCodeParser op = try (string (show op))
-  >> lookAhead (spaces >> char ',')
-  >> return op
+genOpCodeParser op =
+  try (string (show op))
+    >> lookAhead (spaces >> char ',')
+    >> return op
 
 parseOpCode :: Parsec' OpCode
-parseOpCode = foldl1 (<|>) $ fmap genOpCodeParser [minBound..maxBound]
+parseOpCode = foldl1 (<|>) $ fmap genOpCodeParser [minBound .. maxBound]
 
 parseConstantOperand :: Parsec' Operand
-parseConstantOperand = try parseFloatOperand
-  <|> parseIntOperand
-  <?> "constant operand"
+parseConstantOperand =
+  try parseFloatOperand
+    <|> parseIntOperand
+    <?> "constant operand"
 
 parseIntOperand :: Parsec' Operand
 parseIntOperand = do
-    val <- many1 digit
-    return (ConstantOperand (ConstantValue val) IntType)
+  val <- many1 (char '-' <|> digit)
+  return (ConstantOperand (ConstantValue val) IntType)
 
 parseFloatOperand :: Parsec' Operand
 parseFloatOperand = do
-  val <- many1 digit
+  val <- many1 (char '-' <|> digit)
   char '.'
   precision <- many digit
   return (ConstantOperand (ConstantValue (val ++ "." ++ precision)) FloatType)
 
 parseConstOrVarOperand :: Parsec' Operand
-parseConstOrVarOperand = parseConstantOperand
-  <|> parseVariableOperand
-  <?> "constant or variable operand"
+parseConstOrVarOperand =
+  parseConstantOperand
+    <|> parseVariableOperand
+    <?> "constant or variable operand"
 
 parseVariableOperand :: Parsec' Operand
 parseVariableOperand = p <?> "variable operand"
@@ -435,7 +464,8 @@ parseVariableOperand = p <?> "variable operand"
 
 parseFunctionOperand :: Parsec' Operand
 parseFunctionOperand = do
-      name <- FunctionName <$> parseIdentifier
-      t <- S.member name . funcSet <$> getState
-      if t then return $ FunctionOperand name
-        else error $ "Undefined function `" ++ show name ++ "`"
+  name <- FunctionName <$> parseIdentifier
+  t <- S.member name . funcSet <$> getState
+  if t
+    then return $ FunctionOperand name
+    else error $ "Undefined function `" ++ show name ++ "`"
