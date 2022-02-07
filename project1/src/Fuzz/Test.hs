@@ -84,7 +84,7 @@ genBinOpInst (GeneratedVars intVars floatVars _ _ _) = do
 
   let randomIntVar = VariableOperand <$> Q.elements intVars
   let randomIntConst = flip ConstantOperand IntType <$> randomIntConstantValue
-  let randomFloatVar = VariableOperand <$> Q.elements intVars
+  let randomFloatVar = VariableOperand <$> Q.elements floatVars
   let randomFloatConst = flip ConstantOperand FloatType <$> randomFloatConstantValue
 
   intOperation <- Q.arbitrary :: Q.Gen Bool
@@ -117,12 +117,36 @@ genGotoInst (GeneratedVars _ _ _ _ labels) = do
   lineNum <- LineNumber <$> randPositiveInt
   return (Instruction GOTO [label'] lineNum)
 
+genPutInst :: GeneratedVars -> Q.Gen Instruction
+genPutInst (GeneratedVars intVars floatVars _ _ _) = do
+  fn <- Q.elements ["puti", "putc", "putf"]
+
+  let randomIntVar = VariableOperand <$> Q.elements intVars
+  let randomFloatVar = VariableOperand <$> Q.elements floatVars
+
+  printVal <- case fn of
+    "puti" -> randomIntVar
+    "putc" -> randomIntVar
+    "putf" -> randomFloatVar
+
+  lineNum <- LineNumber <$> randPositiveInt
+
+  return (Instruction CALL [FunctionOperand (FunctionName fn), printVal] lineNum)
+
 genInst :: GeneratedVars -> Q.Gen Instruction
 genInst gv = do
   let binOpInst = genBinOpInst gv
   let branchInst = genBranchInst gv
   let gotoInst = genGotoInst gv
   Q.frequency [(4, binOpInst), (1, branchInst), (1, gotoInst)]
+
+genInst' :: GeneratedVars -> Q.Gen Instruction
+genInst' gv = do
+  let binOpInst = genBinOpInst gv
+  let branchInst = genBranchInst gv
+  let gotoInst = genGotoInst gv
+  let putInst = genPutInst gv
+  Q.frequency [(4, binOpInst), (1, branchInst), (1, gotoInst), (1, putInst)]
 
 randPositiveInt :: Q.Gen Int
 randPositiveInt = (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (> 0)
@@ -162,6 +186,32 @@ genRandomFunc = do
       floatArrVars = filter (\v -> elemType (variableType v) == FloatType) variables'
 
   ins <- replicateM instCount $ genInst generatedVars
+  inst <- insertRandomLabels generatedVars ins
+  return (Function (FunctionName "main") VoidType [] variables' inst)
+  where
+    int1 = Variable (VariableName "etuhteuh") IntType
+    float1 = Variable (VariableName "tnoehtnuh") FloatType
+    intArr1 = Variable (VariableName "intArr1") (ArrayType (ArraySize 1) IntType)
+    floatArr1 = Variable (VariableName "floatArr1") (ArrayType (ArraySize 1) FloatType)
+
+-- generates a function that calls put functions
+-- necessary to ensure that program output does not change after optimization
+genRandomFunc' :: Q.Gen Function
+genRandomFunc' = do
+  varCount <- randPositiveInt
+  labelCount <- (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i < 10)
+  variables <- replicateM varCount (Q.arbitrary :: Q.Gen Variable)
+  labels <- genLabels 5
+  instCount <- randPositiveInt
+
+  let variables' = int1 : float1 : intArr1 : floatArr1 : variables
+      generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
+      intVars = filter (\v -> variableType v == IntType) variables'
+      floatVars = filter (\v -> variableType v == FloatType) variables'
+      intArrVars = filter (\v -> elemType (variableType v) == IntType) variables'
+      floatArrVars = filter (\v -> elemType (variableType v) == FloatType) variables'
+
+  ins <- replicateM instCount $ genInst' generatedVars
   inst <- insertRandomLabels generatedVars ins
   return (Function (FunctionName "main") VoidType [] variables' inst)
   where
