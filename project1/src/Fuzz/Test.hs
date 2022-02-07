@@ -3,18 +3,16 @@
 module Fuzz.Test where
 
 import Control.Monad
-import Data.List as L (foldl', head, reverse, sort)
+import Data.List as L (foldl', head, reverse, sort, nub)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import qualified Data.Set as S
 import Debug.Trace
 import IR.Function
 import IR.Instruction
-import IR.Instruction (ConstantValue (ConstantValue), Operand (ConstantOperand))
 import IR.Optimizer.CFG
 import IR.Printer
 import IR.Type
-import IR.Type (Type (ArrayType, FloatType))
 import qualified Test.QuickCheck as Q
 
 data Tree = Leaf Int | Node Tree Int Tree deriving (Eq, Show)
@@ -151,32 +149,39 @@ genInst' gv = do
 randPositiveInt :: Q.Gen Int
 randPositiveInt = (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (> 0)
 
-genLabels :: Int -> Q.Gen [Operand]
-genLabels n = replicateM n $ LabelOperand . LabelName <$> identifier
+genLabel :: Q.Gen Operand
+genLabel = LabelOperand . LabelName <$> identifier
 
 insertRandomLabels :: GeneratedVars -> [Instruction] -> Q.Gen [Instruction]
 insertRandomLabels gv insts = do
-  linenumbers <- sort <$> (replicateM c $ (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i <= k))
+  linenumbers <- sort <$> replicateM c (Q.chooseInt (1, k+c))
   let labels'' = zip linenumbers labels'
   let (xs, _, res) = foldl' f (labels'', 0, []) insts
   return $ res ++ map (\(_, operand) -> Instruction LABEL [operand] (LineNumber (-1))) xs
   where
     f :: ([(Int, Operand)], Int, [Instruction]) -> Instruction -> ([(Int, Operand)], Int, [Instruction])
     f ([], c, is) i = ([], c + 1, is ++ [i])
-    f (x : xs, c, is) i = if c == fst x then (xs, c, is ++ [i, Instruction LABEL [snd x] (LineNumber c)]) else (x : xs, c + 1, is ++ [i])
+    f (x : xs, c, is) i = if c >= fst x then (xs, c+1, is ++ [i, Instruction LABEL [snd x] (LineNumber c)]) else (x : xs, c + 1, is ++ [i])
 
     labels' = labels gv
     k = length insts
     c = length labels'
 
+data IrConfig = IrConfig
+  { instrRange :: (Int, Int)
+  , labelRange :: (Int, Int)
+  , varRange   :: (Int, Int)
+  }
+
 -- LineNumber doesn't matter since we will be transforming instructions to IR
-genRandomFunc :: Q.Gen Function
-genRandomFunc = do
-  varCount <- randPositiveInt
-  labelCount <- (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i < 10)
+genUnsafeRandomFunc :: IrConfig -> Q.Gen Function
+genUnsafeRandomFunc (IrConfig ir lr vr) = do
+  varCount <- Q.chooseInt vr
+  labelCount <- Q.chooseInt lr
+  instCount <- Q.chooseInt ir
+
   variables <- replicateM varCount (Q.arbitrary :: Q.Gen Variable)
-  labels <- genLabels 5
-  instCount <- randPositiveInt
+  labels <- replicateM varCount genLabel
 
   let variables' = int1 : float1 : intArr1 : floatArr1 : variables
       generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
@@ -196,13 +201,15 @@ genRandomFunc = do
 
 -- generates a function that calls put functions
 -- necessary to ensure that program output does not change after optimization
-genRandomFunc' :: Q.Gen Function
-genRandomFunc' = do
-  varCount <- randPositiveInt
-  labelCount <- (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i < 10)
-  variables <- replicateM varCount (Q.arbitrary :: Q.Gen Variable)
-  labels <- genLabels 5
-  instCount <- randPositiveInt
+-- also, puts 
+genSomewhatSafeRandomFunc :: IrConfig -> Q.Gen Function
+genSomewhatSafeRandomFunc (IrConfig ir lr vr) = do
+  varCount <- Q.chooseInt vr
+  labelCount <- Q.chooseInt lr
+  instCount <- Q.chooseInt ir
+
+  variables <- nub <$> replicateM varCount (Q.arbitrary :: Q.Gen Variable)
+  labels <- nub <$> replicateM varCount genLabel
 
   let variables' = int1 : float1 : intArr1 : floatArr1 : variables
       generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
@@ -211,7 +218,7 @@ genRandomFunc' = do
       intArrVars = filter (\v -> elemType (variableType v) == IntType) variables'
       floatArrVars = filter (\v -> elemType (variableType v) == FloatType) variables'
 
-  ins <- replicateM instCount $ genInst' generatedVars
+  ins <- replicateM instCount (genInst' generatedVars)
   inst <- insertRandomLabels generatedVars ins
   return (Function (FunctionName "main") VoidType [] variables' inst)
   where
@@ -220,14 +227,18 @@ genRandomFunc' = do
     intArr1 = Variable (VariableName "intArr1") (ArrayType (ArraySize 1) IntType)
     floatArr1 = Variable (VariableName "floatArr1") (ArrayType (ArraySize 1) FloatType)
 
+genRandomFuncHUGEEE :: Q.Gen Function
+genRandomFuncHUGEEE = genSomewhatSafeRandomFunc
+  IrConfig { instrRange = (600, 6000), labelRange = (50, 200), varRange = (2, 30) }
+
 -- 1. insert labels
 -- 2. constant varaibles
 -- 3. assign operations
 
 -- so we want to write this to a bunch of files
 writeToFile = do
-  sequence $ map (\fp -> wf ("test" ++ show fp)) [1 .. 3]
+  sequence $ map (\fp -> wf ("test_huge" ++ show fp)) [1 .. 3]
   where
     wf path = do
-      func <- Q.generate genRandomFunc
+      func <- Q.generate genRandomFuncHUGEEE
       writeFile path $ pr func
