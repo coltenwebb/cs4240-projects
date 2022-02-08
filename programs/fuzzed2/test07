@@ -1,0 +1,30 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], _B_4L4TL_, Nzu3_4K__
+float-list: tnoehtnuh, floatArr1[1], h__5B
+    add, h__5B, 67180.41, 39217.715
+    add, h__5B, h__5B, tnoehtnuh
+    goto, n5t
+    and, Nzu3_4K__, etuhteuh, Nzu3_4K__
+P2_7a5J:
+    call, putf, h__5B
+    mult, h__5B, h__5B, h__5B
+    and, etuhteuh, -1634965246, Nzu3_4K__
+    mult, tnoehtnuh, tnoehtnuh, -91207.69
+    goto, h
+    mult, Nzu3_4K__, etuhteuh, etuhteuh
+    or, h__5B, 50002.12, tnoehtnuh
+    add, tnoehtnuh, h__5B, 39581.258
+    sub, tnoehtnuh, -2787.2224, 85055.984
+HL_9_4O1g6f5j4e:
+    brlt, P2_7a5J, _B_4L4TL_, etuhteuh
+    goto, Hfr
+h:
+    div, Nzu3_4K__, etuhteuh, 1824741941
+    brleq, h, _B_4L4TL_, _B_4L4TL_
+    goto, Hfr
+    sub, _B_4L4TL_, 788899716, Nzu3_4K__
+    mult, _B_4L4TL_, -1548781697, -796539762
+n5t:
+Hfr:
+#end_function

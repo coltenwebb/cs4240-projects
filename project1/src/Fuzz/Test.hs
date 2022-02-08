@@ -3,7 +3,7 @@
 module Fuzz.Test where
 
 import Control.Monad
-import Data.List as L (foldl', head, reverse, sort, nub)
+import Data.List as L (foldl', head, reverse, sort, nubBy, nub)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import qualified Data.Set as S
@@ -211,6 +211,14 @@ genSomewhatSafeRandomFunc (IrConfig ir lr vr) = do
   variables <- nub <$> replicateM varCount (Q.arbitrary :: Q.Gen Variable)
   labels <- nub <$> replicateM varCount genLabel
 
+--genRandomFuncWithPutAndNoRedefs :: Q.Gen Function
+--genRandomFuncWithPutAndNoRedefs = do
+--  varCount <- randPositiveInt
+--  labelCount <- (Q.arbitrary :: Q.Gen Int) `Q.suchThat` (\i -> i > 0 && i < 10)
+--  variables <- replicateM varCount (Q.arbitrary :: Q.Gen Variable)
+--  labels <- genLabels 5
+--  instCount <- randPositiveInt
+
   let variables' = int1 : float1 : intArr1 : floatArr1 : variables
       generatedVars = GeneratedVars intVars floatVars intArrVars floatArrVars labels
       intVars = filter (\v -> variableType v == IntType) variables'
@@ -220,7 +228,7 @@ genSomewhatSafeRandomFunc (IrConfig ir lr vr) = do
 
   ins <- replicateM instCount (genInst' generatedVars)
   inst <- insertRandomLabels generatedVars ins
-  return (Function (FunctionName "main") VoidType [] variables' inst)
+  return (Function (FunctionName "main") VoidType [] (nubBy (\a b -> variableName a == variableName b) variables') inst)
   where
     int1 = Variable (VariableName "etuhteuh") IntType
     float1 = Variable (VariableName "tnoehtnuh") FloatType
@@ -237,8 +245,10 @@ genRandomFuncHUGEEE = genSomewhatSafeRandomFunc
 
 -- so we want to write this to a bunch of files
 writeToFile = do
-  sequence $ map (\fp -> wf ("test_huge" ++ show fp)) [1 .. 3]
+  sequence $ map (\fp -> wf ("irout/test_huge" ++ show fp ++ ".ir")) [1 .. 100]
   where
     wf path = do
       func <- Q.generate genRandomFuncHUGEEE
       writeFile path $ pr func
+
+

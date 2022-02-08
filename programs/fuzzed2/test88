@@ -1,0 +1,16 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1]
+float-list: tnoehtnuh, floatArr1[1], R__, L9s_y0Shg__1U
+    mult, R__, tnoehtnuh, L9s_y0Shg__1U
+    goto, _
+    add, tnoehtnuh, R__, R__
+    div, L9s_y0Shg__1U, R__, tnoehtnuh
+    brneq, U__0_WnY_, tnoehtnuh, tnoehtnuh
+U__0_WnY_:
+    brgeq, _, etuhteuh, etuhteuh
+_:
+F:
+E:
+_iT:
+#end_function

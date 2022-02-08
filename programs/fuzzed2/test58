@@ -1,0 +1,38 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], _8d3nqi, _0T[2]
+float-list: tnoehtnuh, floatArr1[1], _3a[26], ___6___
+    breq, E0bVT0FJ_5_J_o_Wg1_0_X_4h_j6r, _8d3nqi, etuhteuh
+    brgeq, J5G, etuhteuh, _8d3nqi
+    or, _8d3nqi, etuhteuh, _8d3nqi
+    goto, E0bVT0FJ_5_J_o_Wg1_0_X_4h_j6r
+    goto, M_Jp_
+    goto, Q7_
+    mult, ___6___, tnoehtnuh, tnoehtnuh
+    goto, J5G
+    goto, E0bVT0FJ_5_J_o_Wg1_0_X_4h_j6r
+    brgeq, J5G, tnoehtnuh, ___6___
+    goto, Q7_
+    mult, ___6___, tnoehtnuh, tnoehtnuh
+M_Jp_:
+    mult, _8d3nqi, etuhteuh, etuhteuh
+    or, ___6___, ___6___, tnoehtnuh
+    mult, etuhteuh, _8d3nqi, _8d3nqi
+L:
+    add, ___6___, tnoehtnuh, ___6___
+    brlt, M_Jp_, ___6___, tnoehtnuh
+    goto, J5G
+J5G:
+    goto, L
+    and, etuhteuh, etuhteuh, etuhteuh
+    and, ___6___, ___6___, tnoehtnuh
+    brleq, M_Jp_, _8d3nqi, _8d3nqi
+    brneq, E0bVT0FJ_5_J_o_Wg1_0_X_4h_j6r, etuhteuh, etuhteuh
+    sub, ___6___, tnoehtnuh, ___6___
+    and, ___6___, ___6___, ___6___
+Q7_:
+    brlt, Q7_, tnoehtnuh, tnoehtnuh
+    or, etuhteuh, _8d3nqi, etuhteuh
+    div, etuhteuh, _8d3nqi, etuhteuh
+E0bVT0FJ_5_J_o_Wg1_0_X_4h_j6r:
+#end_function

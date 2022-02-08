@@ -1,0 +1,35 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], v5rvJ7l0c, s3CHiv__D, _, h5p[16], __NVy5_
+float-list: tnoehtnuh, floatArr1[1], I1CJe[7], u
+    sub, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    brleq, F, _, s3CHiv__D
+    and, etuhteuh, __NVy5_, etuhteuh
+    div, s3CHiv__D, _, _
+    breq, F, v5rvJ7l0c, s3CHiv__D
+    mult, __NVy5_, v5rvJ7l0c, _
+    goto, _7_
+    mult, u, u, tnoehtnuh
+    goto, F
+    breq, F, u, tnoehtnuh
+    sub, u, u, tnoehtnuh
+    div, s3CHiv__D, _, __NVy5_
+    or, s3CHiv__D, _, etuhteuh
+    or, __NVy5_, etuhteuh, etuhteuh
+    brgt, _7_, v5rvJ7l0c, s3CHiv__D
+    brlt, F, v5rvJ7l0c, __NVy5_
+    add, v5rvJ7l0c, __NVy5_, _
+_7_:
+    div, u, u, tnoehtnuh
+L_ujp_s:
+    add, v5rvJ7l0c, __NVy5_, s3CHiv__D
+    breq, L_ujp_s, __NVy5_, v5rvJ7l0c
+    breq, _8D4_7_y___, v5rvJ7l0c, etuhteuh
+_8D4_7_y___:
+    sub, u, u, u
+    add, _, _, __NVy5_
+    and, u, tnoehtnuh, tnoehtnuh
+    goto, K
+K:
+F:
+#end_function

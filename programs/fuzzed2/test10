@@ -1,0 +1,36 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], _
+float-list: tnoehtnuh, floatArr1[1], w7F
+    mult, etuhteuh, etuhteuh, _
+    add, etuhteuh, _, _
+m8p:
+    and, w7F, tnoehtnuh, w7F
+    breq, gB_j_1p0_, etuhteuh, etuhteuh
+    and, _, etuhteuh, etuhteuh
+    div, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    brgt, m8p, tnoehtnuh, tnoehtnuh
+    add, _, etuhteuh, _
+    and, _, etuhteuh, _
+    or, w7F, tnoehtnuh, tnoehtnuh
+    brneq, m8p, tnoehtnuh, tnoehtnuh
+    or, _, etuhteuh, _
+_lT:
+    or, etuhteuh, _, etuhteuh
+    breq, m8p, tnoehtnuh, tnoehtnuh
+    sub, _, etuhteuh, etuhteuh
+    mult, tnoehtnuh, w7F, w7F
+_3C5h0_iGXj:
+    div, etuhteuh, _, _
+    brgeq, m8p, etuhteuh, _
+    breq, gB_j_1p0_, tnoehtnuh, tnoehtnuh
+    or, tnoehtnuh, w7F, tnoehtnuh
+    sub, etuhteuh, _, etuhteuh
+    sub, etuhteuh, _, etuhteuh
+    brgt, _lT, etuhteuh, _
+EW_:
+    and, tnoehtnuh, w7F, tnoehtnuh
+    add, etuhteuh, _, _
+    and, etuhteuh, etuhteuh, etuhteuh
+gB_j_1p0_:
+#end_function

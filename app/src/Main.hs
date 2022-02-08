@@ -77,3 +77,4 @@ rawMain progPath = do
   putStrLn $ pr $ optimizeProgram prog
     where
       optimizeProgram (Program fns) = Program $ map markSweepWithReachDef fns
+      --optimizeProgram (Program fns) = Program $ map simpleMarkSweep fns

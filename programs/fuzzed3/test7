@@ -1,0 +1,37 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], EKy, p, g_q5Ms_f_5j4_9_, v, fm_[6], _DP9M, L[5], S3n, w3H0s8i, q2__m6I_Wel, B[19], t8Q[2], E5D1O8J[32]
+float-list: tnoehtnuh, floatArr1[1], w__5_2wz_N__O8_X_Xyk_[23], f4_t_, _, Q[5], c__[8], E6R___h_m8__I[29], _9_nE[3], tqO, p3_, ______ZsP, _0_, v6E8y6fApP___6F_____P5E8V___l, _4a
+    add, etuhteuh, p, etuhteuh
+    add, etuhteuh, g_q5Ms_f_5j4_9_, EKy
+    add, p, S3n, p
+    brlt, _4H, v, etuhteuh
+    add, etuhteuh, v, EKy
+D0P6_8u:
+    div, v, _DP9M, q2__m6I_Wel
+    and, _, _4a, _0_
+tLZQ_:
+    brleq, C, p3_, tnoehtnuh
+    add, S3n, v, EKy
+    sub, q2__m6I_Wel, p, _DP9M
+    brleq, D0P6_8u, q2__m6I_Wel, v
+s:
+    and, v6E8y6fApP___6F_____P5E8V___l, _, tqO
+    brlt, s, etuhteuh, p
+    mult, v, etuhteuh, S3n
+    add, ______ZsP, ______ZsP, v6E8y6fApP___6F_____P5E8V___l
+    mult, p3_, ______ZsP, _
+    goto, _4H
+    div, ______ZsP, _, f4_t_
+    goto, C
+    mult, _, _0_, tqO
+    or, w3H0s8i, v, etuhteuh
+    brlt, D0P6_8u, _DP9M, S3n
+    brlt, C, tqO, ______ZsP
+C:
+    and, p3_, tqO, _
+    or, _DP9M, S3n, p
+    or, f4_t_, v6E8y6fApP___6F_____P5E8V___l, f4_t_
+    brneq, _4H, w3H0s8i, etuhteuh
+_4H:
+#end_function

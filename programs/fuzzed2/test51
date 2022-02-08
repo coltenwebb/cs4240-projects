@@ -1,0 +1,32 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], YiW, _Fz1x[1], lUdA_, E[21]
+float-list: tnoehtnuh, floatArr1[1], _, Y[9], y[8]
+    add, tnoehtnuh, _, _
+    brneq, _1D, lUdA_, etuhteuh
+    brgeq, _0G0U1_, tnoehtnuh, tnoehtnuh
+    add, _, _, _
+_0G0U1_:
+    mult, etuhteuh, lUdA_, lUdA_
+    brneq, l, lUdA_, YiW
+    or, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    goto, l
+    breq, _0G0U1_, tnoehtnuh, _
+Cr_co:
+    goto, l
+    and, tnoehtnuh, _, _
+    goto, T
+    div, lUdA_, YiW, lUdA_
+    brlt, _0G0U1_, etuhteuh, lUdA_
+_1D:
+    or, _, _, tnoehtnuh
+    goto, _0G0U1_
+    brgt, l, lUdA_, etuhteuh
+    add, _, _, tnoehtnuh
+    mult, YiW, lUdA_, lUdA_
+    and, tnoehtnuh, _, tnoehtnuh
+    brgeq, _0G0U1_, YiW, YiW
+    or, tnoehtnuh, _, tnoehtnuh
+T:
+l:
+#end_function

@@ -1,0 +1,23 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], _, M[20], v, Y2b__rT[23], W2_
+float-list: tnoehtnuh, floatArr1[1], r9q4F, SiY_Mpx_k8M5qsi[22], y1_4P0Z2_L_, k9P5ffLD_
+    brlt, B2_, k9P5ffLD_, k9P5ffLD_
+    goto, fRm
+    div, _, W2_, v
+    or, v, v, _
+B2_:
+    mult, W2_, W2_, _
+    div, etuhteuh, etuhteuh, etuhteuh
+    and, y1_4P0Z2_L_, y1_4P0Z2_L_, y1_4P0Z2_L_
+p2P2Y:
+    and, W2_, v, _
+    div, etuhteuh, v, _
+E2j8_:
+    and, y1_4P0Z2_L_, k9P5ffLD_, y1_4P0Z2_L_
+    sub, tnoehtnuh, y1_4P0Z2_L_, y1_4P0Z2_L_
+    goto, E2j8_
+g__4_BI:
+    and, r9q4F, k9P5ffLD_, k9P5ffLD_
+fRm:
+#end_function

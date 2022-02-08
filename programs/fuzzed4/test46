@@ -1,0 +1,27 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], U[20], _8k_UH_3G_k4Mt_2x[23], VGH5g6_1q[32], l, x6O__6_9_, fNGa_, V[8], ____J9d9E7i_rwe[7], ThN[13], _7_, _1S[22]
+float-list: tnoehtnuh, floatArr1[1], a[13], _8___, A, IjxjZD_3x5_8BGx_K5_, g, NpR4voJjNz_4q_E5c_B2n, VOf5_2c1_3H7_6f0_9sHo, L4k, _
+    call, putf, IjxjZD_3x5_8BGx_K5_
+    sub, l, 1656791673, l
+    call, putf, NpR4voJjNz_4q_E5c_B2n
+    add, l, _7_, -297596466
+    mult, l, 5455089, l
+    breq, k, x6O__6_9_, x6O__6_9_
+    add, l, 1084409618, 101639034
+    goto, _F_0Q
+    div, _7_, fNGa_, 750541031
+n4EG_0O:
+    div, l, -1341102613, 1915964943
+    goto, o
+    add, _7_, fNGa_, x6O__6_9_
+    mult, VOf5_2c1_3H7_6f0_9sHo, -40713.055, _
+o:
+    call, putc, fNGa_
+    or, VOf5_2c1_3H7_6f0_9sHo, 87048.195, NpR4voJjNz_4q_E5c_B2n
+    mult, _8___, 43981.41, g
+_F_0Q:
+    mult, etuhteuh, fNGa_, 2001482353
+k:
+CCD4T6t7_1kacyc:
+#end_function

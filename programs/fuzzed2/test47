@@ -1,0 +1,33 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], V, b, r_N4L____, bUt, n4Ixr0__a_C_r[13]
+float-list: tnoehtnuh, floatArr1[1], Y4_, _, v5MDA__nO4_, J
+    goto, Jgc__7Fh_uY_z_B3a2E
+    div, b, etuhteuh, 708439216
+    goto, Jgc__7Fh_uY_z_B3a2E
+    div, tnoehtnuh, tnoehtnuh, -94952.46
+    sub, V, -418646798, V
+    div, V, V, -1986849496
+    goto, w
+    or, etuhteuh, b, 1454505514
+    brlt, z_SZ_9oj_9_5__sCQ, tnoehtnuh, _
+    call, putc, etuhteuh
+    or, V, etuhteuh, bUt
+w:
+    call, putf, J
+    add, bUt, r_N4L____, etuhteuh
+    brlt, Jgc__7Fh_uY_z_B3a2E, bUt, bUt
+Jgc__7Fh_uY_z_B3a2E:
+    or, r_N4L____, -1623375406, bUt
+    and, Y4_, v5MDA__nO4_, 38935.758
+    brleq, _, V, bUt
+    add, _, tnoehtnuh, v5MDA__nO4_
+z_SZ_9oj_9_5__sCQ:
+    div, Y4_, 9194.438, -65204.715
+_:
+    and, r_N4L____, 700430742, bUt
+    sub, V, -364083558, 579180411
+    brgt, Jgc__7Fh_uY_z_B3a2E, tnoehtnuh, v5MDA__nO4_
+m:
+    or, b, r_N4L____, r_N4L____
+#end_function

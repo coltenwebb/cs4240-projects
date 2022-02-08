@@ -1,0 +1,17 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], __vrp9v5U[2], Kky3i6_1o, O[15], D_r[23], L[16]
+float-list: tnoehtnuh, floatArr1[1], T_i, w5Y, C9__p, CQ_wW[19], w_mis
+    or, Kky3i6_1o, etuhteuh, 256230315
+    call, putc, etuhteuh
+A5J_j:
+    goto, BUh
+    goto, A5J_j
+    or, Kky3i6_1o, Kky3i6_1o, Kky3i6_1o
+x:
+    goto, B
+m:
+    call, putf, tnoehtnuh
+BUh:
+B:
+#end_function

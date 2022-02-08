@@ -1,0 +1,32 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1]
+float-list: tnoehtnuh, floatArr1[1], P
+    add, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    goto, u4_7_pM6_9Fgr7u4_3__U4_6g2p4_
+    and, tnoehtnuh, P, P
+F7I9_um:
+    add, P, P, P
+    sub, tnoehtnuh, tnoehtnuh, P
+    goto, E7____Cj_
+    mult, etuhteuh, etuhteuh, etuhteuh
+_:
+    or, P, tnoehtnuh, tnoehtnuh
+    and, etuhteuh, etuhteuh, etuhteuh
+    goto, E7____Cj_
+    brlt, u4_7_pM6_9Fgr7u4_3__U4_6g2p4_, P, tnoehtnuh
+    and, etuhteuh, etuhteuh, etuhteuh
+    and, etuhteuh, etuhteuh, etuhteuh
+    brneq, u4_7_pM6_9Fgr7u4_3__U4_6g2p4_, etuhteuh, etuhteuh
+    mult, etuhteuh, etuhteuh, etuhteuh
+    or, etuhteuh, etuhteuh, etuhteuh
+E7____Cj_:
+    sub, P, tnoehtnuh, tnoehtnuh
+    or, tnoehtnuh, P, P
+    add, etuhteuh, etuhteuh, etuhteuh
+hyqZM2s8Z3_D_:
+    div, etuhteuh, etuhteuh, etuhteuh
+    add, P, tnoehtnuh, tnoehtnuh
+    brgeq, u4_7_pM6_9Fgr7u4_3__U4_6g2p4_, P, tnoehtnuh
+u4_7_pM6_9Fgr7u4_3__U4_6g2p4_:
+#end_function

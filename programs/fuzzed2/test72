@@ -1,0 +1,27 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], T, _7_7W8m, Ly_RM_s, __IvCG___9__v3_
+float-list: tnoehtnuh, floatArr1[1], g4d[1], A6_, SAr, _0_
+    goto, _5_
+    goto, _5_
+    breq, Wxl6_vGGF4c1F_T_G, _7_7W8m, etuhteuh
+    add, _7_7W8m, __IvCG___9__v3_, __IvCG___9__v3_
+    div, tnoehtnuh, SAr, SAr
+_5_:
+    goto, Wxl6_vGGF4c1F_T_G
+    goto, a
+_:
+    sub, _7_7W8m, _7_7W8m, Ly_RM_s
+    or, _0_, tnoehtnuh, A6_
+    mult, etuhteuh, __IvCG___9__v3_, __IvCG___9__v3_
+a:
+    add, T, _7_7W8m, __IvCG___9__v3_
+U:
+    mult, __IvCG___9__v3_, etuhteuh, __IvCG___9__v3_
+    mult, Ly_RM_s, etuhteuh, T
+    mult, _0_, SAr, _0_
+    brleq, _5_, __IvCG___9__v3_, Ly_RM_s
+    sub, _0_, tnoehtnuh, tnoehtnuh
+    div, SAr, SAr, tnoehtnuh
+Wxl6_vGGF4c1F_T_G:
+#end_function

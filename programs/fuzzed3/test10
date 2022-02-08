@@ -1,0 +1,38 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], V[5], _Pe4i_I5X6y_b, L3_, h8_1k2_1e, ___4___S_OJ5_m_d_
+float-list: tnoehtnuh, floatArr1[1], _6xHg1W__2xi_D_0N2j[20], n_p, m, t
+    goto, _
+    goto, C
+    sub, ___4___S_OJ5_m_d_, etuhteuh, h8_1k2_1e
+j1_:
+    goto, C
+    add, m, n_p, t
+    goto, __f
+    brneq, y3S8E, t, t
+    add, m, t, n_p
+    goto, j1_
+    sub, m, tnoehtnuh, tnoehtnuh
+    and, n_p, t, t
+    brgt, j1_, L3_, ___4___S_OJ5_m_d_
+    goto, __f
+    sub, n_p, n_p, t
+_:
+    and, t, tnoehtnuh, n_p
+    brleq, _, t, tnoehtnuh
+    div, n_p, tnoehtnuh, t
+    or, tnoehtnuh, m, m
+    sub, L3_, h8_1k2_1e, etuhteuh
+    add, m, tnoehtnuh, n_p
+    brgeq, j1_, ___4___S_OJ5_m_d_, L3_
+    breq, j1_, tnoehtnuh, tnoehtnuh
+__f:
+    brgeq, j1_, ___4___S_OJ5_m_d_, L3_
+    mult, m, tnoehtnuh, m
+y3S8E:
+    or, t, t, tnoehtnuh
+    goto, __f
+    mult, L3_, etuhteuh, etuhteuh
+    mult, h8_1k2_1e, etuhteuh, ___4___S_OJ5_m_d_
+C:
+#end_function

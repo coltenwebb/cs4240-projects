@@ -1,0 +1,25 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], Z, G2s
+float-list: tnoehtnuh, floatArr1[1], _[13]
+    add, etuhteuh, Z, etuhteuh
+    call, putc, Z
+    goto, _
+    goto, w
+    goto, _6h1RUk
+Z:
+    call, putc, etuhteuh
+    add, tnoehtnuh, 56942.58, tnoehtnuh
+    brneq, _6h1RUk, Z, etuhteuh
+    brleq, _6h1RUk, etuhteuh, G2s
+w:
+    brgt, Z, G2s, etuhteuh
+_:
+    call, puti, Z
+    brgt, _6h1RUk, G2s, etuhteuh
+    call, puti, G2s
+    call, putf, tnoehtnuh
+W4N:
+    div, tnoehtnuh, 82287.32, -42300.227
+_6h1RUk:
+#end_function

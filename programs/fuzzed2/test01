@@ -1,0 +1,33 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], w, D2gYFas_P2uZv6h6H
+float-list: tnoehtnuh, floatArr1[1], C_Q, _9_, _INjV_WQL
+    brlt, WwN, _INjV_WQL, C_Q
+    add, w, -1565330887, D2gYFas_P2uZv6h6H
+    goto, U7yb_fs
+    mult, D2gYFas_P2uZv6h6H, D2gYFas_P2uZv6h6H, -1506222937
+    div, etuhteuh, D2gYFas_P2uZv6h6H, -230282393
+U7yb_fs:
+    breq, _, tnoehtnuh, tnoehtnuh
+    call, putf, _INjV_WQL
+    mult, _INjV_WQL, -75828.086, -71601.22
+    add, _INjV_WQL, -27636.957, _INjV_WQL
+P0uV_5_9a:
+    sub, tnoehtnuh, _9_, _INjV_WQL
+    mult, etuhteuh, -896155814, D2gYFas_P2uZv6h6H
+    or, C_Q, _INjV_WQL, -25775.932
+r:
+    brgeq, U7yb_fs, _INjV_WQL, _INjV_WQL
+    mult, _9_, -88752.055, 27259.008
+    mult, D2gYFas_P2uZv6h6H, etuhteuh, 1988930865
+    goto, WwN
+    goto, P0uV_5_9a
+    mult, w, etuhteuh, 1461078428
+    sub, _9_, -33402.785, tnoehtnuh
+    add, etuhteuh, D2gYFas_P2uZv6h6H, -728619020
+WwN:
+    and, tnoehtnuh, -98216.65, -31667.51
+    brgeq, WwN, w, w
+    brgt, r, D2gYFas_P2uZv6h6H, etuhteuh
+_:
+#end_function
