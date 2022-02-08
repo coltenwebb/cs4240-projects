@@ -32,6 +32,7 @@ data ReachDefSets = ReachDefSets
   { currInSets  :: M.Map BlockId InSet
   , currOutSets :: M.Map BlockId OutSet
   , setsChanged :: Bool
+  , iteration   :: Int
   }
 
 data Env = Env
@@ -47,7 +48,7 @@ data ReachDefResult = ReachDefResult
   , killSets :: M.Map BlockId KillSet
   } deriving Show
 
-type WriteMap = M.Map Variable [Instruction]
+newtype WriteMap = WriteMap (M.Map Variable [Instruction])
 --initSets :: CFG -> GenSets -> KillSets -> State ReachDefSets ()
 --initSets :: (MonadReader Env m, MonadState ReachDefSets m) => m ()
 --initSets = do
@@ -80,14 +81,14 @@ reachingDefAlgorithm = do
   loopUntilFixedPoint updateInAndOuts
 
   Env _ g k <- ask
-  ReachDefSets i o _ <- get
-  return $ ReachDefResult i o g k
+  ReachDefSets i o _ iterCnt <- get
+  return $ trace ("iterCnt: " ++ show iterCnt) ReachDefResult i o g k
   where
     loopUntilFixedPoint m = do
       m
       fixedPointsReached <- not . setsChanged <$> get
       unless fixedPointsReached $ do
-        modify $ \s -> s { setsChanged = False }
+        modify $ \s -> s { setsChanged = False, iteration = iteration s + 1 }
         loopUntilFixedPoint m
 
 runReachingDefAlgorithm :: CFG -> ReachDefResult
@@ -98,24 +99,36 @@ runReachingDefAlgorithm cfg' = evalState (runReaderT reachingDefAlgorithm env) i
     -- Lecture 3, pg. 17, by definition of Gen[S] and Kill[S]
     g = M.fromList . map (\bb -> (blockId bb, genGenSet  bb))      $ bbs
     k = M.fromList . map (\bb -> (blockId bb, genKillSet bb cfg')) $ bbs
-    
+
     -- Lecture 3. pg 30, re: how to initialize in & outs
     i = M.fromList . map (\bb -> (blockId bb, InSet  mempty))      $ bbs
     o = M.fromList . map (\bb -> (blockId bb, OutSet mempty))      $ bbs
 
     env = Env cfg' g k
-    initState = ReachDefSets i o True
+    initState = ReachDefSets i o True 1
 
 genGenSet :: BasicBlock -> GenSet
-genGenSet bb = GenSet $ S.fromList [k | k <- ins, isDefOpcode (opcode k)]
+genGenSet bb = GenSet $ S.fromList . M.elems . foldl' f mempty $ bInstrs
   where
-    ins = NE.toList . instrs $ bb
+    -- The fold ensures that subsequent definitions kill/overwrite
+    -- previous definitions in the same block
+    f :: M.Map Variable Instruction
+      -> Instruction
+      -> M.Map Variable Instruction
+    f gens ins = case defVars ins of
+      Nothing -> gens
+      Just vari -> M.insert vari ins gens
+
+    bInstrs = NE.toList . instrs $ bb
 
 genKillSet :: BasicBlock -> CFG -> KillSet
 genKillSet bb@(BasicBlock ins _ blkId) (CFG lkup _ _) = killS
   where
     ins' = NE.toList ins
 
+    -- Piazza @53 follow-up, it is ok to not include
+    -- killed defs from the current block, as long
+    -- as we don't include the killed defs into the gen set
     otherIns = [ins | (bId, bb) <- M.toList lkup,
                       bId /= blkId,
                       ins <- NE.toList (instrs bb),
@@ -128,7 +141,7 @@ genKillSet bb@(BasicBlock ins _ blkId) (CFG lkup _ _) = killS
     wmap = genWriteMap otherIns
 
     defs :: [Variable]
-    defs = concatMap defVars ins'
+    defs = mapMaybe defVars ins'
 
     killS = KillSet . S.fromList . concat $
       mapMaybe (`M.lookup` wmap) defs
@@ -142,7 +155,7 @@ iterGenInOutSetSingleBlock
   -> ReachDefSets
   -> ReachDefSets
 iterGenInOutSetSingleBlock bb cfg gens kills
-  rds@(ReachDefSets prevIns prevOuts chngd) = nxtState
+  rds@(ReachDefSets prevIns prevOuts chngd iter) = nxtState
   where
     blkId = blockId bb
 
@@ -163,7 +176,7 @@ iterGenInOutSetSingleBlock bb cfg gens kills
     nxtInSets  = M.insert blkId (InSet nxtInB) prevIns
     nxtOutSets = M.insert blkId (OutSet nxtOutB) prevOuts
 
-    nxtState = ReachDefSets nxtInSets nxtOutSets hasChanged
+    nxtState = ReachDefSets nxtInSets nxtOutSets hasChanged iter
 
 genWriteMap :: [Instruction] -> WriteMap
 genWriteMap ins = M.fromListWith (++) allVarInstPairs

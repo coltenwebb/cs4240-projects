@@ -136,12 +136,12 @@ data Instruction = Instruction
   { opcode :: OpCode
   , operands :: [Operand]
   , lineNum :: LineNumber
-  } 
+  }
 
-instance Eq Instruction where 
+instance Eq Instruction where
   (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
 
-instance Ord Instruction where 
+instance Ord Instruction where
   compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
 instance Show Instruction where
   show (Instruction op oprnds ln) =
@@ -164,8 +164,14 @@ usedVars inst
     ] = mapMaybe isVarOp (take 1 (operands inst ))
   | otherwise = []
 
-defVars :: Instruction -> [Variable]
-defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
+defVars :: Instruction -> Maybe Variable
+defVars inst =
+  case dv of
+    [ ]  -> Nothing
+    [x] -> Just x
+    _ -> error "More than one def vars in an instr. unpossible nani?!?!"
+  where
+    dv = mapMaybe isVarOp (operands inst) \\ usedVars inst
 
 defOpcodes :: [OpCode]
 defOpcodes = [ASSIGN, ADD, SUB, MULT, DIV, AND, OR, CALLR, ARRAY_LOAD]
@@ -176,7 +182,7 @@ isDefOpcode = (`elem` defOpcodes)
 branchOpcodes :: [OpCode]
 branchOpcodes = [BREQ, BRGEQ, BRGT, BRLEQ, BRLT, BRNEQ]
 
-lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction 
+lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction
 lineNumberMap insts = M.fromList (map (\i -> (lineNum i, i)) insts)
 
 isBranching :: Instruction -> Bool

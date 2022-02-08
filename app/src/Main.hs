@@ -13,6 +13,7 @@ import IR.Optimizer.MarkSweep
 import IR.Printer
 
 import qualified Data.Map as M
+import IR.Optimizer.MarkSweep (markSweepSimpleAndReachDef)
 
 main :: IO ()
 main = do
@@ -67,7 +68,7 @@ testMain progPath = do
 --
 
 
---rawMain :: String => IO ()
+rawMain :: String -> IO ()
 rawMain progPath = do
   eitherProg <- readProgramFile progPath
   prog <- case eitherProg of
@@ -76,4 +77,4 @@ rawMain progPath = do
 
   putStrLn $ pr $ optimizeProgram prog
     where
-      optimizeProgram (Program fns) = Program $ map markSweepWithReachDef fns
+      optimizeProgram (Program fns) = Program $ map markSweepSimpleAndReachDef fns

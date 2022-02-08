@@ -32,6 +32,9 @@ isCritical inst
     ] = True
   | otherwise = False
 
+markSweepSimpleAndReachDef :: Function -> Function
+markSweepSimpleAndReachDef = markSweepWithReachDef . simpleMarkSweep
+
 -- Map: Variable -> Instructions which write to said Variable
 markSweepWithReachDef :: Function -> Function
 markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
