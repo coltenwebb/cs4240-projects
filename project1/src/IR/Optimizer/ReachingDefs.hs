@@ -48,7 +48,7 @@ data ReachDefResult = ReachDefResult
   , killSets :: M.Map BlockId KillSet
   } deriving Show
 
-newtype WriteMap = WriteMap (M.Map Variable [Instruction])
+newtype WriteMap = WriteMap {unWriteMap :: M.Map Variable [Instruction]}
 --initSets :: CFG -> GenSets -> KillSets -> State ReachDefSets ()
 --initSets :: (MonadReader Env m, MonadState ReachDefSets m) => m ()
 --initSets = do
@@ -144,7 +144,7 @@ genKillSet bb@(BasicBlock ins _ blkId) (CFG lkup _ _) = killS
     defs = mapMaybe defVars ins'
 
     killS = KillSet . S.fromList . concat $
-      mapMaybe (`M.lookup` wmap) defs
+      mapMaybe (`M.lookup` unWriteMap wmap) defs
 
 -- Lecture 3, Page 32
 iterGenInOutSetSingleBlock
@@ -179,10 +179,10 @@ iterGenInOutSetSingleBlock bb cfg gens kills
     nxtState = ReachDefSets nxtInSets nxtOutSets hasChanged iter
 
 genWriteMap :: [Instruction] -> WriteMap
-genWriteMap ins = M.fromListWith (++) allVarInstPairs
+genWriteMap ins = WriteMap $ M.fromListWith (++) allVarInstPairs
   where
-  varInstPairs inst = map (\var->(var, [inst])) (defVars inst)
-  allVarInstPairs = concatMap varInstPairs ins
+  varInstPairs inst = fmap (\v -> (v, [inst])) $ defVars inst 
+  allVarInstPairs = mapMaybe varInstPairs ins
 
 
 --genGenSets :: [BasicBlock] -> [BasicBlock]
