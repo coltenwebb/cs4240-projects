@@ -1,0 +1,42 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], _4I
+float-list: tnoehtnuh, floatArr1[1], W4JyP9c2n7_, Q2X
+    div, _4I, 855835436, _4I
+    brgeq, ub_, etuhteuh, _4I
+    mult, _4I, etuhteuh, _4I
+    goto, s
+    call, puti, etuhteuh
+s:
+    goto, ub_
+    div, Q2X, W4JyP9c2n7_, Q2X
+    call, puti, _4I
+z2O7a6x0C1Q:
+    breq, s, etuhteuh, _4I
+    mult, Q2X, -52871.867, Q2X
+    call, puti, _4I
+    add, W4JyP9c2n7_, 86661.77, Q2X
+    sub, _4I, -1921532134, 1148383420
+ub_:
+    add, tnoehtnuh, 89161.74, W4JyP9c2n7_
+    brleq, ub_, _4I, etuhteuh
+    breq, z2O7a6x0C1Q, W4JyP9c2n7_, tnoehtnuh
+    goto, z2O7a6x0C1Q
+    div, tnoehtnuh, tnoehtnuh, -38421.48
+    and, W4JyP9c2n7_, 23676.084, 86801.1
+    call, puti, _4I
+    and, tnoehtnuh, tnoehtnuh, W4JyP9c2n7_
+    call, puti, _4I
+    call, putf, Q2X
+    or, _4I, etuhteuh, -1650590477
+    mult, etuhteuh, -647805645, etuhteuh
+    or, W4JyP9c2n7_, -99536.37, 87098.08
+    or, Q2X, Q2X, W4JyP9c2n7_
+    call, putf, tnoehtnuh
+    brgeq, ub_, Q2X, tnoehtnuh
+    breq, ub_, Q2X, tnoehtnuh
+    goto, z2O7a6x0C1Q
+    mult, tnoehtnuh, W4JyP9c2n7_, -53726.105
+    or, _4I, -298633344, _4I
+    mult, etuhteuh, -1159973884, 948580944
+#end_function

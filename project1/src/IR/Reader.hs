@@ -52,7 +52,7 @@ insertVariable (Variable name tp) = do
   s <- getState
   let vm = varMap s
   case M.lookup name vm of
-    Just var -> error $ "Redefinition of variable `" ++ show var ++ "`"
+    Just tp -> error $ "Redefinition of variable `" ++ show name ++ "`"
     Nothing -> putState $ s {varMap = M.insert name tp vm}
 
 insertFunction :: FunctionName -> Parsec' ()
@@ -60,7 +60,7 @@ insertFunction fn = do
   s <- getState
   let fs = funcSet s
   if fn `S.member` fs
-    then error $ "Redefinition of function `" ++ show fs ++ "`"
+    then error $ "Redefinition of function `" ++ show fn ++ "`"
     else putState $ s {funcSet = fn `S.insert` fs}
 
 insertLabel :: LabelName -> Parsec' ()

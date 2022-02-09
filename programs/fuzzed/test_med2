@@ -1,0 +1,196 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], SXo4n3f1X, B7QDq6b7__d
+float-list: tnoehtnuh, floatArr1[1], _9__G5N7__h6_1x9FW_8Yw__O, _3S, _, U6_C_[6], vhzmf2_, n, T
+    sub, tnoehtnuh, 4250.0215, 8329.565
+    call, putc, SXo4n3f1X
+    call, putc, etuhteuh
+    div, T, _3S, _3S
+    goto, W
+    call, puti, etuhteuh
+    add, etuhteuh, -1663951995, etuhteuh
+    div, etuhteuh, B7QDq6b7__d, SXo4n3f1X
+    and, n, vhzmf2_, _3S
+    breq, k_d, T, _9__G5N7__h6_1x9FW_8Yw__O
+    add, _9__G5N7__h6_1x9FW_8Yw__O, vhzmf2_, tnoehtnuh
+    goto, _
+    and, etuhteuh, 668621263, -534075730
+    sub, SXo4n3f1X, SXo4n3f1X, etuhteuh
+    mult, T, _, 57841.668
+    brneq, _2_, vhzmf2_, tnoehtnuh
+    call, putc, etuhteuh
+    goto, m_eLP9kf_
+    mult, B7QDq6b7__d, SXo4n3f1X, SXo4n3f1X
+    mult, T, 65076.594, T
+    div, etuhteuh, -1032063376, B7QDq6b7__d
+    goto, k_d
+    brleq, p_W2z, vhzmf2_, _9__G5N7__h6_1x9FW_8Yw__O
+    div, SXo4n3f1X, 1587935523, -952526715
+    and, B7QDq6b7__d, -2040256602, 448413673
+    brlt, I_j, _9__G5N7__h6_1x9FW_8Yw__O, _3S
+    goto, I_j
+    goto, _8vq_5P
+    div, B7QDq6b7__d, -1241051443, -1045365934
+    call, putf, _9__G5N7__h6_1x9FW_8Yw__O
+    sub, T, _3S, 40954.99
+    mult, vhzmf2_, -70397.28, n
+    div, etuhteuh, etuhteuh, etuhteuh
+    mult, tnoehtnuh, T, _
+    sub, SXo4n3f1X, B7QDq6b7__d, etuhteuh
+    call, putf, n
+    goto, _Aa
+    and, T, vhzmf2_, _9__G5N7__h6_1x9FW_8Yw__O
+    goto, _Aa
+    brgeq, W, SXo4n3f1X, SXo4n3f1X
+_:
+    mult, SXo4n3f1X, B7QDq6b7__d, SXo4n3f1X
+    add, _, _9__G5N7__h6_1x9FW_8Yw__O, T
+    goto, _J__T
+    brleq, _Aa, SXo4n3f1X, etuhteuh
+    mult, SXo4n3f1X, 1480964922, 2137215804
+    add, n, n, 89185.875
+    div, B7QDq6b7__d, 457311203, etuhteuh
+    sub, vhzmf2_, vhzmf2_, _3S
+    mult, tnoehtnuh, 75951.51, -77315.68
+    and, vhzmf2_, _3S, -37411.453
+    add, n, _9__G5N7__h6_1x9FW_8Yw__O, _9__G5N7__h6_1x9FW_8Yw__O
+    sub, T, _, 64698.004
+    add, SXo4n3f1X, 1099945864, -585568370
+    call, putf, _
+    call, putf, tnoehtnuh
+    add, _9__G5N7__h6_1x9FW_8Yw__O, _9__G5N7__h6_1x9FW_8Yw__O, 36078.313
+    div, n, -67836.41, 2363.8916
+    brgt, _J__T, T, n
+    call, puti, SXo4n3f1X
+    add, _9__G5N7__h6_1x9FW_8Yw__O, 73424.516, _
+    brgeq, _2_, etuhteuh, B7QDq6b7__d
+    brleq, _Aa, n, _9__G5N7__h6_1x9FW_8Yw__O
+    sub, B7QDq6b7__d, B7QDq6b7__d, -964916631
+    call, putc, SXo4n3f1X
+    sub, SXo4n3f1X, 1205567246, etuhteuh
+    or, _3S, _9__G5N7__h6_1x9FW_8Yw__O, n
+    brgeq, _, _, n
+    mult, vhzmf2_, _, n
+p_W2z:
+    call, putf, _9__G5N7__h6_1x9FW_8Yw__O
+    sub, _3S, 50668.957, _3S
+    and, _, 67884.1, -56100.324
+    or, SXo4n3f1X, -1198526321, SXo4n3f1X
+    call, putf, vhzmf2_
+    goto, _J__T
+    div, T, 89622.53, -42383.637
+    div, etuhteuh, B7QDq6b7__d, -792393530
+    mult, vhzmf2_, _3S, _
+    call, puti, B7QDq6b7__d
+_8vq_5P:
+    call, putc, B7QDq6b7__d
+    sub, tnoehtnuh, -75328.984, T
+    goto, _
+    and, SXo4n3f1X, -205901662, -1646119160
+    div, tnoehtnuh, -31766.01, n
+    brgt, W, B7QDq6b7__d, B7QDq6b7__d
+    brgt, _J__T, _9__G5N7__h6_1x9FW_8Yw__O, vhzmf2_
+    call, puti, SXo4n3f1X
+    call, putc, etuhteuh
+    add, n, n, vhzmf2_
+    add, vhzmf2_, tnoehtnuh, -28430.553
+    call, putc, etuhteuh
+    div, B7QDq6b7__d, 1064053418, SXo4n3f1X
+    and, etuhteuh, -1313040719, -442020926
+_J__T:
+    mult, T, 40253.12, n
+    and, vhzmf2_, _, T
+    brgeq, _Aa, etuhteuh, B7QDq6b7__d
+    and, T, _, 48111.926
+    or, SXo4n3f1X, -496957761, -236523831
+    div, SXo4n3f1X, etuhteuh, -2014528512
+W:
+    add, tnoehtnuh, _, _3S
+    add, _, vhzmf2_, 16642.213
+    add, _3S, _3S, 47475.793
+    brleq, I_j, n, _3S
+    add, SXo4n3f1X, B7QDq6b7__d, -147685662
+    goto, p_W2z
+    add, SXo4n3f1X, etuhteuh, etuhteuh
+    and, _9__G5N7__h6_1x9FW_8Yw__O, _, -28063.127
+    sub, _9__G5N7__h6_1x9FW_8Yw__O, 32730.611, n
+    brgeq, _2_, SXo4n3f1X, B7QDq6b7__d
+    or, B7QDq6b7__d, -641113249, -623693686
+    mult, vhzmf2_, _9__G5N7__h6_1x9FW_8Yw__O, n
+    goto, W
+    mult, SXo4n3f1X, B7QDq6b7__d, SXo4n3f1X
+    call, puti, etuhteuh
+    call, puti, etuhteuh
+    or, T, T, n
+    goto, p_W2z
+    sub, _3S, tnoehtnuh, _
+    brneq, p_W2z, etuhteuh, SXo4n3f1X
+    and, n, -84845.37, _3S
+    call, putc, B7QDq6b7__d
+_Aa:
+    div, _, 38798.434, -58209.516
+    or, SXo4n3f1X, 1639876385, etuhteuh
+    or, _9__G5N7__h6_1x9FW_8Yw__O, -14822.675, _9__G5N7__h6_1x9FW_8Yw__O
+    and, SXo4n3f1X, -778012159, etuhteuh
+    mult, etuhteuh, etuhteuh, SXo4n3f1X
+    sub, vhzmf2_, n, 67179.375
+    brleq, _, etuhteuh, SXo4n3f1X
+    or, n, tnoehtnuh, _3S
+    and, SXo4n3f1X, SXo4n3f1X, 751451038
+    goto, W
+    goto, W
+    call, puti, B7QDq6b7__d
+    goto, m_eLP9kf_
+    call, putf, _
+    brleq, W, B7QDq6b7__d, B7QDq6b7__d
+k_d:
+    breq, _2_, SXo4n3f1X, etuhteuh
+_2_:
+    and, T, _, tnoehtnuh
+    brgt, W, etuhteuh, B7QDq6b7__d
+    mult, _, 78244.77, 61518.938
+    and, vhzmf2_, -54217.617, -16297.592
+    mult, vhzmf2_, 48992.402, T
+    brleq, _J__T, _9__G5N7__h6_1x9FW_8Yw__O, vhzmf2_
+    sub, _3S, T, 60632.52
+    sub, _9__G5N7__h6_1x9FW_8Yw__O, T, _
+    brgeq, _J__T, etuhteuh, B7QDq6b7__d
+    div, _3S, 31612.14, -64176.305
+    div, _3S, -42594.426, -24685.006
+    call, putf, T
+    add, SXo4n3f1X, etuhteuh, -1706236882
+    call, putc, etuhteuh
+    breq, W, etuhteuh, B7QDq6b7__d
+    sub, B7QDq6b7__d, 909573463, -1975289116
+    or, n, 79355.46, 11758.79
+    goto, _J__T
+    brleq, _2_, T, T
+    call, puti, etuhteuh
+    sub, n, n, n
+    goto, _8vq_5P
+    call, putc, etuhteuh
+    mult, B7QDq6b7__d, -1138053793, B7QDq6b7__d
+    div, _3S, tnoehtnuh, -14649.631
+    add, etuhteuh, SXo4n3f1X, B7QDq6b7__d
+    or, etuhteuh, etuhteuh, -1881662137
+    and, _3S, _9__G5N7__h6_1x9FW_8Yw__O, T
+    and, _9__G5N7__h6_1x9FW_8Yw__O, 85374.164, -34584.34
+    sub, tnoehtnuh, -3050.628, T
+    sub, etuhteuh, -1146608271, 1830229115
+    or, _3S, 35575.2, vhzmf2_
+    div, _3S, _, _3S
+    goto, _Aa
+    and, B7QDq6b7__d, B7QDq6b7__d, etuhteuh
+    breq, _8vq_5P, SXo4n3f1X, SXo4n3f1X
+    brneq, _, n, vhzmf2_
+    goto, _
+    add, B7QDq6b7__d, -1059753935, -528499591
+    goto, W
+    goto, _2_
+    goto, _
+    brgt, _Aa, T, tnoehtnuh
+I_j:
+    goto, W
+    or, tnoehtnuh, 63338.316, -43082.242
+m_eLP9kf_:
+#end_function
