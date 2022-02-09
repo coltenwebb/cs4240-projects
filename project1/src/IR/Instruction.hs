@@ -6,6 +6,20 @@ import Data.Data (ConstrRep(FloatConstr))
 import Data.List
 import qualified Data.Map as M
 
+data Instruction = Instruction
+  { opcode :: OpCode
+  , operands :: [Operand]
+  , lineNum :: LineNumber
+  }
+instance Eq Instruction where
+  (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
+instance Ord Instruction where
+  compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
+instance Show Instruction where
+  show (Instruction op oprnds ln) =
+    show ln ++ " [" ++ show op ++ "]"
+    ++ concatMap (\x -> ", " ++ show x) oprnds
+
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
 
@@ -132,21 +146,6 @@ isArrayType tp = case tp of
   ArrayType _ _ -> True
   _ -> False
 
-data Instruction = Instruction
-  { opcode :: OpCode
-  , operands :: [Operand]
-  , lineNum :: LineNumber
-  }
-
-instance Eq Instruction where
-  (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
-
-instance Ord Instruction where
-  compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
-instance Show Instruction where
-  show (Instruction op oprnds ln) =
-    show ln ++ " [" ++ show op ++ "]"
-    ++ concatMap (\x -> ", " ++ show x) oprnds
 
 isVarOp (VariableOperand var) = Just var
 isVarOp _ = Nothing

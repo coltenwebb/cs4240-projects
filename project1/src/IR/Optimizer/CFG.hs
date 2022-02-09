@@ -73,7 +73,7 @@ makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
 
     blkLookup = M.fromList . map (\b -> (blockId b, b)) $ blks
 
-    labelLookup = labelMap blks
+    labelLookup = labelToBlockIdMap blks
 
     adjMap = M.fromList [(blockId bb, S.fromList (blockEdges bb)) | bb <- blks]
 
@@ -97,7 +97,7 @@ makeCFG ins = CFG blkLookup adjMap (transposeMap adjMap)
                                           Just l ->
                                             case l `M.lookup` labelLookup of
                                               Nothing -> [] -- If not GOTO or BRANCH
-                                              Just bb -> [blockId bb]
+                                              Just bId -> [bId]
 
     transposeMap :: CfgAdjMap -> RevCfg
     transposeMap cfg =
@@ -116,9 +116,12 @@ predecessors bb (CFG blockLookup _ (RevCfg revAdj)) =
     Nothing -> []
     Just ids -> mapMaybe (`M.lookup` blockLookup) . S.toList $ ids
 
-labelMap :: [BasicBlock] -> M.Map LabelName BasicBlock
-labelMap = foldl handle M.empty
+labelToBlockIdMap :: [BasicBlock] -> M.Map LabelName BlockId
+labelToBlockIdMap bbs = M.fromList
+  [(lname, blockId bb) | bb <- bbs, 
+                        let firstInstr = NE.head (instrs bb),
+                        lname <- getPotentialLabelName firstInstr]
   where
-    handle mp blk@(BasicBlock ((Instruction _ (LabelOperand lbn:_) _):|_) _ _)
-      = M.insert lbn blk mp
-    handle mp _ = mp
+    getPotentialLabelName :: Instruction -> [LabelName]
+    getPotentialLabelName (Instruction LABEL [LabelOperand lname] _) = [lname]
+    getPotentialLabelName _ = []

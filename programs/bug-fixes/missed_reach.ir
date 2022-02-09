@@ -1,0 +1,17 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], j[14], tS_, SBe1d, D[18], v5_oh, R4z, _[13], _5HXG, x, H_ci_bS5_, _px__1a8I[6]
+float-list: tnoehtnuh, floatArr1[1], zZf3_0_8W7G, a3E_E, hKm0fmh4_fU4c6Y6B0_[6], l[31], zCASDOH, _L_[7], zC_[28], Tq_3Z9_m_maKHj_3TTf4h[5], U, s, M[6], g
+X8_2we_7E6S:
+    add, s, 72810.445, U
+    brgt, e, U, a3E_E
+    goto, hq_o_
+hq_o_:
+    add, x, -758776067, SBe1d
+    call, putf, s
+    goto, _O_
+    goto, hq_o_
+e:
+Q_Vv_:
+_O_:
+#end_function

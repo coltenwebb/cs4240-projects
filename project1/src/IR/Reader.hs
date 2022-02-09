@@ -32,7 +32,8 @@ type Parsec' = Parsec String ParseState
 lexer = Tok.makeTokenParser emptyDef
 
 -- TODO:
---  1) Allow trailing whitespace
+--  1) Allow trailing whitespace / CRLF
+--  2) Check labels, returns, main func, lnes 238-268 in IRReader.java
 readProgramFile :: FilePath -> IO (Either ParseError Program)
 readProgramFile fp = do
   input <- readFile fp
