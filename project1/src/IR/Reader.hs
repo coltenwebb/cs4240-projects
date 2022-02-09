@@ -143,12 +143,12 @@ parseVariable tp = do
       return var
 
 spacesNoNewline :: Parsec' ()
-spacesNoNewline = skipMany $ notFollowedBy newline >> space
+spacesNoNewline = skipMany $ notFollowedBy endOfLine >> space
 
 parseVariableLists :: Parsec' [Variable]
 parseVariableLists = do
   v1 <- i
-  skipMany1 newline
+  skipMany1 endOfLine
   v2 <- f
   return $ v1 ++ v2
   where
@@ -163,24 +163,24 @@ parseFunction :: Parsec' Function
 parseFunction = do
   parseStartFunc
 
-  skipMany1 newline
+  skipMany1 endOfLine
   (tp, fname, params) <- parseFunctionSignature
 
-  skipMany1 newline
+  skipMany1 endOfLine
   vars <- parseVariableLists
 
   mapM_ insertVariable params
   mapM_ insertVariable vars
 
-  skipMany1 newline
-  ins <- (spacesNoNewline >> parseInstruction) `sepEndBy` skipMany1 newline
+  skipMany1 endOfLine
+  ins <- (spacesNoNewline >> parseInstruction) `sepEndBy` skipMany1 endOfLine
 
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
   return $ Function fname tp params vars ins
 
 parseProgram :: Parsec' Program
-parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 newline
+parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 endOfLine
 
 parseInstruction :: Parsec' Instruction
 parseInstruction =

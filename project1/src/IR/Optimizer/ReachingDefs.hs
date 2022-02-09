@@ -82,7 +82,8 @@ reachingDefAlgorithm = do
 
   Env _ g k <- ask
   ReachDefSets i o _ iterCnt <- get
-  return $ trace ("iterCnt: " ++ show iterCnt) ReachDefResult i o g k
+  --return $ trace ("iterCnt: " ++ show iterCnt) ReachDefResult i o g k
+  return $ ReachDefResult i o g k
   where
     loopUntilFixedPoint m = do
       m

@@ -159,8 +159,11 @@ usedVars inst
     ] = mapMaybe isVarOp (drop 1 (operands inst ))
   -- only the variable in the first operand is used (if it is a variable)
   | opcode inst `elem` [
-      RETURN, ARRAY_STORE
+      RETURN
     ] = mapMaybe isVarOp (take 1 (operands inst ))
+  | opcode inst `elem` [
+      ARRAY_STORE
+    ] = mapMaybe isVarOp (take 1 (operands inst)++drop 2 (operands inst))
   | otherwise = []
 
 defVars :: Instruction -> Maybe Variable
@@ -168,7 +171,7 @@ defVars inst =
   case dv of
     [ ]  -> Nothing
     [x] -> Just x
-    _ -> error "More than one def vars in an instr. unpossible nani?!?!"
+    _ -> error ("More than one def vars in an instr. unpossible nani?!?! " ++ show inst)
   where
     dv = mapMaybe isVarOp (operands inst) \\ usedVars inst
 
