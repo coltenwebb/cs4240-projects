@@ -235,6 +235,10 @@ genSomewhatSafeRandomFunc (IrConfig ir lr vr) = do
     intArr1 = Variable (VariableName "intArr1") (ArrayType (ArraySize 1) IntType)
     floatArr1 = Variable (VariableName "floatArr1") (ArrayType (ArraySize 1) FloatType)
 
+genRandomFuncSmaller :: Q.Gen Function
+genRandomFuncSmaller = genSomewhatSafeRandomFunc
+  IrConfig { instrRange = (30, 50), labelRange = (10, 20), varRange = (3, 5) }
+
 genRandomFuncHUGEEE :: Q.Gen Function
 genRandomFuncHUGEEE = genSomewhatSafeRandomFunc
   IrConfig { instrRange = (600, 6000), labelRange = (50, 200), varRange = (2, 30) }
@@ -246,9 +250,10 @@ genRandomFuncHUGEEE = genSomewhatSafeRandomFunc
 -- so we want to write this to a bunch of files
 writeToFile = do
   sequence $ map (\fp -> wf ("irout/test_huge" ++ show fp ++ ".ir")) [1 .. 100]
+  sequence $ map (\fp -> wf ("test_med" ++ show fp)) [4 .. 6]
   where
     wf path = do
-      func <- Q.generate genRandomFuncHUGEEE
+      func <- Q.generate genRandomFuncSmaller
       writeFile path $ pr func
 
 

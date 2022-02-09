@@ -1,0 +1,191 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], V, xTI
+float-list: tnoehtnuh, floatArr1[1], RW___iW1q4m4S__1Q6y__QD8L5L
+    call, putc, V
+    sub, tnoehtnuh, -2263.862, -28458.967
+    call, puti, V
+    sub, V, 649729196, -459041710
+    or, RW___iW1q4m4S__1Q6y__QD8L5L, 12431.861, -76373.67
+    mult, V, V, 1298948517
+    add, tnoehtnuh, -2530.0547, 37821.746
+    and, xTI, V, -99380366
+    and, tnoehtnuh, 99122.44, tnoehtnuh
+    add, V, -476361764, etuhteuh
+    or, RW___iW1q4m4S__1Q6y__QD8L5L, -49419.855, 13765.764
+    or, tnoehtnuh, -31459.002, RW___iW1q4m4S__1Q6y__QD8L5L
+    brgt, L, V, etuhteuh
+    and, etuhteuh, 1587445793, xTI
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, -64457.33, -30351.967
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, -51295.684, RW___iW1q4m4S__1Q6y__QD8L5L
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, 65769.26, 47714.96
+    and, xTI, -1161919624, V
+    mult, etuhteuh, V, xTI
+    goto, L
+    brleq, L__Nw_g5YTa5_, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    call, puti, etuhteuh
+    or, etuhteuh, -1608805872, etuhteuh
+    sub, tnoehtnuh, 16093.731, RW___iW1q4m4S__1Q6y__QD8L5L
+    call, putf, RW___iW1q4m4S__1Q6y__QD8L5L
+    sub, V, xTI, 353086976
+    or, V, etuhteuh, 571706153
+    sub, V, -979771812, V
+    add, tnoehtnuh, -88232.23, 38001.945
+    goto, _2RHm3u
+    and, xTI, 557170894, 581363848
+    add, V, 1161176908, 1557671724
+    sub, etuhteuh, 2129205788, -1689313302
+    and, etuhteuh, 1088625743, -648146727
+    brneq, L, V, xTI
+    and, xTI, 533082555, 1714884525
+    call, putf, tnoehtnuh
+    sub, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    mult, xTI, V, 1842172595
+    add, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, 61861.42
+    call, putc, V
+    call, putf, RW___iW1q4m4S__1Q6y__QD8L5L
+    call, puti, etuhteuh
+    call, putc, etuhteuh
+    div, xTI, V, etuhteuh
+    and, tnoehtnuh, -33514.555, 76691.62
+    and, V, 433517620, xTI
+    call, putf, RW___iW1q4m4S__1Q6y__QD8L5L
+    goto, L__Nw_g5YTa5_
+    mult, etuhteuh, -1985530642, -1861687647
+    brlt, L, xTI, V
+    goto, L
+    sub, etuhteuh, V, V
+    call, putc, V
+    call, puti, V
+    call, putc, xTI
+    brgeq, L, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L
+    sub, V, -1211429912, -1331680129
+    mult, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L, -1327.134
+    and, tnoehtnuh, -44086.848, RW___iW1q4m4S__1Q6y__QD8L5L
+    goto, L
+    and, tnoehtnuh, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    breq, L, xTI, V
+    call, putc, V
+    add, etuhteuh, -2042483918, V
+    brneq, L, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L
+    goto, _2RHm3u
+    brneq, _2RHm3u, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    brgt, L__Nw_g5YTa5_, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    brlt, _2RHm3u, xTI, V
+    call, putc, etuhteuh
+    add, V, etuhteuh, -250604732
+    or, xTI, -413545728, etuhteuh
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    goto, L__Nw_g5YTa5_
+    div, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    add, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    and, etuhteuh, etuhteuh, etuhteuh
+    add, tnoehtnuh, tnoehtnuh, 82135.04
+    breq, _2RHm3u, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    brneq, L, etuhteuh, etuhteuh
+    mult, etuhteuh, 626985824, -434893167
+    sub, etuhteuh, xTI, 1726866791
+    goto, _2RHm3u
+    div, etuhteuh, 1895873071, xTI
+    and, V, 493733023, etuhteuh
+    or, xTI, V, V
+    sub, xTI, etuhteuh, -1809216250
+    or, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    div, etuhteuh, -155405125, -824956908
+    and, tnoehtnuh, -78915.22, tnoehtnuh
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, -60515.59, 18629.506
+    mult, xTI, 1033060838, 1505296265
+    call, puti, xTI
+    breq, L, etuhteuh, V
+    and, etuhteuh, 52700515, V
+    goto, L
+    brleq, _2RHm3u, xTI, V
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L, -64659.98
+    mult, V, V, xTI
+    brneq, L, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    div, tnoehtnuh, tnoehtnuh, tnoehtnuh
+L:
+    call, putf, RW___iW1q4m4S__1Q6y__QD8L5L
+    sub, etuhteuh, etuhteuh, xTI
+    brleq, L, xTI, xTI
+    and, xTI, V, 2075413168
+    mult, etuhteuh, V, V
+    mult, tnoehtnuh, 95919.484, tnoehtnuh
+    goto, _2RHm3u
+    brgeq, L__Nw_g5YTa5_, tnoehtnuh, tnoehtnuh
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, 91540.19, 55847.254
+    add, V, 2113053560, V
+    goto, L__Nw_g5YTa5_
+    and, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    sub, xTI, -361555135, 1428302283
+    or, RW___iW1q4m4S__1Q6y__QD8L5L, 79195.67, 82580.73
+    call, putf, tnoehtnuh
+    div, RW___iW1q4m4S__1Q6y__QD8L5L, 38106.715, RW___iW1q4m4S__1Q6y__QD8L5L
+    brleq, L, tnoehtnuh, tnoehtnuh
+    breq, L, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L
+    mult, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, -90356.96
+    or, V, -1865045166, 672999551
+    or, etuhteuh, xTI, etuhteuh
+    sub, V, etuhteuh, V
+    goto, _2RHm3u
+    goto, L__Nw_g5YTa5_
+    sub, RW___iW1q4m4S__1Q6y__QD8L5L, 31381.734, -76062.99
+L__Nw_g5YTa5_:
+    goto, _2RHm3u
+    div, V, xTI, etuhteuh
+    call, puti, xTI
+    div, etuhteuh, 657898988, xTI
+    add, tnoehtnuh, -88338.01, tnoehtnuh
+    call, putc, etuhteuh
+    breq, L__Nw_g5YTa5_, V, xTI
+    brlt, _2RHm3u, xTI, xTI
+    add, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    sub, tnoehtnuh, 93365.43, 39756.832
+    div, tnoehtnuh, tnoehtnuh, tnoehtnuh
+    goto, L
+    or, V, 338541188, 1490984490
+    div, xTI, V, -605130333
+_2RHm3u:
+    call, putf, tnoehtnuh
+    goto, _2RHm3u
+    and, tnoehtnuh, -64567.246, 48230.027
+    div, V, -1054842533, 1559856783
+    call, putf, RW___iW1q4m4S__1Q6y__QD8L5L
+    and, xTI, 582380855, -540491478
+    goto, _2RHm3u
+    sub, etuhteuh, V, etuhteuh
+    div, V, -540565804, etuhteuh
+    call, putf, tnoehtnuh
+    goto, L__Nw_g5YTa5_
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, 40478.645, RW___iW1q4m4S__1Q6y__QD8L5L
+    mult, tnoehtnuh, -55518.617, tnoehtnuh
+    goto, _2RHm3u
+    or, tnoehtnuh, -63295.766, 24411.025
+    call, putf, tnoehtnuh
+    or, xTI, 1320351878, xTI
+    sub, etuhteuh, -2090481329, xTI
+    call, putc, xTI
+    div, tnoehtnuh, 50592.977, 71704.67
+    and, etuhteuh, 1979393674, etuhteuh
+    brleq, L, xTI, V
+    breq, L__Nw_g5YTa5_, tnoehtnuh, tnoehtnuh
+    goto, _2RHm3u
+    div, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, -90906.984
+    and, xTI, -1110401731, etuhteuh
+    brneq, _2RHm3u, xTI, V
+    brleq, _2RHm3u, xTI, V
+    add, tnoehtnuh, 11071.275, -116.71383
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, -18262.371, -87071.44
+    sub, etuhteuh, V, xTI
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    sub, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh
+    or, etuhteuh, -2108612741, -1589671747
+    add, tnoehtnuh, tnoehtnuh, RW___iW1q4m4S__1Q6y__QD8L5L
+    mult, RW___iW1q4m4S__1Q6y__QD8L5L, -73825.98, tnoehtnuh
+    mult, tnoehtnuh, 75793.48, tnoehtnuh
+    sub, RW___iW1q4m4S__1Q6y__QD8L5L, -63009.5, -47861.223
+    goto, L
+    div, xTI, -34738813, -2122374026
+    and, RW___iW1q4m4S__1Q6y__QD8L5L, tnoehtnuh, 96836.68
+#end_function

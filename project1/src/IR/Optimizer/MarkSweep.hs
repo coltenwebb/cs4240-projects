@@ -10,6 +10,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.List.NonEmpty as NE
 import Data.Monoid
+import Data.Maybe
 
 import Data.Foldable (Foldable(toList))
 import qualified Data.Sequence as SE
@@ -31,6 +32,9 @@ isCritical inst
       ARRAY_STORE
     ] = True
   | otherwise = False
+
+markSweepSimpleAndReachDef :: Function -> Function
+markSweepSimpleAndReachDef = markSweepWithReachDef . simpleMarkSweep
 
 -- Map: Variable -> Instructions which write to said Variable
 markSweepWithReachDef :: Function -> Function
@@ -91,7 +95,7 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
           interBlockReaches :: M.Map Variable (S.Set Instruction)
           interBlockReaches = M.fromListWith mappend
             [(v, S.singleton i) | i <- S.toList (unInSet currInSet),
-                                  v <- defVars i,
+                                  v <- maybeToList (defVars i),
                                   v `elem` uses]
 
           -- Condition 2 + reaching defs in the same block, we replace
@@ -101,7 +105,7 @@ markSweepWithReachDef fn = fn { F.instrs = optimizedInstrs }
             where
               b = takeWhile (/= currIns) (NE.toList (C.instrs currBlock))
               f p instr =
-                let dv = defVars instr
+                let dv = maybeToList $ defVars instr
                 -- `M.union` is left-biased, prefers first arg. in conflict
                 in (M.fromList [(v, S.singleton instr) | v <- dv, v `elem` uses]) `M.union` p
 
@@ -134,7 +138,7 @@ simpleMarkSweep fn = buildFuncFromLineNumbers
           visited' = lineNum (head worklist) `S.insert` visited
 
           lookupWmap :: Variable -> [Instruction]
-          lookupWmap v = maybe [] filterVisited (M.lookup v wmap)
+          lookupWmap v = maybe [] filterVisited (M.lookup v (unWriteMap wmap))
 
           filterVisited :: [Instruction] -> [Instruction]
           filterVisited ix = filter (\i -> not (lineNum i `S.member` visited)) ix

@@ -1,0 +1,41 @@
+#start_function
+void main():
+int-list: etuhteuh, intArr1[1], kci[16]
+float-list: tnoehtnuh, floatArr1[1], N1_iD0_, G, uJT
+    sub, etuhteuh, -1347896337, 965722551
+    and, uJT, 1641.9666, -31930.104
+    add, etuhteuh, 722317536, etuhteuh
+    call, putf, N1_iD0_
+    mult, N1_iD0_, 64923.586, N1_iD0_
+    and, G, -2591.35, 24316.26
+    sub, tnoehtnuh, -98806.805, -77132.414
+    and, etuhteuh, etuhteuh, 349546818
+    or, uJT, -87370.52, 97215.48
+    div, etuhteuh, etuhteuh, etuhteuh
+    breq, m, uJT, N1_iD0_
+    goto, _
+    sub, etuhteuh, -232999372, etuhteuh
+    sub, N1_iD0_, -25014.967, tnoehtnuh
+    call, putf, G
+    mult, tnoehtnuh, uJT, tnoehtnuh
+M:
+    or, etuhteuh, -1033552577, -1632927942
+    or, tnoehtnuh, tnoehtnuh, uJT
+    div, etuhteuh, 1933499379, -2047938465
+    goto, M
+    call, putc, etuhteuh
+    and, etuhteuh, etuhteuh, etuhteuh
+    add, etuhteuh, 1016239325, etuhteuh
+    goto, m
+    and, etuhteuh, etuhteuh, 802965367
+    call, puti, etuhteuh
+    goto, F6s3z_YH_
+    div, etuhteuh, -1865468247, etuhteuh
+_:
+    goto, M
+    call, putc, etuhteuh
+    sub, etuhteuh, 1124141999, 1054007876
+F6s3z_YH_:
+    sub, tnoehtnuh, -92695.6, 76900.97
+m:
+#end_function

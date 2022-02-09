@@ -32,7 +32,8 @@ type Parsec' = Parsec String ParseState
 lexer = Tok.makeTokenParser emptyDef
 
 -- TODO:
---  1) Allow trailing whitespace
+--  1) Allow trailing whitespace / CRLF
+--  2) Check labels, returns, main func, lnes 238-268 in IRReader.java
 readProgramFile :: FilePath -> IO (Either ParseError Program)
 readProgramFile fp = do
   input <- readFile fp
@@ -51,7 +52,7 @@ insertVariable (Variable name tp) = do
   s <- getState
   let vm = varMap s
   case M.lookup name vm of
-    Just var -> error $ "Redefinition of variable `" ++ show var ++ "`"
+    Just tp -> error $ "Redefinition of variable `" ++ show name ++ "`"
     Nothing -> putState $ s {varMap = M.insert name tp vm}
 
 insertFunction :: FunctionName -> Parsec' ()
@@ -59,7 +60,7 @@ insertFunction fn = do
   s <- getState
   let fs = funcSet s
   if fn `S.member` fs
-    then error $ "Redefinition of function `" ++ show fs ++ "`"
+    then error $ "Redefinition of function `" ++ show fn ++ "`"
     else putState $ s {funcSet = fn `S.insert` fs}
 
 insertLabel :: LabelName -> Parsec' ()
@@ -142,12 +143,12 @@ parseVariable tp = do
       return var
 
 spacesNoNewline :: Parsec' ()
-spacesNoNewline = skipMany $ notFollowedBy newline >> space
+spacesNoNewline = skipMany $ notFollowedBy endOfLine >> space
 
 parseVariableLists :: Parsec' [Variable]
 parseVariableLists = do
   v1 <- i
-  skipMany1 newline
+  skipMany1 endOfLine
   v2 <- f
   return $ v1 ++ v2
   where
@@ -162,24 +163,24 @@ parseFunction :: Parsec' Function
 parseFunction = do
   parseStartFunc
 
-  skipMany1 newline
+  skipMany1 endOfLine
   (tp, fname, params) <- parseFunctionSignature
 
-  skipMany1 newline
+  skipMany1 endOfLine
   vars <- parseVariableLists
 
   mapM_ insertVariable params
   mapM_ insertVariable vars
 
-  skipMany1 newline
-  ins <- (spacesNoNewline >> parseInstruction) `sepEndBy` skipMany1 newline
+  skipMany1 endOfLine
+  ins <- (spacesNoNewline >> parseInstruction) `sepEndBy` skipMany1 endOfLine
 
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
   return $ Function fname tp params vars ins
 
 parseProgram :: Parsec' Program
-parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 newline
+parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 endOfLine
 
 parseInstruction :: Parsec' Instruction
 parseInstruction =

@@ -6,6 +6,20 @@ import Data.Data (ConstrRep(FloatConstr))
 import Data.List
 import qualified Data.Map as M
 
+data Instruction = Instruction
+  { opcode :: OpCode
+  , operands :: [Operand]
+  , lineNum :: LineNumber
+  }
+instance Eq Instruction where
+  (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
+instance Ord Instruction where
+  compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
+instance Show Instruction where
+  show (Instruction op oprnds ln) =
+    show ln ++ " [" ++ show op ++ "]"
+    ++ concatMap (\x -> ", " ++ show x) oprnds
+
 newtype LineNumber = LineNumber Int
   deriving (Ord, Eq)
 
@@ -132,21 +146,6 @@ isArrayType tp = case tp of
   ArrayType _ _ -> True
   _ -> False
 
-data Instruction = Instruction
-  { opcode :: OpCode
-  , operands :: [Operand]
-  , lineNum :: LineNumber
-  } 
-
-instance Eq Instruction where 
-  (Instruction _ _ (LineNumber n1)) == (Instruction _ _ (LineNumber n2)) = n1 == n2
-
-instance Ord Instruction where 
-  compare (Instruction _ _ (LineNumber n1)) (Instruction _ _ (LineNumber n2)) = n1 `compare` n2
-instance Show Instruction where
-  show (Instruction op oprnds ln) =
-    show ln ++ " [" ++ show op ++ "]"
-    ++ concatMap (\x -> ", " ++ show x) oprnds
 
 isVarOp (VariableOperand var) = Just var
 isVarOp _ = Nothing
@@ -160,12 +159,21 @@ usedVars inst
     ] = mapMaybe isVarOp (drop 1 (operands inst ))
   -- only the variable in the first operand is used (if it is a variable)
   | opcode inst `elem` [
-      RETURN, ARRAY_STORE
+      RETURN
     ] = mapMaybe isVarOp (take 1 (operands inst ))
+  | opcode inst `elem` [
+      ARRAY_STORE
+    ] = mapMaybe isVarOp (take 1 (operands inst)++drop 2 (operands inst))
   | otherwise = []
 
-defVars :: Instruction -> [Variable]
-defVars inst = mapMaybe isVarOp (operands inst) \\ usedVars inst
+defVars :: Instruction -> Maybe Variable
+defVars inst =
+  case dv of
+    [ ]  -> Nothing
+    [x] -> Just x
+    _ -> error ("More than one def vars in an instr. unpossible nani?!?! " ++ show inst)
+  where
+    dv = mapMaybe isVarOp (operands inst) \\ usedVars inst
 
 defOpcodes :: [OpCode]
 defOpcodes = [ASSIGN, ADD, SUB, MULT, DIV, AND, OR, CALLR, ARRAY_LOAD]
@@ -176,7 +184,7 @@ isDefOpcode = (`elem` defOpcodes)
 branchOpcodes :: [OpCode]
 branchOpcodes = [BREQ, BRGEQ, BRGT, BRLEQ, BRLT, BRNEQ]
 
-lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction 
+lineNumberMap :: [Instruction] -> M.Map LineNumber Instruction
 lineNumberMap insts = M.fromList (map (\i -> (lineNum i, i)) insts)
 
 isBranching :: Instruction -> Bool

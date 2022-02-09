@@ -13,6 +13,7 @@ import IR.Optimizer.MarkSweep
 import IR.Printer
 
 import qualified Data.Map as M
+import IR.Optimizer.MarkSweep (markSweepSimpleAndReachDef, markSweepWithReachDef, simpleMarkSweep)
 
 main :: IO ()
 main = do
@@ -27,6 +28,7 @@ main = do
     --"-t" -> testMain $ args!!1
     --"-r" -> rawMain $ args!!1
   rawMain $ head args
+  -- rawMain $ head args
 
 
 
@@ -66,8 +68,14 @@ testMain progPath = do
   print $ M.lookup (BlockId 1) (inSets rdRes)
 --
 
+-- turns out it was cfg bug
+debugParser :: FilePath -> IO ()
+debugParser fp = do
+  Right prog <- readProgramFile fp
+  forM_ (functions prog) print
 
---rawMain :: String => IO ()
+
+rawMain :: String -> IO ()
 rawMain progPath = do
   eitherProg <- readProgramFile progPath
   prog <- case eitherProg of
