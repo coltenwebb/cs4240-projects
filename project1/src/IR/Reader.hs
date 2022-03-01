@@ -189,7 +189,7 @@ parseInstruction =
     op <- parseOpCode
     commaSep
     operands <- case op of
-      ASSIGN -> try assignmentOp <|> arrayAssignOp
+      ASSIGN -> try arrayAssignOp <|> assignmentOp
       ADD -> binaryOp
       SUB -> binaryOp
       MULT -> binaryOp
@@ -402,18 +402,12 @@ parseInstruction =
       count <- parseIntOperand
 
       commaSep
-      val <- parseIntOperand
+      val <- parseConstOrVarOperand
 
       unless (operandIsArrayType arr) $ error $ show arr ++ " is not an array."
 
       -- Not our job? for now
       -- when (arrayIndexOutofBound arr count) $ error $ "Array index out of bound: " ++ show arr
-
-      unless (basicTypeMatches arr val) $
-        error $
-          "Cannot store value of type " ++ show (getType val)
-            ++ " to an array of type "
-            ++ show (elemType (getType arr))
 
       return [arr, count, val]
 
