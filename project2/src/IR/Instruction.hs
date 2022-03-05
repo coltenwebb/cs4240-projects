@@ -60,7 +60,11 @@ instance Show OpCode where
     ARRAY_LOAD -> "array_load"
     LABEL -> "label"
 
-newtype FunctionName = FunctionName String deriving (Eq, Ord, Show)
+newtype FunctionName = FunctionName String deriving (Eq, Ord)
+
+instance Show FunctionName where 
+  show (FunctionName s) = init $ tail $ show s
+
 newtype LabelName = LabelName String deriving (Eq, Ord, Show)
 newtype VariableName = VariableName String deriving (Eq, Ord, Show)
 newtype ConstantValue = ConstantValue String deriving (Eq, Ord, Show)

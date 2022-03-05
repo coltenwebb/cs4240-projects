@@ -18,9 +18,15 @@ newtype AsmProgram = AsmProgram { asmInstructions :: [AsmInstruction] } deriving
 newtype Reg = Reg String deriving (Show, Eq)
 newtype Imm = Imm String deriving (Show, Eq)
 newtype Lab = Lab String deriving (Show, Eq)
-
+-- newtype RetRegister = RetReg ()
 zreg = Reg "$0"
 imreg = Reg "$8"
+ra = Reg "$31"
+v1 = Reg "$2"
+v2 = Reg "$3"
+sp = Reg "$29"
+fp = Reg "30"
+
 
 data AsmInstruction =
   Addi Reg Reg Imm |
@@ -40,10 +46,50 @@ data AsmInstruction =
   Blez Reg Lab |
   Lbu Reg Imm Reg |
   Sw  Reg Imm Reg |
+  Label Lab |
 
   Placeholder Instruction
-  deriving (Show)
+  -- deriving (Show)
 
+instance Show AsmInstruction where
+  show (Addi (Reg dst) (Reg src) (Imm imm)) 
+    = "    addi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
+  show (Add (Reg dst) (Reg src1) (Reg src2)) 
+    = "    add " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Sub (Reg dst) (Reg src1) (Reg src2)) 
+    = "    sub " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Mflo (Reg dst)) 
+    = "    mflo " ++ dst  ++ "\n"
+  show (Mult (Reg src1) (Reg src2)) 
+    = "    mult " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Div (Reg src1) (Reg src2)) 
+    = "    div " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Andi (Reg dst) (Reg src) (Imm imm)) 
+    = "    andi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
+  show (And (Reg dst) (Reg src1) (Reg src2)) 
+    = "    and " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Ori (Reg dst) (Reg src) (Imm imm)) 
+    = "    ori " ++ dst ++ ", " ++ src ++ ", " ++ src  ++ "\n"
+  show (Or (Reg dst) (Reg src1) (Reg src2)) 
+    = "    or " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
+  show (Jal (Lab label)) 
+    = "    jal " ++ label ++ "\n"
+  show (Beq (Reg dst) (Reg src) (Lab label)) 
+    = "    beq " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
+  show (Bne (Reg dst) (Reg src) (Lab label)) 
+    = "    bne " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
+  show (Bgtz (Reg dst) (Lab label)) 
+    = "    bgtz " ++ dst ++ ", " ++ label  ++ "\n"
+  show (Blez (Reg dst) (Lab label)) 
+    = "    blez " ++ dst ++ ", " ++ label  ++ "\n"
+  show (Lbu (Reg base) (Imm imm) (Reg src) ) 
+    = "    lbu " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
+  show (Sw (Reg src) (Imm imm) (Reg base) ) 
+    = "    sw " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
+  show (Label (Lab label)) 
+    = label ++ ": \n"
+  show (Placeholder x)
+     = show x ++ "\n"
 instance Show AsmProgram where
   show prog =
     "prog:\n"
@@ -57,7 +103,7 @@ andVals str1 str2 = show $ (read str1 :: Integer) .&. read str2
 orVals str1 str2 = show $ (read str1 :: Integer) .|. read str2
 
 constValToImm (ConstantValue str) = Imm str
-constValToNegatedImm (ConstantValue str) = Imm $ show (0 - (read str) :: Integer)
+constValToNegatedImm (ConstantValue str) = Imm $ show (negate (read str) :: Integer)
 
 toAsm :: Program -> AsmProgram
 toAsm = AsmProgram . programSelection
@@ -66,7 +112,7 @@ allocateRegs :: Function -> M.Map Variable Reg
 allocateRegs (Function _ _ params vars _) = foldl comb M.empty (params ++ vars)
   where
     -- TODO: smarter allocation here? r8 is used for some immediate ops in instruction selection
-    comb mp var = M.insert var (Reg ("$" ++ show (length mp + 9))) mp
+    comb mp var = M.insert var (Reg ("$" ++ show (length mp + 32))) mp
 
 programSelection :: Program -> [AsmInstruction]
 programSelection prog = concatMap functionSelection (functions prog)
@@ -138,64 +184,64 @@ functionSelection fn = concatMap sel (instrs fn)
     sel (Instruction OR [VariableOperand d, VariableOperand s, VariableOperand t] _) =
       [Or (reg d) (reg s) (reg t)]
 
-    sel (Instruction BREQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BREQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) == read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BREQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (VariableOperand z)] _) = 
-      [Addi (imreg) zreg (Imm str1), Beq (imreg) (reg z) (Lab str)]
-    sel (Instruction BREQ [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand (ConstantValue str2) _)] _) = 
-      [Addi (imreg) zreg (Imm str2), Beq (reg y) (imreg) (Lab str)]
-    sel (Instruction BREQ [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BREQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, VariableOperand z] _) =
+      [Addi imreg zreg (Imm str1), Beq imreg (reg z) (Lab str)]
+    sel (Instruction BREQ [LabelOperand (LabelName str), VariableOperand y, ConstantOperand (ConstantValue str2) _] _) =
+      [Addi imreg zreg (Imm str2), Beq (reg y) imreg (Lab str)]
+    sel (Instruction BREQ [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Beq (reg y) (reg z) (Lab str)]
 
-    sel (Instruction BRNEQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BRNEQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) /= read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BRNEQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (VariableOperand z)] _) = 
-      [Addi (imreg) zreg (Imm str1), Bne (imreg) (reg z) (Lab str)]
-    sel (Instruction BRNEQ [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand (ConstantValue str2) _)] _) = 
-      [Addi (imreg) zreg (Imm str2), Bne (reg y) (imreg) (Lab str)]
-    sel (Instruction BRNEQ [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BRNEQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, VariableOperand z] _) =
+      [Addi imreg zreg (Imm str1), Bne imreg (reg z) (Lab str)]
+    sel (Instruction BRNEQ [LabelOperand (LabelName str), VariableOperand y, ConstantOperand (ConstantValue str2) _] _) =
+      [Addi imreg zreg (Imm str2), Bne (reg y) imreg (Lab str)]
+    sel (Instruction BRNEQ [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Bne (reg y) (reg z) (Lab str)]
 
-    sel (Instruction BRLT [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BRLT [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) < read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BRLT [(LabelOperand (LabelName str)), (ConstantOperand cv1 _), (VariableOperand z)] _) = 
-      [Addi (imreg) (reg z) (constValToNegatedImm cv1), Bgtz (imreg) (Lab str)]
-    sel (Instruction BRLT [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand cv2 _)] _) = 
-      [Addi (imreg) (reg y) (constValToNegatedImm cv2), Sub imreg zreg imreg, Bgtz (imreg) (Lab str)]
-    sel (Instruction BRLT [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BRLT [LabelOperand (LabelName str), ConstantOperand cv1 _, VariableOperand z] _) =
+      [Addi imreg (reg z) (constValToNegatedImm cv1), Bgtz imreg (Lab str)]
+    sel (Instruction BRLT [LabelOperand (LabelName str), VariableOperand y, ConstantOperand cv2 _] _) =
+      [Addi imreg (reg y) (constValToNegatedImm cv2), Sub imreg zreg imreg, Bgtz imreg (Lab str)]
+    sel (Instruction BRLT [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Sub imreg (reg y) (reg z), Bgtz imreg (Lab str)]
 
-    sel (Instruction BRGT [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BRGT [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) > read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BRGT [(LabelOperand (LabelName str)), (ConstantOperand cv1 _), (VariableOperand z)] _) = 
-      [Addi (imreg) (reg z) (constValToNegatedImm cv1), Sub imreg zreg imreg, Bgtz (imreg) (Lab str)]
-    sel (Instruction BRGT [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand cv2 _)] _) = 
-      [Addi (imreg) (reg y) (constValToNegatedImm cv2), Bgtz (imreg) (Lab str)]
-    sel (Instruction BRGT [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BRGT [LabelOperand (LabelName str), ConstantOperand cv1 _, VariableOperand z] _) =
+      [Addi imreg (reg z) (constValToNegatedImm cv1), Sub imreg zreg imreg, Bgtz imreg (Lab str)]
+    sel (Instruction BRGT [LabelOperand (LabelName str), VariableOperand y, ConstantOperand cv2 _] _) =
+      [Addi imreg (reg y) (constValToNegatedImm cv2), Bgtz imreg (Lab str)]
+    sel (Instruction BRGT [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Sub imreg (reg z) (reg y), Bgtz imreg (Lab str)]
 
-    sel (Instruction BRGEQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BRGEQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) >= read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BRGEQ [(LabelOperand (LabelName str)), (ConstantOperand cv1 _), (VariableOperand z)] _) = 
-      [Addi (imreg) (reg z) (constValToNegatedImm cv1), Blez (imreg) (Lab str)]
-    sel (Instruction BRGEQ [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand cv2 _)] _) = 
-      [Addi (imreg) (reg y) (constValToNegatedImm cv2), Sub imreg zreg imreg, Blez (imreg) (Lab str)]
-    sel (Instruction BRGEQ [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BRGEQ [LabelOperand (LabelName str), ConstantOperand cv1 _, VariableOperand z] _) =
+      [Addi imreg (reg z) (constValToNegatedImm cv1), Blez imreg (Lab str)]
+    sel (Instruction BRGEQ [LabelOperand (LabelName str), VariableOperand y, ConstantOperand cv2 _] _) =
+      [Addi imreg (reg y) (constValToNegatedImm cv2), Sub imreg zreg imreg, Blez imreg (Lab str)]
+    sel (Instruction BRGEQ [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Sub imreg (reg z) (reg y), Blez imreg (Lab str)]
 
-    sel (Instruction BRLEQ [(LabelOperand (LabelName str)), (ConstantOperand (ConstantValue str1) _), (ConstantOperand (ConstantValue str2) _)] _)
+    sel (Instruction BRLEQ [LabelOperand (LabelName str), ConstantOperand (ConstantValue str1) _, ConstantOperand (ConstantValue str2) _] _)
       | (read str1::Integer) <= read str2 = [Jal (Lab str)]
       | otherwise = []
-    sel (Instruction BRLEQ [(LabelOperand (LabelName str)), (ConstantOperand cv1 _), (VariableOperand z)] _) = 
-      [Addi (imreg) (reg z) (constValToNegatedImm cv1), Sub imreg zreg imreg, Blez (imreg) (Lab str)]
-    sel (Instruction BRLEQ [(LabelOperand (LabelName str)), (VariableOperand y), (ConstantOperand cv2 _)] _) = 
-      [Addi (imreg) (reg y) (constValToNegatedImm cv2), Blez (imreg) (Lab str)]
-    sel (Instruction BRLEQ [(LabelOperand (LabelName str)), (VariableOperand y), (VariableOperand z)] _) = 
+    sel (Instruction BRLEQ [LabelOperand (LabelName str), ConstantOperand cv1 _, VariableOperand z] _) =
+      [Addi imreg (reg z) (constValToNegatedImm cv1), Sub imreg zreg imreg, Blez imreg (Lab str)]
+    sel (Instruction BRLEQ [LabelOperand (LabelName str), VariableOperand y, ConstantOperand cv2 _] _) =
+      [Addi imreg (reg y) (constValToNegatedImm cv2), Blez imreg (Lab str)]
+    sel (Instruction BRLEQ [LabelOperand (LabelName str), VariableOperand y, VariableOperand z] _) =
       [Sub imreg (reg y) (reg z), Blez imreg (Lab str)]
 
     -- array load
@@ -233,7 +279,18 @@ functionSelection fn = concatMap sel (instrs fn)
         Addi imreg imreg (Imm s),
         Sw imreg (Imm (mulVals o "4")) (reg a)]
 
+    -- label 
+    sel (Instruction LABEL [LabelOperand (LabelName label)] _) = [ Label (Lab ( labelStr label )) ]
+
     sel (Instruction GOTO [LabelOperand (LabelName str)] _) = [Jal (Lab str)]
 
+    -- return
+    sel (Instruction RETURN [VariableOperand a] _) 
+      = [  ]
+    sel (Instruction RETURN [ConstantOperand (ConstantValue s) _] _) = []
+
     sel inst = [Placeholder inst]
+
+    labelStr :: String -> String
+    labelStr labelName = show (name fn) ++ "_" ++ labelName
 
