@@ -34,7 +34,12 @@ library
     IR.Optimizer.MarkSweep
     IR.Optimizer.ReachingDefs
     IR.Optimizer.CFG
-    IR.Selection
+
+    MIPS.Selection
+    MIPS.RegisterAllocator
+    MIPS.Types.Operands
+    MIPS.Types.Physical
+    MIPS.Types.Virtual
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , parsec ^>=3.1.15.0

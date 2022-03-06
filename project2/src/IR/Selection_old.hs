@@ -1,4 +1,4 @@
-module IR.Selection where
+--module IR.Selection where
 
 import IR.Function
 import IR.Program
@@ -38,28 +38,27 @@ t8 = Reg "$24"
 t9 = Reg "$25"
 
 
-data AsmInstruction =
-  Addi Reg Reg Imm |
-  Add Reg Reg Reg |
-  Sub Reg Reg Reg |
-  Mflo Reg |
-  Mult Reg Reg |
-  Div Reg Reg |
-  Andi Reg Reg Imm |
-  And Reg Reg Reg |
-  Ori Reg Reg Imm |
-  Or Reg Reg Reg |
-  Jal Lab |
-  Jr Reg |
-  Beq Reg Reg Lab |
-  Bne Reg Reg Lab |
-  Bgtz Reg Lab |
-  Blez Reg Lab |
-  Lw Reg Imm Reg |
-  Sw  Reg Imm Reg |
-  Label Lab |
-
-  Placeholder Instruction
+data MipsVirtual
+  = Addi Reg Reg Imm
+  | Add Reg Reg Reg
+  | Sub Reg Reg Reg
+  | Mflo Reg
+  | Mult Reg Reg
+  | Div Reg Reg
+  | Andi Reg Reg Imm
+  | And Reg Reg Reg
+  | Ori Reg Reg Imm
+  | Or Reg Reg Reg
+  | Jal Lab
+  | Jr Reg
+  | Beq Reg Reg Lab
+  | Bne Reg Reg Lab
+  | Bgtz Reg Lab
+  | Blez Reg Lab
+  | Lw Reg Imm Reg
+  | Sw  Reg Imm Reg
+  | Label Lab
+  | Placeholder Instruction
   -- deriving (Show)
 
 instance Show AsmInstruction where

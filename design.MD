@@ -10,18 +10,25 @@
 - $31 Return address
 
 ## Calling Convention
+```
+       ---------------------
 
-     ---------------------
+$sp'     spillover regs        callee responsible for moving sp up for spillover reg
+      
+       ---------------------
+          ...
+
+      ---------------------
 $sp ->
        -------------------
           arg n (for callee)
-       -------------------
+      -------------------
           arg n - 1
        -------------------
               ...
        -------------------
             arg 0
-static in size  across every call ------------------
+       ------------------  static in size  across every call 
           $old_fp
        -------------------
           $t31 (return addr)
@@ -37,7 +44,7 @@ fp/old sp ->     $t0
 
 
 old fp ------------------------------
-
+```
 
 Caller responsible for both setup and teardown of stack.
 Including moving the sp and fp back to original positions.
