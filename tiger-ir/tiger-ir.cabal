@@ -1,0 +1,29 @@
+cabal-version:      2.4
+name:               tiger-ir
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Ethan Kiang, Luke Kim
+maintainer:         tszhang.kiang@gatech.edu, wkim330@gatech.edu
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+
+library
+  exposed-modules:
+  hs-source-dirs: src
+  build-depends: base ^>=4.14.3.0
+  default-language: Haskell2010
