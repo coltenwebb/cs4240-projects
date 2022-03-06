@@ -22,10 +22,20 @@ newtype Lab = Lab String deriving (Show, Eq)
 zreg = Reg "$0"
 imreg = Reg "$8"
 ra = Reg "$31"
-v1 = Reg "$2"
-v2 = Reg "$3"
+v0 = Reg "$2"
+v1 = Reg "$3"
 sp = Reg "$29"
-fp = Reg "30"
+fp = Reg "$30"
+t0 = Reg "$8"
+t1 = Reg "$9"
+t2 = Reg "$10"
+t3 = Reg "$11"
+t4 = Reg "$12"
+t5 = Reg "$13"
+t6 = Reg "$14"
+t7 = Reg "$15"
+t8 = Reg "$24"
+t9 = Reg "$25"
 
 
 data AsmInstruction =
@@ -40,11 +50,12 @@ data AsmInstruction =
   Ori Reg Reg Imm |
   Or Reg Reg Reg |
   Jal Lab |
+  Jr Reg |
   Beq Reg Reg Lab |
   Bne Reg Reg Lab |
   Bgtz Reg Lab |
   Blez Reg Lab |
-  Lbu Reg Imm Reg |
+  Lw Reg Imm Reg |
   Sw  Reg Imm Reg |
   Label Lab |
 
@@ -52,44 +63,46 @@ data AsmInstruction =
   -- deriving (Show)
 
 instance Show AsmInstruction where
-  show (Addi (Reg dst) (Reg src) (Imm imm)) 
+  show (Addi (Reg dst) (Reg src) (Imm imm))
     = "    addi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
-  show (Add (Reg dst) (Reg src1) (Reg src2)) 
+  show (Add (Reg dst) (Reg src1) (Reg src2))
     = "    add " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Sub (Reg dst) (Reg src1) (Reg src2)) 
+  show (Sub (Reg dst) (Reg src1) (Reg src2))
     = "    sub " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Mflo (Reg dst)) 
+  show (Mflo (Reg dst))
     = "    mflo " ++ dst  ++ "\n"
-  show (Mult (Reg src1) (Reg src2)) 
+  show (Mult (Reg src1) (Reg src2))
     = "    mult " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Div (Reg src1) (Reg src2)) 
+  show (Div (Reg src1) (Reg src2))
     = "    div " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Andi (Reg dst) (Reg src) (Imm imm)) 
+  show (Andi (Reg dst) (Reg src) (Imm imm))
     = "    andi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
-  show (And (Reg dst) (Reg src1) (Reg src2)) 
+  show (And (Reg dst) (Reg src1) (Reg src2))
     = "    and " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Ori (Reg dst) (Reg src) (Imm imm)) 
+  show (Ori (Reg dst) (Reg src) (Imm imm))
     = "    ori " ++ dst ++ ", " ++ src ++ ", " ++ src  ++ "\n"
-  show (Or (Reg dst) (Reg src1) (Reg src2)) 
+  show (Or (Reg dst) (Reg src1) (Reg src2))
     = "    or " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Jal (Lab label)) 
+  show (Jal (Lab label))
     = "    jal " ++ label ++ "\n"
-  show (Beq (Reg dst) (Reg src) (Lab label)) 
+  show (Beq (Reg dst) (Reg src) (Lab label))
     = "    beq " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
-  show (Bne (Reg dst) (Reg src) (Lab label)) 
+  show (Bne (Reg dst) (Reg src) (Lab label))
     = "    bne " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
-  show (Bgtz (Reg dst) (Lab label)) 
+  show (Bgtz (Reg dst) (Lab label))
     = "    bgtz " ++ dst ++ ", " ++ label  ++ "\n"
-  show (Blez (Reg dst) (Lab label)) 
+  show (Blez (Reg dst) (Lab label))
     = "    blez " ++ dst ++ ", " ++ label  ++ "\n"
-  show (Lbu (Reg base) (Imm imm) (Reg src) ) 
-    = "    lbu " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
-  show (Sw (Reg src) (Imm imm) (Reg base) ) 
+  show (Lw (Reg base) (Imm imm) (Reg src) )
+    = "    lw " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
+  show (Sw (Reg src) (Imm imm) (Reg base) )
     = "    sw " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
-  show (Label (Lab label)) 
+  show (Label (Lab label))
     = label ++ ": \n"
+  show (Jr (Reg retAddr))
+    = "    jr " ++ retAddr ++ "\n"
   show (Placeholder x)
-     = show x ++ "\n"
+     = show x ++ " placeholder\n"
 instance Show AsmProgram where
   show prog =
     "prog:\n"
@@ -118,7 +131,7 @@ programSelection :: Program -> [AsmInstruction]
 programSelection prog = concatMap functionSelection (functions prog)
 
 functionSelection :: Function -> [AsmInstruction]
-functionSelection fn = concatMap sel (instrs fn)
+functionSelection fn@(Function (FunctionName fname) _ _ _ _) = Label (Lab fname) : concatMap sel (instrs fn)
   where
     reg = (M.!) (allocateRegs fn)
 
@@ -246,14 +259,14 @@ functionSelection fn = concatMap sel (instrs fn)
 
     -- array load
     sel (Instruction ARRAY_LOAD [VariableOperand t, VariableOperand a, ConstantOperand (ConstantValue o) _] _) =
-      [Lbu (reg t) (Imm $ mulVals o "4") (reg a)]
+      [Lw (reg t) (Imm $ mulVals o "4") (reg a)]
     sel (Instruction ARRAY_LOAD [VariableOperand t, VariableOperand a, VariableOperand o] _) =
       [ And imreg zreg imreg,
         Addi imreg imreg (Imm "4"),
         Mult imreg (reg o),
         Mflo (reg o),
         Add (reg o) (reg o) (reg a),
-        Lbu (reg t) (Imm "0") (reg o)]
+        Lw (reg t) (Imm "0") (reg o)]
 
     -- array store
     sel (Instruction ARRAY_STORE [VariableOperand s, VariableOperand a, ConstantOperand (ConstantValue o) _] _) =
@@ -275,9 +288,9 @@ functionSelection fn = concatMap sel (instrs fn)
         Addi imreg imreg (Imm s),
         Sw imreg (Imm "o") (reg a)]
     sel (Instruction ARRAY_STORE [ConstantOperand (ConstantValue s) _, VariableOperand a, ConstantOperand (ConstantValue o) _] _) =
-      [ And imreg zreg imreg,
-        Addi imreg imreg (Imm s),
-        Sw imreg (Imm (mulVals o "4")) (reg a)]
+      [ And imreg zreg imreg
+      , Addi imreg imreg (Imm s)
+      , Sw imreg (Imm (mulVals o "4")) (reg a)]
 
     -- label 
     sel (Instruction LABEL [LabelOperand (LabelName label)] _) = [ Label (Lab ( labelStr label )) ]
@@ -285,12 +298,61 @@ functionSelection fn = concatMap sel (instrs fn)
     sel (Instruction GOTO [LabelOperand (LabelName str)] _) = [Jal (Lab str)]
 
     -- return
-    sel (Instruction RETURN [VariableOperand a] _) 
-      = [  ]
-    sel (Instruction RETURN [ConstantOperand (ConstantValue s) _] _) = []
+    sel (Instruction RETURN [VariableOperand a] _)
+      = [ And v0 v0 zreg
+        , Add v0 v0 (reg a)
+        , Jr ra ]
+    sel (Instruction RETURN [ConstantOperand (ConstantValue s) _] _)
+      = [ And v0 v0 zreg
+        , Addi v0 v0 (Imm s)
+        , Jr ra ]
 
-    sel inst = [Placeholder inst]
+    -- call
+    sel (Instruction CALL ((FunctionOperand (FunctionName fname)):args) _)
+      = stackSetup ++ pushArgsToStack args ++ [ Jal (Lab fname) ]
+
+    -- callr 
+    sel (Instruction CALLR ((VariableOperand dst):(FunctionOperand (FunctionName fname)):args) _)
+      = stackSetup
+        ++ pushArgsToStack args
+        ++ [ Jal(Lab fname)
+           , Addi (reg dst) v0 (Imm "0") ] -- we should also include teardown afterwards
+
+    sel _ = error "Failed..."
+    -- sel inst = [Placeholder inst]
 
     labelStr :: String -> String
     labelStr labelName = show (name fn) ++ "_" ++ labelName
+
+    pushArgsToStack :: [Operand] -> [AsmInstruction]
+    pushArgsToStack operands = foldl operandsToRegs [] operands
+      where
+        operandsToRegs :: [AsmInstruction] -> Operand -> [AsmInstruction]
+        operandsToRegs insts (VariableOperand a)
+          = insts ++ [Sw (reg a) (Imm "0") sp] ++ pushToStack [reg a]
+        operandsToRegs insts (ConstantOperand (ConstantValue s) _)
+          = insts ++ [Addi t0 zreg (Imm s), Sw t0 (Imm "0") sp] ++ pushToStack [t0]
+        operandsToRegs insts _
+          = error "BIG BRUH MOMENT, higher order functions??!!?!!??"
+
+    pushToStack :: [Reg] -> [AsmInstruction]
+    pushToStack regs = foldl store [] regs
+      where
+        store :: [AsmInstruction] -> Reg -> [AsmInstruction]
+        store insts reg = insts ++ [Sw reg (Imm (show $ 4 * (length insts + 1) )) sp]
+
+    stackSetup :: [AsmInstruction]
+    stackSetup = [ Sw t0 (Imm "4") sp
+                 , Sw t1 (Imm "8") sp
+                 , Sw t2 (Imm "12") sp
+                 , Sw t3 (Imm "16") sp
+                 , Sw t4 (Imm "20") sp
+                 , Sw t5 (Imm "24") sp
+                 , Sw t6 (Imm "28") sp
+                 , Sw t7 (Imm "32") sp
+                 , Sw t8 (Imm "36") sp
+                 , Sw t9 (Imm "40") sp
+                 , Sw ra (Imm "44") sp
+                 , Sw fp (Imm "48") sp
+                 , Addi sp sp (Imm "48") ]
 
