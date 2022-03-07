@@ -1,7 +1,7 @@
 module MIPS.RegisterAllocator.Naive where
 
-import MIPS.Types.Operands
-import MIPS.RegisterAllocator.CallingConvention
+import MIPS.Types.Operand
+import MIPS.CallingConvention
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
 

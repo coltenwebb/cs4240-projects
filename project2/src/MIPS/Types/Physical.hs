@@ -1,6 +1,6 @@
 module MIPS.Types.Physical where
 
-import MIPS.Types.Operands
+import MIPS.Types.Operand
 
 data MipsPhys
   = Addi PReg PReg Imm
@@ -23,3 +23,5 @@ data MipsPhys
   | Jal Lab
   | Jr PReg
   | J Lab
+  | Syscall
+  | Li PReg Imm

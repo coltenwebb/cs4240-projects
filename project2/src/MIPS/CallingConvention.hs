@@ -1,8 +1,8 @@
-module MIPS.RegisterAllocator.CallingConvention where
+module MIPS.CallingConvention where
 
 import qualified Data.Map as M
 import Data.Maybe
-import MIPS.Types.Operands
+import MIPS.Types.Operand
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
 import Control.Monad
@@ -82,4 +82,3 @@ setupReturn retVal loadReg =
           [ P.Add Retval preg ZeroReg 
           , P.Jr RetAddr
           ]
-  
