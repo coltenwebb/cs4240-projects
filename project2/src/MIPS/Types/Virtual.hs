@@ -1,7 +1,7 @@
 module MIPS.Types.Virtual where
 
 import MIPS.Types.Operands
-
+import Data.Maybe
 data MipsVirtual
   = Addi     VReg VReg Imm
   | Add      VReg VReg VReg
@@ -19,5 +19,6 @@ data MipsVirtual
   | Sw       VReg Imm VReg
   | Label    Lab
   | Goto     Lab
-  | Call     VReg Lab [VReg] 
-  | Return   VReg
+  | Call     Lab  [VReg]
+  | Callr    VReg Lab [VReg] 
+  | Return   (Maybe VReg)

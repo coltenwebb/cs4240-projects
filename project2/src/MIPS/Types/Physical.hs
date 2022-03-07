@@ -21,5 +21,5 @@ data MipsPhys
   | Sw PReg Imm PReg
   | Label Lab
   | Jal Lab
-  | Jr RetAddrReg
+  | Jr PReg
   | J Lab

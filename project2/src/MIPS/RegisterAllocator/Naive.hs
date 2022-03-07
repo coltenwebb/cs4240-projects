@@ -1,16 +1,12 @@
 module MIPS.RegisterAllocator.Naive where
 
 import MIPS.Types.Operands
+import MIPS.RegisterAllocator.CallingConvention
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
 
 import qualified Data.Map as M
 import Data.Foldable
-
-newtype OffsetIdx = OffsetIdx Int
--- Location of virtual register on stack
--- $sp+offset*4, starting from offset=0
-type RegMap = M.Map VReg OffsetIdx
 
 genRegMap :: [VReg] -> RegMap
 genRegMap = fst . foldl' f (mempty, 0)
@@ -19,34 +15,118 @@ genRegMap = fst . foldl' f (mempty, 0)
 
 virtToPhysMIPS
   :: RegMap
-  -> MipsVirtual
-  -> [MipsPhys]
+  -> V.MipsVirtual
+  -> [P.MipsPhys]
 virtToPhysMIPS rm mv = case mv of
-  V.Add d s t ->
-    [ Lw (M M1) (k s) Sp
-    , Lw (M M2) (k t) Sp
-    , Add (M M1) (M M1) (M M2)
-    , Sw (M M1) (k d) Sp
+  V.Addi t s i ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Addi (M M1) (M M1) i
+    , P.Sw (M M1) (k t) Sp
     ]
 
-  V.Sub vr vr' vr2 -> _
-  V.Mult vr vr' vr2 -> _
-  V.Div vr vr' vr2 -> _
-  V.Andi vr vr' imm -> _
-  V.And vr vr' vr2 -> _
-  V.Ori vr vr' imm -> _
-  V.Or vr vr' vr2 -> _
-  V.Beq vr vr' lab -> _
-  V.Bne vr vr' lab -> _
-  V.Bgtz vr lab -> _
-  V.Lw vr imm vr' -> _
-  V.Sw vr imm vr' -> _
-  V.Label lab -> _
-  V.Goto lab -> _
-  V.Call vr lab vrs -> _
-  V.Return vr -> _
+  V.Add d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Add (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Sub d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Sub (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Mult d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Mult (M M1) (M M2)
+    , P.Mflo (M M1)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Div d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Mult (M M1) (M M2)
+    , P.Mflo (M M1)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Andi t s i ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Andi (M M1) (M M1) i
+    , P.Sw (M M1) (k t) Sp
+    ]
+
+  V.And d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.And (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Ori t s i ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Ori (M M1) (M M1) i
+    , P.Sw (M M1) (k t) Sp
+    ]
+
+  V.Or d s t ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Or (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k d) Sp
+    ]
+
+  V.Beq s t lab ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Beq (M M1) (M M2) lab
+    ]
+
+  V.Bne s t lab ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M2) (k t) Sp
+    , P.Bne (M M1) (M M2) lab
+    ]
+
+  V.Bgtz s lab ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Bgtz (M M1) lab
+    ]
+
+  V.Lw t i s ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Lw (M M1) i (M M1)
+    , P.Sw (M M1) (k t) Sp
+    ]
+
+  V.Sw t i s ->
+    [ P.Lw (M M1) (k s) Sp
+    , P.Sw (M M2) i (M M1)
+    , P.Sw (M M2) (k t) Sp
+    ]
+
+  V.Label lab -> [P.Label lab]
+
+  V.Goto lab -> setupGoto lab
+
+  V.Call lab args -> setupCallStack lab args loadReg
+
+  V.Callr retReg lab args ->
+    setupCallStack lab args loadReg
+      ++ [ P.Sw Retval (k retReg) Sp]
+
+  V.Return retVal -> setupReturn retVal loadReg
   where
-  -- This is safe because genRegMap has assigned
-  -- every virtual register its own unique index
-  k :: VReg -> Imm
-  k = Imm . show . (M.!) rm
+    -- This is safe because genRegMap has assigned
+    -- every virtual register its own unique index
+    k :: VReg -> Imm
+    k = Imm . show . unOffsetIdx . (M.!) rm
+
+    loadReg :: VReg -> (PReg, [P.MipsPhys])
+    loadReg vreg =
+      (M M1, [ P.Lw (M M1) (k vreg) Sp ])
+
