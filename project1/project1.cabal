@@ -26,6 +26,7 @@ library
   exposed-modules:
     IR.Function
     IR.Instruction
+    IR.InstructionShim
     IR.Program
     IR.Type
     IR.Reader
@@ -36,6 +37,7 @@ library
     IR.Optimizer.CFG
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
+                 , tiger-ir
                  , parsec ^>=3.1.15.0
                  , containers ^>=0.6.5.1
                  , vector ^>=0.12.3.1

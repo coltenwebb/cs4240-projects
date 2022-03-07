@@ -24,6 +24,8 @@ extra-source-files: CHANGELOG.md
 
 library
   exposed-modules:
+    TigerIR.IrInstruction
+    TigerIR.Types
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
   default-language: Haskell2010
