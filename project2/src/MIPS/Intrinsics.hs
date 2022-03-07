@@ -6,6 +6,10 @@ import MIPS.Types.Operand
 -- These built-in functions all assume our self-defined
 -- calling convention.
 
+-- TODO:
+-- Read https://courses.missouristate.edu/kenvollmar/mars/help/syscallhelp.html
+-- Has info about print character syscall? and reach character?
+
 -- https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf
 -- syscall nums pg. 8
 data SpimSyscall = PrintInt | PrintString | ReadInt | ReadString

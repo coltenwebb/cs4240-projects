@@ -12,7 +12,6 @@ newtype Lab     = Lab     String deriving (Show, Eq)
 -- pg. 10: https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf
 data PReg
   = ZeroReg
-  | ImmReg -- wait do we need this? I forgor
   | RetAddr
   | Retval
   | SyscallCode

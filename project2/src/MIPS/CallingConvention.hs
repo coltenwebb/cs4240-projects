@@ -18,7 +18,7 @@ setupCallStack
   -- load value of virtual reg. onto physical reg
   -> (VReg -> (PReg, [P.MipsPhys]))
   -> [P.MipsPhys]
-setupCallStack lab args loadReg =
+setupCallStack fn args loadReg =
   -- Save registers
   [ P.Sw  (T T0)  (Imm "0") Sp
   , P.Sw  (T T1)  (Imm "4") Sp
@@ -36,7 +36,7 @@ setupCallStack lab args loadReg =
   ++
   [ P.Add Fp Sp ZeroReg            -- fp points to old sp
   , P.Addi Sp Sp spOffset          -- move sp up
-  , P.Jal lab                      -- Jump
+  , P.Jal fn                       -- Jump
   -- Callee returned, teardown / restoring registers
   , P.Add Sp Fp ZeroReg            -- Restore sp
 

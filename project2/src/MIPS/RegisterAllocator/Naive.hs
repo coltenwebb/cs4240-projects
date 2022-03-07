@@ -113,10 +113,10 @@ virtToPhysMIPS rm mv = case mv of
 
   V.Goto lab -> setupGoto lab
 
-  V.Call lab args -> setupCallStack lab args loadReg
+  V.Call fn args -> setupCallStack fn args loadReg
 
-  V.Callr retReg lab args ->
-    setupCallStack lab args loadReg
+  V.Callr retReg fn args ->
+    setupCallStack fn args loadReg
       ++ [ P.Sw Retval (k retReg) Sp]
 
   V.Return retVal -> setupReturn retVal loadReg
