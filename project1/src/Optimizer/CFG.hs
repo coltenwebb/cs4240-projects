@@ -12,11 +12,14 @@ import qualified Data.Set as S
 import Data.Monoid
 
 -- TODO: switch to non-empty list
-data BasicBlock = BasicBlock
-  { instrs :: NonEmpty Instruction
-  , lastIns :: Instruction
+data BasicBlockGeneral a = BasicBlockGeneral 
+  { instrs :: NonEmpty a
+  , lastIns :: a
   , blockId :: BlockId
   } deriving Show
+
+type BasicBlock = BasicBlockGeneral Instruction
+
 newtype BlockId = BlockId Int
   deriving (Eq, Ord, Show)
 
