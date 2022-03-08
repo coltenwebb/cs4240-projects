@@ -61,52 +61,6 @@ data MipsVirtual
   | Placeholder Instruction
   -- deriving (Show)
 
-instance Show AsmInstruction where
-  show (Addi (Reg dst) (Reg src) (Imm imm))
-    = "    addi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
-  show (Add (Reg dst) (Reg src1) (Reg src2))
-    = "    add " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Sub (Reg dst) (Reg src1) (Reg src2))
-    = "    sub " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Mflo (Reg dst))
-    = "    mflo " ++ dst  ++ "\n"
-  show (Mult (Reg src1) (Reg src2))
-    = "    mult " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Div (Reg src1) (Reg src2))
-    = "    div " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Andi (Reg dst) (Reg src) (Imm imm))
-    = "    andi " ++ dst ++ ", " ++ src ++ ", " ++ imm  ++ "\n"
-  show (And (Reg dst) (Reg src1) (Reg src2))
-    = "    and " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Ori (Reg dst) (Reg src) (Imm imm))
-    = "    ori " ++ dst ++ ", " ++ src ++ ", " ++ src  ++ "\n"
-  show (Or (Reg dst) (Reg src1) (Reg src2))
-    = "    or " ++ dst ++ ", " ++ src1 ++ ", " ++ src2 ++ "\n"
-  show (Jal (Lab label))
-    = "    jal " ++ label ++ "\n"
-  show (Beq (Reg dst) (Reg src) (Lab label))
-    = "    beq " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
-  show (Bne (Reg dst) (Reg src) (Lab label))
-    = "    bne " ++ dst ++ ", " ++ src ++ ", " ++ label  ++ "\n"
-  show (Bgtz (Reg dst) (Lab label))
-    = "    bgtz " ++ dst ++ ", " ++ label  ++ "\n"
-  show (Blez (Reg dst) (Lab label))
-    = "    blez " ++ dst ++ ", " ++ label  ++ "\n"
-  show (Lw (Reg base) (Imm imm) (Reg src) )
-    = "    lw " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
-  show (Sw (Reg src) (Imm imm) (Reg base) )
-    = "    sw " ++ src ++ ", " ++ imm ++ "(" ++ base  ++ ")\n"
-  show (Label (Lab label))
-    = label ++ ": \n"
-  show (Jr (Reg retAddr))
-    = "    jr " ++ retAddr ++ "\n"
-  show (Placeholder x)
-     = show x ++ " placeholder\n"
-instance Show AsmProgram where
-  show prog =
-    "prog:\n"
-    ++ concatMap (\ins -> show ins ++ "\n") (asmInstructions prog)
-
 addVals str1 str2 = show $ read str1 + read str2
 subVals str1 str2 = show $ read str1 - read str2
 mulVals str1 str2 = show $ read str1 * read str2
