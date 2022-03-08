@@ -24,11 +24,17 @@ extra-source-files: CHANGELOG.md
 
 library
   exposed-modules:
-    MIPS.RegisterAllocator.Naive
-    MIPS.Types.Operand
-    MIPS.Types.Physical
-    MIPS.Types.Virtual
-    MIPS.CallingConvention
+    IR.Function
+    IR.Instruction
+    IR.InstructionShim
+    IR.Program
+    IR.Type
+    IR.Reader
+    IR.Printer
+    Fuzz.Test
+    IR.Optimizer.MarkSweep
+    IR.Optimizer.ReachingDefs
+    IR.Optimizer.CFG
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , tiger-ir
