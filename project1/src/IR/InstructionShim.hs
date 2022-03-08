@@ -116,13 +116,13 @@ newToOldIrType (T.IrInstruction newIns (T.LineNumber ln)) =
         ]
         ln'
 
-    T.FloatArrStore (T.ArrStoreOperands (T.Variable v1) arr (T.Variable v2)) ->
-      I.Instruction I.ARRAY_STORE
-        [ I.VariableOperand (I.Variable (v2v v1) I.FloatType)
-        , ia2ia arr
-        , I.VariableOperand (I.Variable (v2v v2) I.IntType)
-        ]
-        ln'
+--    T.FloatArrStore (T.ArrStoreOperands (T.Variable v1) arr (T.Variable v2)) ->
+--      I.Instruction I.ARRAY_STORE
+--        [ I.VariableOperand (I.Variable (v2v v1) I.FloatType)
+--        , ia2ia arr
+--        , I.VariableOperand (I.Variable (v2v v2) I.IntType)
+--        ]
+--        ln'
 
     -- Array Load
     
