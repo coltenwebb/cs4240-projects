@@ -106,7 +106,7 @@ handleBrOp brops cmp =
         else V.Nop
 
 fnArgsToCallArgs :: FnArgs -> [CallArg]
-fnArgsToCallArgs (FnArgs ags) = map ps ags
+fnArgsToCallArgs = map ps
   where
     ps :: FnArg -> CallArg
     ps farg = case farg of

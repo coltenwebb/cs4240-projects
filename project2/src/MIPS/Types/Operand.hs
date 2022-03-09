@@ -8,6 +8,19 @@ import TigerIR.Types
 -- Virtual Registers
 newtype VReg = VReg Variable deriving (Show, Eq, Ord)
 
+class PseudoReg a where
+  toVReg :: a -> VReg
+
+instance PseudoReg ParamVar where
+  toVReg param = case param of
+    ParamV v -> VReg v
+    ParamA (Array v _) -> VReg v
+
+instance PseudoReg LocalVar where
+  toVReg param = case param of
+    LocalV v -> VReg v
+    LocalA (Array v _) -> VReg v
+
 -- Physical registers
 -- pg. 10: https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf
 data PReg

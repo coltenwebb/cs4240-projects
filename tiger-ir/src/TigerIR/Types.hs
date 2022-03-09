@@ -14,15 +14,23 @@ data Array = Array Variable ArraySize deriving (Eq, Ord, Show)
 newtype FunctionName = FunctionName Label deriving (Eq, Ord, Show)
 
 -- Parameters and local vars can't be 
-newtype Parameters = Parameters [InitVar]
-newtype LocalVars  = LocalVars  [InitVar]
-newtype FnArgs     = FnArgs     [FnArg]
+type Parameters = [ParamVar]
+type LocalVars  = [LocalVar]
+type FnArgs     = [FnArg]
 
-data InitVar
-  = InitV Variable
-  | InitA Array
+data ParamVar
+  = ParamV Variable
+  | ParamA Array
   deriving (Ord, Eq, Show)
 
+data LocalVar
+  = LocalV Variable
+  | LocalA Array
+  deriving (Ord, Eq, Show)
+
+-- For Virtual MIPS to know whether we need
+-- extra registers or if we are passing
+-- an imm val as arg
 data FnArg
   = Varg Variable
   | Aarg Array

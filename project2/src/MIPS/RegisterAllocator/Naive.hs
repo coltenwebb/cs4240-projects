@@ -110,7 +110,7 @@ virtToPhysMIPS rm mv = case mv of
     -- This is safe because genRegMap has assigned
     -- every virtual register its own unique index
     k :: VReg -> Imm
-    k = Imm . show . unOffsetIdx . (M.!) rm
+    k = toImm . (M.!) rm
 
     loadReg :: VReg -> (PReg, [P.MipsPhys])
     loadReg vreg =
