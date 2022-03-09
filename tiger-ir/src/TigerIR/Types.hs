@@ -21,7 +21,15 @@ newtype VariableName = VariableName String deriving (Eq, Ord, Show)
 newtype Variable (a :: VarType) = Variable VariableName deriving (Eq, Ord, Show)
 
 newtype ArrayName = ArrayName String deriving (Eq, Ord, Show)
-data Array (a :: ArrType) = Array ArrayName ArraySize
+data Array (a :: ArrType) = Array ArrayName ArraySize deriving (Eq, Ord, Show)
 
 newtype Label = Label String deriving (Eq, Ord, Show)
 newtype FunctionName = FunctionName String deriving (Eq, Ord, Show)
+
+newtype Parameters = Parameters [GeneralIntVariable]
+newtype LocalVars  = LocalVars  [GeneralIntVariable]
+
+data GeneralIntVariable
+  = IntVar (Variable IntType)
+  | ArrVar (Array IntArr)
+  deriving (Show, Eq, Ord)

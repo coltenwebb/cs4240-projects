@@ -2,6 +2,7 @@ module MIPS.Types.Virtual where
 
 import MIPS.Types.Operand
 import Data.Maybe
+
 data MipsVirtual
   = Addi     VReg VReg Imm
   | Add      VReg VReg VReg

@@ -1,11 +1,13 @@
 module MIPS.Types.Operand where
 
+import TigerIR.Types (GeneralIntVariable)
+
 -- Virtual Registers
-newtype VReg    = VReg    Int    deriving (Show, Eq, Ord)
+newtype VReg    = VReg    GeneralIntVariable deriving (Show, Eq, Ord)
 
 -- Immediate Values and Labels
-newtype Imm     = Imm     String deriving (Show, Eq)
-newtype Lab     = Lab     String deriving (Show, Eq)
+newtype Imm     = Imm     String             deriving (Show, Eq)
+newtype Lab     = Lab     String             deriving (Show, Eq)
 
 
 -- Physical registers
