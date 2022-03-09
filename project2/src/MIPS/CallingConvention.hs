@@ -2,17 +2,75 @@ module MIPS.CallingConvention where
 
 import qualified Data.Map as M
 import Data.Maybe
-import TigerIR.Types (Imm, Label)
+
+import TigerIR.Program
 
 import MIPS.Types.Operand
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
-import Control.Monad
 
-newtype OffsetIdx = OffsetIdx { unOffsetIdx :: Int }
+import Data.List (foldl1')
+
+newtype OffsetIdx  = OffsetIdx  Int
+newtype OffsetSize = OffsetSize Int
+
+-- Offset addition
+(.+) :: OffsetIdx -> OffsetSize -> OffsetIdx
+(.+) (OffsetIdx i) (OffsetSize sz) = OffsetIdx (i + sz)
+
+-- Size addition
+(^+) :: OffsetSize -> OffsetSize -> OffsetSize
+(^+) (OffsetSize sz1) (OffsetSize sz2) = OffsetSize (sz1 + sz2)
+
+-- Offset subtraction
+(.-) :: OffsetIdx -> OffsetSize -> OffsetIdx
+(.-) (OffsetIdx i) (OffsetSize sz) = OffsetIdx (i - sz)
+
+-- Offset Size Multiplication
+(.*) :: OffsetSize -> Int -> OffsetSize
+(.*) (OffsetSize sz) k = OffsetSize (sz * k)
+
 -- Location of virtual register on stack
 -- $sp+offset*4, starting from offset=0
 type RegMap = M.Map VReg OffsetIdx
+
+{-
+hi addr
+        ----------------------
+  fp ->     local var m' - 1    PREVIOUS STACK FRAME
+  ***** ---------------------- *******************
+              arg 0             CURRENT STACK FRAME BEGIN
+        ----------------------
+                ...
+        ----------------------
+              arg n-1          CALLER setup, see `setupCallStack`
+  ***** ---------------------- *******************
+            local var 0        CALLEE setup
+        ----------------------
+                ...
+        ----------------------  after callee allocates local var on stack
+  sp ->      local var m-1     /    CURRENT STACK FRAME END
+        ---------------------- *********************
+
+lo addr
+-}
+calcRegMap :: TigerIrFunction -> RegMap
+calcRegMap = _
+
+initVarSize :: InitVar -> OffsetSize
+initVarSize iv = case iv of
+  InitV (Variable _) -> OffsetSize 4
+  InitA (Array _ (ArraySize k)) -> OffsetSize 4 .* k
+
+netVarOffset :: TigerIrFunction -> OffsetSize
+netVarOffset
+  (TigerIrFunction _  _ (Parameters pv) (LocalVars lvs) _) = paramSize ^+ lvarSize
+  where
+    paramSize :: OffsetSize
+    paramSize = foldl1' (^+) (map initVarSize pv)
+
+    lvarSize :: OffsetSize
+    lvarSize = foldl1' (^+) (map initVarSize lvs)
 
 setupCallStack
   :: Label
@@ -59,7 +117,7 @@ setupCallStack fn args loadReg =
       let offset = Imm . show . (+36) . (*4) $ argno
           (preg, loadInstrs) = loadReg vreg
       in loadInstrs ++ [P.Sw preg offset Sp]
-    
+
     spOffset :: Imm
     spOffset = Imm . show $
       36                  -- saved registers
@@ -70,7 +128,7 @@ setupGoto :: Label -> [P.MipsPhys]
 setupGoto lab = [P.J lab]
 
 -- Setup instructions to return to caller
-setupReturn :: 
+setupReturn ::
   Maybe VReg
   -> (VReg -> (PReg, [P.MipsPhys]))
   -> [P.MipsPhys]
@@ -80,7 +138,7 @@ setupReturn retVal loadReg =
     Just rv ->
       let (preg, ins) = loadReg rv
       in
-        ins ++ 
-          [ P.Add Retval preg ZeroReg 
+        ins ++
+          [ P.Add Retval preg ZeroReg
           , P.Jr RetAddr
           ]

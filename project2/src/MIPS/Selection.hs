@@ -5,7 +5,6 @@ import MIPS.Types.Virtual as V
 import MIPS.Types.Operand
 
 import Data.Bits
-import TigerIR.IrInstruction (BrOperands)
 
 instructionSelection :: T.Instruction -> MipsVirtual
 instructionSelection ins = case ins of

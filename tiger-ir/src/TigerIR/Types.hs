@@ -1,6 +1,6 @@
 module TigerIR.Types where
 
-newtype ArraySize = ArraySize Integer
+newtype ArraySize = ArraySize Int
   deriving (Eq, Ord, Show)
 
 

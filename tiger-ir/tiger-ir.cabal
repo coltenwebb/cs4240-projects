@@ -26,6 +26,7 @@ library
   exposed-modules:
     TigerIR.IrInstruction
     TigerIR.Types
+    TigerIR.Program
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , parsec ^>=3.1.15.0
