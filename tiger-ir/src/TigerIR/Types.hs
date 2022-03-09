@@ -1,35 +1,30 @@
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
 module TigerIR.Types where
+
 newtype ArraySize = ArraySize Integer
   deriving (Eq, Ord, Show)
 
-data VarType
-  = IntType
-  | FloatType
-  | VoidType
-  deriving (Eq, Ord, Show)
 
-data ArrType
-  = IntArr
-  | FloatArr
+-- Immediate Values and Labels
+newtype Imm   = Imm     String             deriving (Show, Eq, Ord)
+newtype Label = Label   String             deriving (Show, Eq, Ord)
 
-newtype ConstantValue = ConstantValue String deriving (Eq, Ord, Show)
-newtype Constant (a :: VarType) = Constant ConstantValue deriving (Eq, Ord, Show)
+newtype Variable = Variable String deriving (Eq, Ord, Show)
+data Array = Array Variable ArraySize deriving (Eq, Ord, Show)
 
-newtype VariableName = VariableName String deriving (Eq, Ord, Show)
-newtype Variable (a :: VarType) = Variable VariableName deriving (Eq, Ord, Show)
+newtype FunctionName = FunctionName Label deriving (Eq, Ord, Show)
 
-newtype ArrayName = ArrayName String deriving (Eq, Ord, Show)
-data Array (a :: ArrType) = Array ArrayName ArraySize deriving (Eq, Ord, Show)
+-- Parameters and local vars can't be 
+newtype Parameters = Parameters [InitVar]
+newtype LocalVars  = LocalVars  [InitVar]
+newtype FnArgs     = FnArgs     [FnArg]
 
-newtype Label = Label String deriving (Eq, Ord, Show)
-newtype FunctionName = FunctionName String deriving (Eq, Ord, Show)
+data InitVar
+  = InitV Variable
+  | InitA Array
+  deriving (Ord, Eq, Show)
 
-newtype Parameters = Parameters [GeneralIntVariable]
-newtype LocalVars  = LocalVars  [GeneralIntVariable]
-
-data GeneralIntVariable
-  = IntVar (Variable IntType)
-  | ArrVar (Array IntArr)
-  deriving (Show, Eq, Ord)
+data FnArg
+  = Varg Variable
+  | Aarg Array
+  | Iarg Imm
+  deriving (Ord, Eq, Show)

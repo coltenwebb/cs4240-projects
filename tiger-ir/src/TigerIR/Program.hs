@@ -7,7 +7,7 @@ data TigerIrFunction = TigerIrFunction
   { name       :: FunctionName
   -- Tiger-IR.pdf:
   -- Notes on semantics: The return value of a function cannot be array-typed.
-  , returnType :: VarType
+  , returnsVal :: Bool -- int or void
   , parameters :: Parameters
   , localVars  :: LocalVars
   , instrs     :: IrInstruction

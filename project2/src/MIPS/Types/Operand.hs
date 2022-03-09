@@ -1,14 +1,12 @@
-module MIPS.Types.Operand where
+module MIPS.Types.Operand
+  ( module MIPS.Types.Operand
+  , module TigerIR.Types
+  ) where
 
-import TigerIR.Types (GeneralIntVariable)
+import TigerIR.Types
 
 -- Virtual Registers
-newtype VReg    = VReg    GeneralIntVariable deriving (Show, Eq, Ord)
-
--- Immediate Values and Labels
-newtype Imm     = Imm     String             deriving (Show, Eq)
-newtype Lab     = Lab     String             deriving (Show, Eq)
-
+newtype VReg = VReg Variable deriving (Show, Eq, Ord)
 
 -- Physical registers
 -- pg. 10: https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf

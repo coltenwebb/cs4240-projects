@@ -2,6 +2,8 @@ module MIPS.CallingConvention where
 
 import qualified Data.Map as M
 import Data.Maybe
+import TigerIR.Types (Imm, Label)
+
 import MIPS.Types.Operand
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
@@ -13,7 +15,7 @@ newtype OffsetIdx = OffsetIdx { unOffsetIdx :: Int }
 type RegMap = M.Map VReg OffsetIdx
 
 setupCallStack
-  :: Lab
+  :: Label
   -> [VReg]
   -- load value of virtual reg. onto physical reg
   -> (VReg -> (PReg, [P.MipsPhys]))
@@ -64,7 +66,7 @@ setupCallStack fn args loadReg =
       + (4 * length args) -- fn args
       + 4                 -- points to above last arg
 
-setupGoto :: Lab -> [P.MipsPhys]
+setupGoto :: Label -> [P.MipsPhys]
 setupGoto lab = [P.J lab]
 
 -- Setup instructions to return to caller

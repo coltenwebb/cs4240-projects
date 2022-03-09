@@ -13,16 +13,16 @@ data MipsPhys
   | And   PReg PReg PReg
   | Ori   PReg PReg Imm
   | Or    PReg PReg PReg
-  | Beq   PReg PReg Lab
-  | Bne   PReg PReg Lab
-  | Bgtz  PReg Lab
-  | Blez  PReg Lab
+  | Beq   PReg PReg Label
+  | Bne   PReg PReg Label
+  | Bgtz  PReg Label
+  | Blez  PReg Label
   | Lw    PReg Imm PReg
   | Sw    PReg Imm PReg
-  | Label Lab
-  | Jal   Lab
+  | Label Label
+  | Jal   Label
   | Jr    PReg
-  | J     Lab
+  | J     Label
   | Syscall
   | Li    PReg Imm
 

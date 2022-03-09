@@ -80,22 +80,7 @@ virtToPhysMIPS rm mv = case mv of
     , P.Sw (M M1) (k d) Sp
     ]
 
-  V.Beq s t lab ->
-    [ P.Lw (M M1) (k s) Sp
-    , P.Lw (M M2) (k t) Sp
-    , P.Beq (M M1) (M M2) lab
-    ]
-
-  V.Bne s t lab ->
-    [ P.Lw (M M1) (k s) Sp
-    , P.Lw (M M2) (k t) Sp
-    , P.Bne (M M1) (M M2) lab
-    ]
-
-  V.Bgtz s lab ->
-    [ P.Lw (M M1) (k s) Sp
-    , P.Bgtz (M M1) lab
-    ]
+  -- TODO: Handle branches
 
   V.Lw t i s ->
     [ P.Lw (M M1) (k s) Sp
@@ -113,13 +98,14 @@ virtToPhysMIPS rm mv = case mv of
 
   V.Goto lab -> setupGoto lab
 
-  V.Call fn args -> setupCallStack fn args loadReg
+  -- TODO: Fix
+  --V.Call fn args -> setupCallStack fn args loadReg
 
-  V.Callr retReg fn args ->
-    setupCallStack fn args loadReg
-      ++ [ P.Sw Retval (k retReg) Sp]
+  --V.Callr retReg fn args ->
+  --  setupCallStack fn args loadReg
+  --    ++ [ P.Sw Retval (k retReg) Sp]
 
-  V.Return retVal -> setupReturn retVal loadReg
+  --V.Return retVal -> setupReturn retVal loadReg
   where
     -- This is safe because genRegMap has assigned
     -- every virtual register its own unique index
