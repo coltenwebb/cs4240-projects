@@ -52,29 +52,19 @@ Including moving the sp and fp back to original positions.
 ### Caller Stack Setup
 * Stack grows from high to low address, meaning we decrement `$sp` to push to stack.
 ```
-# $sp is currently pointing to nth arg for the caller
-# need to push the stack by one to begin the procedure
 $sp = $sp - 1  
 
-# Caller saves $t registers on stack
 for (i in range(0,9)):
    MEM[$sp - i] = $t_i
 
-# Caller saves its $ra on stack
-# $ra holds the address that caller needs to jump to
 MEM[$sp - 10] = $ra
 
-# Caller saves its base/frame pointer $fp on stack
 MEM[$sp - 11] = $fp
 
-# Set the frame pointer for the callee
 $fp = $sp
 
-# Bring stack pointer to where $fp is stored
-# From here on above, the stack is empty and free to use
 $sp = $sp - 11
 
-# Add callee's arguments
 for (i in range(len(args))):
    $sp = $sp - 1
    MEM[$sp] = args[i]
@@ -89,7 +79,6 @@ jal callee_label
 
 ### Caller Stack Teardown
 ```
-# Ignore function arguments stored on stack by bringing $sp to $fp 
 $sp = $fp
 $fp = MEM[$sp - 11]
 $ra = MEM[$sp - 10]
