@@ -90,10 +90,10 @@ for (i in range(0,9)):
 $sp = $sp + 1
 ```
 
-sp = fp
+<!-- sp = fp
 fp = mem_in_stack[$old_fp]
 
 for i in range(0, 9)
   LW $t{i} $sp+whatever+i
 
-LW $return addr $sp+whatever
+LW $return addr $sp+whatever -->
