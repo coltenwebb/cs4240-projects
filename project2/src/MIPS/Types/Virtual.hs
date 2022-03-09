@@ -16,6 +16,7 @@ data MipsVirtual
   | Beq      VReg VReg Lab
   | Bne      VReg VReg Lab
   | Bgtz     VReg Lab
+  | Blez     VReg Lab
   | Lw       VReg Imm VReg
   | Sw       VReg Imm VReg
   | Label    Lab
@@ -23,3 +24,5 @@ data MipsVirtual
   | Call     Lab  [VReg]
   | Callr    VReg Lab [VReg] 
   | Return   (Maybe VReg)
+
+newtype VirtualProgram = VirtualProgram { virtualInstructions :: [MipsVirtual] } deriving ()

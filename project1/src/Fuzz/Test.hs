@@ -10,7 +10,7 @@ import qualified Data.Set as S
 import Debug.Trace
 import IR.Function
 import IR.Instruction
-import IR.Optimizer.CFG
+import Optimizer.CFG
 import IR.Printer
 import IR.Type
 import qualified Test.QuickCheck as Q

@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
-module IR.Optimizer.ReachingDefs where
+module Optimizer.ReachingDefs where
 
 import IR.Instruction
-import IR.Optimizer.CFG
+import Optimizer.CFG
 
 import qualified Data.Map as M
 import qualified Data.Set as S

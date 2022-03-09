@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingVia #-}
 
-module IR.Optimizer.CFG where
+module Optimizer.CFG where
 
 import IR.Instruction
 

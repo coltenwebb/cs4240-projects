@@ -25,3 +25,5 @@ data MipsPhys
   | J     Lab
   | Syscall
   | Li    PReg Imm
+
+newtype PhysicalProgram = PhysicalProgram { physicalInstructions :: [MipsPhys] } deriving ()

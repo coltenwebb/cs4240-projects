@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module IR.Optimizer.MarkSweep where
+module Optimizer.MarkSweep where
 
 import IR.Instruction
 import IR.Function as F
-import IR.Optimizer.ReachingDefs
-import IR.Optimizer.CFG as C
+import Optimizer.ReachingDefs
+import Optimizer.CFG as C
 
 import qualified Data.Map as M
 import qualified Data.Set as S

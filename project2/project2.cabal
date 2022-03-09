@@ -29,6 +29,7 @@ library
     MIPS.Types.Physical
     MIPS.Types.Virtual
     MIPS.CallingConvention
+    MIPS.Printer
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , tiger-ir
