@@ -7,11 +7,11 @@ import Data.Maybe
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
 data MipsVirtual
-  = AssignI  VReg Imm
+  = AssignI  VReg Imm         
   | AssignV   VReg VReg
-  | Addi     VReg VReg Imm
+  | Addi     VReg VReg Imm  
   | Li       VReg Imm          -- [P]
-  | Add      VReg VReg VReg
+  | Add      VReg VReg VReg    -- 
   | Sub      VReg VReg VReg
   | Subi     VReg VReg Imm     -- [P]
   | Mult     VReg VReg VReg
@@ -54,3 +54,4 @@ data Cmp = Eq | Neq | Lt | Gt | Geq | Leq
 data CallArg = CVarg VReg | CIarg Imm
 
 newtype VirtualProgram = VirtualProgram { virtualInstructions :: [MipsVirtual] } deriving ()
+
