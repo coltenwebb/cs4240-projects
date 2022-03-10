@@ -65,3 +65,27 @@ geti =
   , P.Add Retval V0 ZeroReg -- Result stored in $v0
   , P.Jr RetAddr
   ]
+
+
+memset :: (VReg, Either VReg Imm, Either VReg Imm) -> [P.MipsPhys]
+memset (x, s, v) =  
+  [ loadSize -- P.Lw (M M1) (k s) Sp OR P.Addi (M M1) ZeroReg s
+  , P.Addi (M M2) ZeroReg imm4
+  , P.Mult (M M1) (M M2)
+  , P.Mflo (M M2)
+  , P.Label "LOOP"
+  , P.Brlez (M M2) (Label "EXIT") -- branch if negative
+  , P.Addi (M M1) ZeroReg imm4
+  , P.Sub (M M1) (M M2) (M M1)
+  , P.Lw (M M2) (k x) Sp 
+  , P.Add (M M2) (M M1) (M M2)
+  , loadVal -- P.Lw (M M1) (k v) Sp OR P.Addi (M M1) ZeroReg v
+  , P.Sw (M M1) imm0 (M M2)
+  , P.Lw (M M1) (k x) Sp
+  , P.Sub (M M2) (M M2) (M M1)
+  , P.J (Label "Loop")
+  , P.Label "EXIT" ] 
+  where 
+    loadSize = either (\_ -> P.Lw (M M1) (k s) Sp) (\_ -> P.Addi (M M1) ZeroReg s) s
+    loadVal = either (\_ -> P.Lw (M M1) (k v) Sp) (\_ -> P.Addi (M M1) ZeroReg v) s
+
