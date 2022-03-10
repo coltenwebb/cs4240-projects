@@ -8,6 +8,10 @@ import Data.Bits
 
 instructionSelection :: T.Instruction -> MipsVirtual
 instructionSelection ins = case ins of
+  AssignVar avops -> case avops of
+    AssignVarOpsVI v1 i2 -> V.AssignI (VReg v1) i2
+    AssignVarOpsVV v1 v2 -> V.AssignV (VReg v1) (VReg v2)
+
   BinaryOperation op -> case op of
     T.Add  bops -> handleBinOp bops addImm  V.Addi   V.Add
     T.Sub  bops -> handleBinOp bops subImm  V.Subi   V.Sub

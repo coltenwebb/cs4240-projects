@@ -7,7 +7,9 @@ import Data.Maybe
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
 data MipsVirtual
-  = Addi     VReg VReg Imm
+  = AssignI  VReg Imm
+  | AssignV   VReg VReg
+  | Addi     VReg VReg Imm
   | Li       VReg Imm          -- [P]
   | Add      VReg VReg VReg
   | Sub      VReg VReg VReg
