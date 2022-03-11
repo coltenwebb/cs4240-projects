@@ -33,7 +33,7 @@ library
     MIPS.Selection
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
-                 , tiger-ir
+                 , tiger-ir ^>= 0.1.0.0
                  , parsec ^>=3.1.15.0
                  , containers ^>=0.6.5.1
                  , vector ^>=0.12.3.1

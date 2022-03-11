@@ -2,6 +2,9 @@ module MIPS.Types.Physical where
 
 import MIPS.Types.Operand
 
+f :: FnArg -> Int 
+f = undefined
+
 data MipsPhys
   = Addi  PReg PReg Imm
   | Add   PReg PReg PReg

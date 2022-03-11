@@ -67,23 +67,27 @@ geti =
   ]
 
 
-memset :: (VReg, Either VReg Imm, Either VReg Imm) -> [P.MipsPhys]
-memset (x, s, v) =  
-  [ loadSize -- P.Lw (M M1) (k s) Sp OR P.Addi (M M1) ZeroReg s
-  , P.Addi (M M2) ZeroReg imm4
+-- Intrinsic func for array assign 
+-- We load `val` into `arr` from index `size` - 1 to 0
+-- ex) assign arr, size, val
+--     args = [arr, size, val]
+memset :: [P.MipsPhys]
+memset =  
+  [ P.Lw (M M1) (Imm "-8") Fp     
+  , P.Addi (M M2) ZeroReg imm4    
   , P.Mult (M M1) (M M2)
-  , P.Mflo (M M2)
+  , P.Mflo (M M2)                 -- load size to M2
   , P.Label "LOOP"
-  , P.Brlez (M M2) (Label "EXIT") -- branch if negative
-  , P.Addi (M M1) ZeroReg imm4
+  , P.Brlez (M M2) (Label "EXIT") -- while size >= 0
+  , P.Addi (M M1) ZeroReg imm4    --   size = size - 1
   , P.Sub (M M1) (M M2) (M M1)
-  , P.Lw (M M2) (k x) Sp 
-  , P.Add (M M2) (M M1) (M M2)
-  , loadVal -- P.Lw (M M1) (k v) Sp OR P.Addi (M M1) ZeroReg v
-  , P.Sw (M M1) imm0 (M M2)
-  , P.Lw (M M1) (k x) Sp
+  , P.Lw (M M2) (Imm "-4") Fp     
+  , P.Add (M M2) (M M1) (M M2) 
+  , P.Lw (M M1) (Imm "-12") Fp 
+  , P.Sw (M M1) imm0 (M M2)       --   arr[size] = val
+  , P.Lw (M M1) (k x) Sp          
   , P.Sub (M M2) (M M2) (M M1)
-  , P.J (Label "Loop")
+  , P.J (Label "LOOP")
   , P.Label "EXIT" ] 
   where 
     loadSize = either (\_ -> P.Lw (M M1) (k s) Sp) (\_ -> P.Addi (M M1) ZeroReg s) s

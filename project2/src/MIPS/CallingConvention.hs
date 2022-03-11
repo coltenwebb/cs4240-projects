@@ -58,6 +58,10 @@ hi addr
                 ...              (Corresponds to ParamVar)
         ----------------------
               arg n-1          CALLER setup, see `setupCallStack`
+        ----------------------
+              retAddr
+        ----------------------
+            caller's fp
   ***** ---------------------- *******************
  ptr2 ->     local var 0        CALLEE setup
         ----------------------
@@ -95,7 +99,7 @@ calcRegMap fn =
         currRegOffst = offst .- localVarSize lv
 
     netVarSz, netLocalSz, netParamSz :: OffsetSize
-    netVarSz = netLocalSz ^+ netParamSz
+    netVarSz = netLocalSz ^+ netParamSz ^+ OffsetSize 2 -- add two to handle caller's retaddr and fp
     netLocalSz = netLocalVarSize fn
     netParamSz = netParamSize fn
 
@@ -135,47 +139,47 @@ setupCallStack
   -> [P.MipsPhys]
 setupCallStack fn args loadReg =
   -- Save registers
-  [ P.Sw  (T T0)  (Imm "-0") Sp
-  , P.Sw  (T T1)  (Imm "-4") Sp
-  , P.Sw  (T T2)  (Imm "-8") Sp
-  , P.Sw  (T T3)  (Imm "-12") Sp
-  , P.Sw  (T T4)  (Imm "-16") Sp
-  , P.Sw  (T T5)  (Imm "-20") Sp
-  , P.Sw  (T T6)  (Imm "-24") Sp
-  , P.Sw  (T T7)  (Imm "-28") Sp
-  , P.Sw  RetAddr (Imm "-32") Sp
-  , P.Sw  Fp      (Imm "-36") Sp
+  [ P.Sw   (T T0)  (Imm "-4") Sp
+  , P.Sw   (T T1)  (Imm "-8") Sp
+  , P.Sw   (T T2)  (Imm "-12") Sp
+  , P.Sw   (T T3)  (Imm "-16") Sp
+  , P.Sw   (T T4)  (Imm "-20") Sp
+  , P.Sw   (T T5)  (Imm "-24") Sp
+  , P.Sw   (T T6)  (Imm "-28") Sp
+  , P.Sw   (T T7)  (Imm "-32") Sp
+  , P.Sw   RetAddr (Imm "-36") Sp
+  , P.Sw   Fp      (Imm "-40") Sp
+  , P.Addi Sp      Sp         (Imm "-40")
+  , P.Add  Fp      Sp         Zero
   ]
   ++
   pushArgs
   ++
-  [ P.Add Fp Sp ZeroReg            -- fp points to old sp
-  , P.Addi Sp Sp spOffset          -- move sp down
+  [ P.Addi Sp Sp spOffset          -- move sp down
   , P.Jal fn                       -- Jump
   -- Callee returned, teardown / restoring registers
   , P.Add Sp Fp ZeroReg            -- Restore sp
-
-  , P.Lw  (T T0)  (Imm "-0") Sp     -- Mirror save registers
-  , P.Lw  (T T1)  (Imm "-4") Sp
-  , P.Lw  (T T2)  (Imm "-8") Sp
-  , P.Lw  (T T3)  (Imm "-12") Sp
-  , P.Lw  (T T4)  (Imm "-16") Sp
-  , P.Lw  (T T5)  (Imm "-20") Sp
-  , P.Lw  (T T6)  (Imm "-24") Sp
-  , P.Lw  (T T7)  (Imm "-28") Sp
-  , P.Lw  RetAddr (Imm "-32") Sp
-  , P.Lw  Fp      (Imm "-36") Sp
+  , P.Lw  Fp      (Imm "0")  Sp
+  , P.Lw  RetAddr (Imm "4")  Sp
+  , P.Lw  (T T7)  (Imm "8")  Sp
+  , P.Lw  (T T6)  (Imm "12")  Sp
+  , P.Lw  (T T5)  (Imm "16")  Sp
+  , P.Lw  (T T4)  (Imm "20")  Sp
+  , P.Lw  (T T3)  (Imm "24")  Sp
+  , P.Lw  (T T2)  (Imm "28")  Sp
+  , P.Lw  (T T1)  (Imm "32")  Sp
+  , P.Lw  (T T0)  (Imm "36") Sp
+  , P.Addi Sp     Sp        (Imm "40")
   ]
   where
     pushArgs :: [P.MipsPhys]
     pushArgs = flip concatMap (zip [1..] args) $ \(argno, vreg) ->
-      let offset = Imm . show . (+36) . (*4) $ argno
+      let offset = Imm . show . (*(-4)) $ argno
           (preg, loadInstrs) = loadReg vreg
-      in loadInstrs ++ [P.Sw preg offset Sp]
+      in loadInstrs ++ [P.Sw preg offset Fp]
 
     spOffset :: Imm
     spOffset = Imm . show $
-      -36                  -- saved registers
       - (4 * length args)  -- fn args (sp points to last arg)
 
 setupGoto :: Label -> [P.MipsPhys]

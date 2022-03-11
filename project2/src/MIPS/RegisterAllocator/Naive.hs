@@ -40,9 +40,8 @@ virtToPhysMIPS rm mv = case mv of
 
   V.Subi t s i ->
     [ P.Lw (M M1) (k s) Sp
-    , P.Addi (M M2) ZeroReg i
-    , P.Sub (M M1) (M M1) (M M2)
-    . P.Sw (M M1) (k t) Sp
+    , P.Addi (M M1) (M M1) (negateImm i)
+    , P.Sw (M M1) (k t) Sp
     ]
 
   V.Mult d s t ->
@@ -216,21 +215,6 @@ virtToPhysMIPS rm mv = case mv of
     , P.Lw (M M2) (times4 i) (M M1)
     , P.Sw (M M2) (k d) Sp ]
 
-  -- V.ArrAssignIV x (Imm s) v ->
-  --   [ P.Lw (M M1) (k v) Sp
-  --   , P.Lw (M M2) (k x) Sp ]
-  --   ++ arrAssignI_ $ (read s :: Int) - 1
-
-  -- V.ArrAssignII x (Imm s) v ->
-  --   [ P.Addi (M M1) ZeroReg v
-  --   , P.Lw (M M2) (k x) Sp ]
-  --   ++ arrAssignI_ $ (read s :: Int) - 1
-
-  V.ArrAssignVV x s v -> memset (x,s,v)
-  V.ArrAssignVI x s v -> memset (x,s,v)
-  V.ArrAssignII x s v -> memset (x,s,v)
-  V.ArrAssignIV x s v -> memset (x,s,v)
-
   V.Nop -> []
 
   -- TODO: Should we pass in netLocalVarSize as a param?
@@ -247,6 +231,9 @@ virtToPhysMIPS rm mv = case mv of
 
     imm4 = Imm "4"
     imm0 = Imm "0"
+
+    negateImm :: Imm -> Imm 
+    negateImm (Imm i) = Imm (show $ (read i :: Int) * -1)
 
     times4 :: Imm -> Imm
     times4 (Imm i) = Imm (show $ (read i :: Int) * 4)

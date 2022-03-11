@@ -51,5 +51,3 @@ data ArgReg
 -- m1 <- addi m1, m2
 -- sw k1, $addr_of_v1
 data MReg = M1 | M2
-
-data Label = Label String 
