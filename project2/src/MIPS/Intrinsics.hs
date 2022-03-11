@@ -95,4 +95,5 @@ memset =
   , P.Lw (M M1) (k x) Sp          
   , P.Sub (M M2) (M M2) (M M1)
   , P.J (Label "LOOP")
-  , P.Label "EXIT" ] 
+  , P.Label "EXIT" 
+  , P.Jr RetAddr ] 
