@@ -7,13 +7,13 @@ import Control.Monad
 import IR.Reader (readProgramFile)
 import IR.Function as F
 import IR.Program
-import IR.Optimizer.CFG
-import IR.Optimizer.ReachingDefs
-import IR.Optimizer.MarkSweep
+import Optimizer.CFG
+import Optimizer.ReachingDefs
+import Optimizer.MarkSweep
 import IR.Printer
 
 import qualified Data.Map as M
-import IR.Optimizer.MarkSweep (markSweepSimpleAndReachDef, markSweepWithReachDef, simpleMarkSweep)
+import Optimizer.MarkSweep (markSweepSimpleAndReachDef, markSweepWithReachDef, simpleMarkSweep)
 
 main :: IO ()
 main = do

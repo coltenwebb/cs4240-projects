@@ -1,12 +1,25 @@
-module MIPS.Types.Operand where
+module MIPS.Types.Operand
+  ( module MIPS.Types.Operand
+  , module TigerIR.Types
+  ) where
+
+import TigerIR.Types
 
 -- Virtual Registers
-newtype VReg    = VReg    Int    deriving (Show, Eq, Ord)
+newtype VReg = VReg Variable deriving (Show, Eq, Ord)
 
--- Immediate Values and Labels
-newtype Imm     = Imm     String deriving (Show, Eq)
-newtype Lab     = Lab     String deriving (Show, Eq)
+class PseudoReg a where
+  toVReg :: a -> VReg
 
+instance PseudoReg ParamVar where
+  toVReg param = case param of
+    ParamV v -> VReg v
+    ParamA (Array v _) -> VReg v
+
+instance PseudoReg LocalVar where
+  toVReg param = case param of
+    LocalV v -> VReg v
+    LocalA (Array v _) -> VReg v
 
 -- Physical registers
 -- pg. 10: https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf
