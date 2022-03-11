@@ -47,8 +47,9 @@ data MipsVirtual
   | ArrAssignII   VReg Imm  Imm
   | ArrAssignIV   VReg Imm  VReg
   | Nop                           -- [P]
-  | Return   VReg
-  | Returni  Imm
+  | Return   VReg                 -- [P]
+  | Returni  Imm                  -- [P]
+  | EndFunction                   -- [P] void return
 
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq
 data CallArg = CVarg VReg | CIarg Imm

@@ -25,7 +25,8 @@ syscallNum s = case s of
 -- void puti(int i)
 puti :: [P.MipsPhys]
 puti =
-  [ P.Lw (A A0) (Imm "0") Sp  -- arg i
+  [ P.Label "puti"
+  , P.Lw (A A0) (Imm "0") Sp  -- arg i
   , P.Li SyscallCode (syscallNum PrintInt)
   , P.Syscall
   , P.Jr RetAddr
@@ -38,7 +39,8 @@ puti =
 -}
 putc :: [P.MipsPhys]
 putc =
-  [ P.Lw (A A0) (Imm "0") Sp    -- arg c
+  [ P.Label "putc"
+  , P.Lw (A A0) (Imm "0") Sp    -- arg c
   , P.Li SyscallCode (syscallNum PrintChar)
   , P.Syscall
   , P.Jr RetAddr
@@ -51,7 +53,8 @@ putc =
 -}
 getc :: [P.MipsPhys]
 getc =
-  [ P.Li SyscallCode (syscallNum ReadChar)
+  [ P.Label "getc"
+  , P.Li SyscallCode (syscallNum ReadChar)
   , P.Syscall
   , P.Add Retval V0 ZeroReg     -- store char into retval
   , P.Jr RetAddr
@@ -60,7 +63,8 @@ getc =
 -- Read an integer from standard input.
 geti :: [P.MipsPhys]
 geti =
-  [ P.Li SyscallCode (syscallNum ReadInt)
+  [ P.Label "geti"
+  , P.Li SyscallCode (syscallNum ReadInt)
   , P.Syscall
   , P.Add Retval V0 ZeroReg -- Result stored in $v0
   , P.Jr RetAddr
@@ -71,25 +75,24 @@ geti =
 -- We load `val` into `arr` from index `size` - 1 to 0
 -- ex) assign arr, size, val
 --     args = [arr, size, val]
+--
+-- void memset(int *arr, int size, int val)
 memset :: [P.MipsPhys]
 memset =  
-  [ P.Lw (M M1) (Imm "-8") Fp     
-  , P.Addi (M M2) ZeroReg imm4    
+  [ P.Label "memset"
+  , P.Lw (M M1) (Imm "-8") Fp     
+  , P.Addi (M M2) ZeroReg (Imm "4")  
   , P.Mult (M M1) (M M2)
   , P.Mflo (M M2)                 -- load size to M2
   , P.Label "LOOP"
   , P.Brlez (M M2) (Label "EXIT") -- while size >= 0
-  , P.Addi (M M1) ZeroReg imm4    --   size = size - 1
+  , P.Addi (M M1) ZeroReg (Imm "4")    --   size = size - 1
   , P.Sub (M M1) (M M2) (M M1)
   , P.Lw (M M2) (Imm "-4") Fp     
   , P.Add (M M2) (M M1) (M M2) 
   , P.Lw (M M1) (Imm "-12") Fp 
-  , P.Sw (M M1) imm0 (M M2)       --   arr[size] = val
+  , P.Sw (M M1) (Imm "0") (M M2)       --   arr[size] = val
   , P.Lw (M M1) (k x) Sp          
   , P.Sub (M M2) (M M2) (M M1)
   , P.J (Label "LOOP")
   , P.Label "EXIT" ] 
-  where 
-    loadSize = either (\_ -> P.Lw (M M1) (k s) Sp) (\_ -> P.Addi (M M1) ZeroReg s) s
-    loadVal = either (\_ -> P.Lw (M M1) (k v) Sp) (\_ -> P.Addi (M M1) ZeroReg v) s
-
