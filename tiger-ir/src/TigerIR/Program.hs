@@ -12,5 +12,7 @@ data TigerIrFunction = TigerIrFunction
   , localVars  :: [LocalVar]
   , instrs     :: [TigerIrIns]
   }
+  deriving (Show)
 
 newtype TigerIrProgram = TigerIrProgram { functions :: [TigerIrFunction] }
+  deriving (Show)
