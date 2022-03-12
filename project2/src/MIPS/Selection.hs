@@ -6,27 +6,27 @@ import MIPS.Types.Operand
 
 import Data.Bits
 
-instructionSelection :: T.Instruction -> MipsVirtual
+instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
   AssignVar avops -> case avops of
-    AssignVarOpsVI v1 i2 -> V.AssignI (VReg v1) i2
-    AssignVarOpsVV v1 v2 -> V.AssignV (VReg v1) (VReg v2)
+    AssignVarOpsDI v1 i2 -> V.AssignI (VReg v1) i2
+    AssignVarOpsDV v1 v2 -> V.AssignV (VReg v1) (VReg v2)
 
-  BinaryOperation op -> case op of
-    T.Add  bops -> handleBinOp bops addImm  V.Addi   V.Add
-    T.Sub  bops -> handleBinOp bops subImm  V.Subi   V.Sub
-    T.Mult bops -> handleBinOp bops multImm V.Multi  V.Mult
-    T.Div  bops -> handleBinOp bops divImm  V.Divi   V.Div
-    T.And  bops -> handleBinOp bops andImm  V.Andi   V.And
-    T.Or   bops -> handleBinOp bops orImm   V.Ori    V.Or
+  BinaryOperation op bops -> case op of
+    T.Add  -> handleBinOp bops addImm  V.Addi   V.Add
+    T.Sub  -> handleBinOp bops subImm  V.Subi   V.Sub
+    T.Mult -> handleBinOp bops multImm V.Multi  V.Mult
+    T.Div  -> handleBinOp bops divImm  V.Divi   V.Div
+    T.And  -> handleBinOp bops andImm  V.Andi   V.And
+    T.Or   -> handleBinOp bops orImm   V.Ori    V.Or
 
-  BranchOperation op -> case op of
-    T.Breq   brops -> handleBrOp brops Eq
-    T.Brneq  brops -> handleBrOp brops Neq
-    T.Brlt   brops -> handleBrOp brops Lt
-    T.Brgt   brops -> handleBrOp brops Gt
-    T.Brgeq  brops -> handleBrOp brops Geq
-    T.Brleq  brops -> handleBrOp brops Leq
+  BranchOperation op brops -> case op of
+    T.Breq  -> handleBrOp brops Eq
+    T.Brneq -> handleBrOp brops Neq
+    T.Brlt  -> handleBrOp brops Lt
+    T.Brgt  -> handleBrOp brops Gt
+    T.Brgeq -> handleBrOp brops Geq
+    T.Brleq -> handleBrOp brops Leq
 
   T.Return retvarOp -> case retvarOp of
     Retvar v -> V.Return (VReg v)
@@ -48,23 +48,23 @@ instructionSelection ins = case ins of
       -> V.ArrStri (VReg v) (VReg arr) i
   
   T.ArrLoad arrLdOps -> case arrLdOps of
-    ArrLoadVAV v1 (Array arr _) v2
+    ArrLoadDAV v1 (Array arr _) v2
       -> V.ArrLoad (VReg v1) (VReg arr) (VReg v2)
 
-    ArrLoadVAI v (Array arr _) i
+    ArrLoadDAI v (Array arr _) i
       -> V.ArrLoadi (VReg v) (VReg arr) i
 
   T.AssignArr asses -> case asses of
-    T.ArrAssignII (Array arr _) i1 i2
+    T.ArrAssignAII (Array arr _) i1 i2
       -> V.ArrAssignII (VReg arr) i1 i2
     
-    T.ArrAssignIV (Array arr _) i v
+    T.ArrAssignAIV (Array arr _) i v
       -> V.ArrAssignIV (VReg arr) i (VReg v)
     
-    T.ArrAssignVI (Array arr _) v i
+    T.ArrAssignAVI (Array arr _) v i
       -> V.ArrAssignVI (VReg arr) (VReg v) i
     
-    T.ArrAssignVV (Array arr _) v1 v2
+    T.ArrAssignAVV (Array arr _) v1 v2
       -> V.ArrAssignVV (VReg arr) (VReg v1) (VReg v2)
 
 handleBinOp
@@ -75,10 +75,10 @@ handleBinOp
   -> MipsVirtual
 handleBinOp bops immHandler immIns regIns =
   case bops of
-    BinOpsVII v1 i2 i3 -> V.Li (VReg v1) (immHandler i2 i3)
-    BinOpsVIV v1 i2 v3 -> immIns (VReg v1) (VReg v3) i2
-    BinOpsVVI v1 v2 i3 -> immIns (VReg v1) (VReg v2) i3
-    BinOpsVVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
+    BinOpsDII v1 i2 i3 -> V.Li (VReg v1) (immHandler i2 i3)
+    BinOpsDIV v1 i2 v3 -> immIns (VReg v1) (VReg v3) i2
+    BinOpsDVI v1 v2 i3 -> immIns (VReg v1) (VReg v2) i3
+    BinOpsDVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
 
 liftImm :: (Int -> Int -> Int) -> Imm -> Imm -> Imm
 liftImm f (Imm i1) (Imm i2) = Imm (show i3')
