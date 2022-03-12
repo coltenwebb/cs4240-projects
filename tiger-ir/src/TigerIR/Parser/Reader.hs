@@ -8,6 +8,7 @@ import qualified Data.Set as S
 
 import qualified TigerIR.IrInstruction as T
 import qualified TigerIR.Types as T
+import qualified TigerIR.Program as T
 
 import TigerIR.Parser.Legacy.Function
 
@@ -59,7 +60,6 @@ parseFunctionSignature = do
   char '('
   params <- parseParameter `sepBy` commaSep
   string "):"
-
   return (tp, name, params)
 
 parseIdentifier :: Parsec' String
@@ -130,12 +130,12 @@ parseVariableLists = do
 commaSep :: Parsec' ()
 commaSep = spacesNoNewline >> char ',' >> spacesNoNewline
 
-parseFunction :: Parsec' Function
+parseFunction :: Parsec' T.TigerIrFunction 
 parseFunction = do
   parseStartFunc
 
   skipMany1 endOfLine
-  (tp, fname, params) <- parseFunctionSignature
+  (tp, (FunctionName fname), params) <- parseFunctionSignature
 
   skipMany1 endOfLine
   vars <- parseVariableLists
@@ -148,10 +148,29 @@ parseFunction = do
 
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
-  return $ Function fname tp params vars ins
+  let tp' = returnsInt tp
+  let params' = map var2Param params
+  let vars' = map var2Local vars 
+  -- let ins' = map T.IrInstruction ins
 
-parseProgram :: Parsec' Program
-parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 endOfLine
+  return $ T.TigerIrFunction (T.FunctionName (T.Label fname)) tp' params' vars' ins 
+  where 
+    returnsInt IntType  = True
+    returnsInt _        = False
+
+    var2Param :: Variable -> T.ParamVar
+    var2Param var@(Variable _ IntType) = (T.ParamV . Shim.v2v) var
+    var2Param var@(Variable _ (ArrayType _ _)) = (T.ParamA . Shim.a2a) var
+    var2Param _ = error "Invalid type when converting old variable type to new param type"
+
+    var2Local :: Variable -> T.LocalVar
+    var2Local var@(Variable _ IntType) = (T.LocalV . Shim.v2v) var
+    var2Local var@(Variable _ (ArrayType _ _)) = (T.LocalA . Shim.a2a) var
+    var2Local _ = error "Invalid type when converting old variable type to new param type"
+    
+
+parseProgram :: Parsec' T.TigerIrProgram
+parseProgram = T.TigerIrProgram <$> parseFunction `sepEndBy` skipMany1 endOfLine
 
 parseInstruction :: Parsec' T.TigerIrIns
 parseInstruction =

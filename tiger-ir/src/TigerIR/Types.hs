@@ -3,6 +3,10 @@ module TigerIR.Types where
 newtype ArraySize = ArraySize Int
   deriving (Eq, Ord, Show)
 
+data Type =
+  IntType
+  | VoidType
+  deriving (Eq, Ord, Show)
 
 -- Immediate Values and Labels
 newtype Imm   = Imm     String             deriving (Show, Eq, Ord)
