@@ -56,6 +56,6 @@ data CallArg = CVarg VReg | CIarg Imm deriving Show
 
 newtype VirtualProgram = VirtualProgram { virtualFunctions :: [VirtualFunction] } deriving ()
 
-data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: String }
+data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName }
 
 

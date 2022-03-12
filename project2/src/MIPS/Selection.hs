@@ -6,9 +6,21 @@ import MIPS.Types.Virtual as V
 import MIPS.Types.Operand
 
 import Data.Bits
+import qualified TigerIR.Program as TP
 
-instructionSelection :: T.Instruction -> MipsVirtual
-instructionSelection ins = case ins of
+programSelection :: TP.TigerIrProgram -> VirtualProgram
+programSelection program = VirtualProgram vfuncs 
+  where 
+    vfuncs = map functionSelection $ TP.functions program 
+
+functionSelection :: TP.TigerIrFunction -> VirtualFunction
+functionSelection fn = VirtualFunction vinsts (TP.name fn)
+  where 
+    vinsts :: [MipsVirtual]
+    vinsts = map instructionSelection (TP.instrs fn)
+
+instructionSelection :: T.IrInstruction -> MipsVirtual
+instructionSelection irIns@(IrInstruction ins lineno) = case ins of
   AssignVar avops -> case avops of
     AssignVarOpsVI v1 i2 -> V.AssignI (VReg v1) i2
     AssignVarOpsVV v1 v2 -> V.AssignV (VReg v1) (VReg v2)

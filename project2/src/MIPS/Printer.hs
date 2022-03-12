@@ -18,7 +18,7 @@ instance Print V.VirtualProgram where
     concatMap pr vfuncs
 
 instance Print V.VirtualFunction where
-  pr (V.VirtualFunction vinsts fname) =
+  pr (V.VirtualFunction vinsts (FunctionName (Label fname))) =
     concatMap f vinsts
     where
       f (V.Label (Label s)) = pr $ V.Label (Label (fname ++ "_" ++ s))

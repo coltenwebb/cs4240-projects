@@ -10,7 +10,7 @@ data TigerIrFunction = TigerIrFunction
   , returnsVal :: Bool -- int or void
   , parameters :: Parameters
   , localVars  :: LocalVars
-  , instrs     :: IrInstruction
+  , instrs     :: [IrInstruction]
   }
 
 newtype TigerIrProgram = TigerIrProgram { functions :: [TigerIrFunction] }
