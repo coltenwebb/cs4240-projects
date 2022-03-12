@@ -17,8 +17,39 @@ legacyParams2NewParams = map f
 
       _ -> error $ "Unsupported fn param type "
         ++ show tp ++ " for variable `"
-        ++ vname ++ "`"
+        ++ vname
+        ++ "`, note no float support for proj. 2"
 
+legacyCallArgs2FnArgs :: [L.Operand] -> T.FnArgs
+legacyCallArgs2FnArgs = map f
+  where
+    f oprnd = case oprnd of
+      L.VariableOperand (L.Variable (L.VariableName vname) tp) -> case tp of
+        L.IntType -> T.Varg (T.Variable vname)
 
+        L.ArrayType (L.ArraySize sz) L.IntType
+          -> T.Aarg (T.Array (T.Variable vname) (T.ArraySize sz))
+        
+        L.ArrayType (L.ArraySize sz) _
+          -> error "non-int arrays unsupported"
 
+        L.FloatType -> error "float type not supported fn arg"
 
+        L.VoidType -> error "void type not supported fn arg"
+      
+      L.ConstantOperand (ConstantValue c) IntType
+        -> T.Iarg (Imm c)
+
+      L.ConstantOperand _ _ -> error "non-int constants unsupported"
+      
+      L.FunctionOperand _ -> error "function unsupported fn arg type"
+
+      L.LabelOperand _ -> error "label unsupported fn arg type"
+      
+      
+
+v2v :: L.Variable -> T.Variable
+v2v (L.Variable (VariableName vn) _) = T.Variable vn
+
+c2i :: L.ConstantValue -> T.Imm
+c2i (ConstantValue str) = T.Imm str

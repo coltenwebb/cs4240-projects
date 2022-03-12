@@ -90,13 +90,6 @@ instance Show Operand where
     ConstantOperand (ConstantValue s) tp ->
       "(const " ++ show tp ++ ": " ++ s ++ ")"
 
-
-arrayIndexOutofBound :: Operand -> Integer -> Bool
-arrayIndexOutofBound operand i =
-  case operand of
-    VariableOperand (Variable _ (ArrayType (ArraySize size) _)) -> i >= size && i < 0
-    _ -> False
-
 isVariableOperand :: Operand -> Bool
 isVariableOperand operand =
   case operand of

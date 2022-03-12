@@ -7,11 +7,15 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import qualified TigerIR.IrInstruction as T
+import qualified TigerIR.Types as T
 
 import TigerIR.Parser.Legacy.Function
-import TigerIR.Parser.Legacy.Instruction
+
+-- We will be retuning the new TigerIr Instruction type instead
+import TigerIR.Parser.Legacy.Instruction hiding (Instruction)
 import TigerIR.Parser.Legacy.Program
 import TigerIR.Parser.Legacy.Type
+import qualified TigerIR.Parser.Legacy.Shim as Shim
 
 import System.IO (readFile)
 import Text.Parsec
@@ -149,13 +153,48 @@ parseFunction = do
 parseProgram :: Parsec' Program
 parseProgram = Program <$> parseFunction `sepEndBy` skipMany1 endOfLine
 
-parseInstruction :: Parsec' Instruction
+parseInstruction :: Parsec' T.TigerIrIns
 parseInstruction =
   try labelOp <|> do
-    ln <- LineNumber . sourceLine <$> getPosition
+    ln <- T.LineNumber . sourceLine <$> getPosition
     op <- parseOpCode
     commaSep
-    _
+    instr <- case op of
+      -- Binary ops
+      ADD  -> T.BinaryOperation T.Add <$> binaryOperands
+      SUB  -> T.BinaryOperation T.Sub <$> binaryOperands
+      MULT -> T.BinaryOperation T.Mult <$> binaryOperands
+      DIV  -> T.BinaryOperation T.Div <$> binaryOperands
+      AND  -> T.BinaryOperation T.And <$> binaryOperands
+      OR   -> T.BinaryOperation T.Or <$> binaryOperands
+
+      -- GOTO
+      GOTO -> T.Goto <$> gotoOp
+
+      -- Branch ops
+      BREQ  -> T.BranchOperation T.Breq  <$> branchOperands
+      BRNEQ -> T.BranchOperation T.Brneq <$> branchOperands
+      BRLT  -> T.BranchOperation T.Brlt  <$> branchOperands
+      BRGT  -> T.BranchOperation T.Brgt  <$> branchOperands
+      BRLEQ -> T.BranchOperation T.Brleq <$> branchOperands
+      BRGEQ -> T.BranchOperation T.Brgeq <$> branchOperands
+
+      -- RETURN
+      RETURN -> T.Return <$> returnOperand
+
+      -- CALL
+      CALL  -> callIns
+      CALLR -> callInsR
+
+      -- ARRAY Operations
+      ARRAY_STORE -> T.ArrStore <$> arrayStoreOperands
+      _ -> _
+
+
+
+
+    return $ T.Instruction instr ln
+    --return $ Instruction op operands ln
     --case op of
     --  ASSIGN -> try arrayAssignOp <|> assignmentOp
     --  ADD -> binaryOp
@@ -180,16 +219,15 @@ parseInstruction =
     --  -- handled with `labelOp`
     --  LABEL -> error "Invalid opcode `label`"
 
-    --return $ Instruction op operands ln
   where
     labelOp = do
       spaces
-      name <- LabelName <$> parseIdentifier
+      lab <- T.Label <$> parseIdentifier
       char ':'
 
-      ln <- LineNumber . sourceLine <$> getPosition
+      ln <- T.LineNumber . sourceLine <$> getPosition
 
-      return $ Instruction LABEL [LabelOperand name] ln
+      return $ T.Instruction (T.LabelIns lab) ln
 
     -- Section 7.1
     assignmentOp = do
@@ -200,39 +238,67 @@ parseInstruction =
       return [o1, o2]
 
     -- Section 7.2
-    binaryOp = do
-      o1 <- parseConstOrVarOperand
+    binaryOperands = do
+      (VariableOperand v1) <- parseVariableOperand
       commaSep
       o2 <- parseConstOrVarOperand
       commaSep
       o3 <- parseConstOrVarOperand
 
-      return [o1, o2, o3]
+      case (o2, o3) of
+        (VariableOperand v2, VariableOperand v3)
+          -> return $ T.BinOpsDVV (Shim.v2v v1) (Shim.v2v v2) (Shim.v2v v3)
+
+        (ConstantOperand c2 IntType, VariableOperand v3)
+          -> return $ T.BinOpsDIV (Shim.v2v v1) (Shim.c2i c2) (Shim.v2v v3)
+
+        (ConstantOperand c2 IntType, ConstantOperand c3 IntType)
+          -> return $ T.BinOpsDII (Shim.v2v v1) (Shim.c2i c2) (Shim.c2i c3)
+
+        (VariableOperand v2, ConstantOperand c3 IntType)
+          -> return $ T.BinOpsDVI (Shim.v2v v1) (Shim.v2v v2) (Shim.c2i c3)
+
+        _ -> fail $ "Unsupported binary operands: " ++ show o2 ++ " " ++ show o3
+
 
     -- Section 7.3
-    gotoOp = do
-      o1 <- LabelOperand . LabelName <$> parseIdentifier
-      return [o1]
+    gotoOp = T.Label <$> parseIdentifier
 
     -- Section 7.4
-    branchOp = do
-      o1 <- LabelOperand . LabelName <$> parseIdentifier
+    branchOperands = do
+      lab <- T.Label <$> parseIdentifier
       commaSep
       o2 <- parseConstOrVarOperand
       commaSep
       o3 <- parseConstOrVarOperand
 
-      return [o1, o2, o3]
+      case (o2, o3) of
+        (VariableOperand v2, VariableOperand v3)
+          -> return $ T.BrOpsVV lab (Shim.v2v v2) (Shim.v2v v3)
+
+        (ConstantOperand c2 IntType, VariableOperand v3)
+          -> return $ T.BrOpsIV lab (Shim.c2i c2) (Shim.v2v v3)
+
+        (ConstantOperand c2 IntType, ConstantOperand c3 IntType)
+          -> return $ T.BrOpsII lab (Shim.c2i c2) (Shim.c2i c3)
+
+        (VariableOperand v2, ConstantOperand c3 _)
+          -> return $ T.BrOpsVI lab (Shim.v2v v2) (Shim.c2i c3)
+        
+        _ -> fail $ "Unsupported branch operands: " ++ show o2 ++ " " ++ show o3
 
     -- Section 7.5
-    returnOp = do
+    returnOperand = do
       o1 <- parseConstOrVarOperand
 
-      return [o1]
+      case o1 of
+        VariableOperand v         -> return $ T.Retvar (Shim.v2v v)
+        ConstantOperand c IntType -> return $ T.Retimm (Shim.c2i c)
+        _ -> fail $ "Unsupported return operand: " ++ show o1
 
     -- Section 7.6
-    callOp = do
-      func <- parseFunctionOperand
+    callIns = do
+      fn <- parseFunctionOperand
 
       args <-
         try
@@ -241,14 +307,17 @@ parseInstruction =
               (spaces >> parseConstOrVarOperand) `sepBy` char ','
           )
           <|> return [] -- in the case of no args
-      return (func : args)
+        
+      return $ T.Call fn (Shim.legacyCallArgs2FnArgs args)
 
     -- Section 7.7
-    callrOp = do
-      ret <- parseVariableOperand
+    callInsR = do
+      -- This should be ok since parseVariableOperand
+      -- can only return VarialbeOperands
+      (VariableOperand dest) <- parseVariableOperand
 
       commaSep
-      func <- parseFunctionOperand
+      fn <- parseFunctionOperand
 
       args <-
         try
@@ -257,10 +326,12 @@ parseInstruction =
               (spaces >> parseConstOrVarOperand) `sepBy` char ','
           )
           <|> return [] -- in the case of no args
-      return (ret : func : args)
+      
+      return $ T.Callr (Shim.v2v dest) fn (Shim.legacyCallArgs2FnArgs args)
+
 
     -- Section 7.8
-    arrayStoreOp = do
+    arrayStoreOperands = do
       -- Differs from array_load in that first operand can be const.
       op1 <- parseConstOrVarOperand
 
@@ -343,7 +414,6 @@ parseVariableOperand = p <?> "variable operand"
         Nothing -> error $ "Undefined variable `" ++ show name ++ "`"
         Just tp -> return $ VariableOperand $ Variable name tp
 
-parseFunctionOperand :: Parsec' Operand
+parseFunctionOperand :: Parsec' T.FunctionName
 parseFunctionOperand = do
-  name <- FunctionName <$> parseIdentifier
-  return $ FunctionOperand name
+  T.FunctionName . T.Label <$> parseIdentifier
