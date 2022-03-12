@@ -14,8 +14,15 @@ class Print p where
 -- ============
 
 instance Print V.VirtualProgram where
-  pr (V.VirtualProgram vinsts) =
-    concatMap (\ins -> pr ins) vinsts
+  pr (V.VirtualProgram vfuncs) =
+    concatMap pr vfuncs
+
+instance Print V.VirtualFunction where
+  pr (V.VirtualFunction vinsts fname) =
+    concatMap f vinsts
+    where
+      f (V.Label (Label s)) = pr $ V.Label (Label (fname ++ "_" ++ s))
+      f x         = pr x
 
 instance Print V.MipsVirtual where
   pr (V.Addi dst src imm)
@@ -101,7 +108,7 @@ instance Print P.MipsPhys where
 -- ============
 
 instance Print VReg where
-  pr (VReg num) = "$sym" ++ show num 
+  pr (VReg num) = "$sym" ++ show num
 
 instance Print PReg where
   pr ZeroReg = "$zero"

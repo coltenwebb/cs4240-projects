@@ -54,5 +54,8 @@ data MipsVirtual
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving Show
 data CallArg = CVarg VReg | CIarg Imm deriving Show
 
-newtype VirtualProgram = VirtualProgram { virtualInstructions :: [MipsVirtual] } deriving ()
+newtype VirtualProgram = VirtualProgram { virtualFunctions :: [VirtualFunction] } deriving ()
+
+data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: String }
+
 
