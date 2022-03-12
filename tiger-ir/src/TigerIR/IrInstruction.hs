@@ -3,14 +3,14 @@ module TigerIR.IrInstruction where
 import TigerIR.Types
 
 newtype LineNumber = LineNumber Int
-  deriving (Ord, Eq)
+  deriving (Ord, Eq, Show)
 
 data Instruction a = Instruction
   { instruction :: a
   , lineNum     :: LineNumber
   }
-
-type TigerIrIns = Instruction IrInstruction
+  deriving (Show)
+type TigerIrIns = Instruction IrInstruction 
 type DestVar = Variable
 
 data IrInstruction
@@ -25,10 +25,12 @@ data IrInstruction
   | ArrLoad           ArrLoadOperands
   | AssignArr         ArrAssignOperands
   | LabelIns          Label
+  deriving (Show)
 
 data AssignVarOperands
   = AssignVarOpsDV DestVar Variable
   | AssignVarOpsDI DestVar Imm
+  deriving (Show)
 
 data BinOp
   = Add
@@ -37,6 +39,7 @@ data BinOp
   | Div
   | And 
   | Or
+  deriving (Show)
 
 data BrOp
   = Breq
@@ -45,18 +48,21 @@ data BrOp
   | Brgt 
   | Brgeq
   | Brleq
+  deriving (Show)
 
 data BinOperands
   = BinOpsDVV DestVar Variable Variable
   | BinOpsDIV DestVar Imm      Variable
   | BinOpsDII DestVar Imm      Imm
   | BinOpsDVI DestVar Variable Imm
+  deriving (Show)
 
 data BrOperands
   = BrOpsVV Label Variable Variable
   | BrOpsVI Label Variable Imm
   | BrOpsIV Label Imm      Variable
   | BrOpsII Label Imm      Imm
+  deriving (Show)
 
 data ArrStoreOperands
   -- array_store, a, arr, 0
@@ -65,12 +71,14 @@ data ArrStoreOperands
   | ArrStoreVAV Variable Array Variable
   | ArrStoreIAI Imm      Array Imm
   | ArrStoreIAV Imm      Array Variable
+  deriving (Show)
 
 data ArrLoadOperands
   -- array_load, a, arr, 0
   -- a := arr[0]
   = ArrLoadDAI DestVar Array Imm
   | ArrLoadDAV DestVar Array Variable
+  deriving (Show)
 
 data ArrAssignOperands
   -- Array X implicit
@@ -81,7 +89,9 @@ data ArrAssignOperands
   | ArrAssignAIV Array Imm Variable
   | ArrAssignAVI Array Variable Imm
   | ArrAssignAVV Array Variable Variable
+  deriving (Show)
 
 data RetvarOperand
   = Retvar Variable
   | Retimm Imm
+  deriving (Show)
