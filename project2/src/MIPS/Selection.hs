@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 module MIPS.Selection where
 
 import TigerIR.IrInstruction as T

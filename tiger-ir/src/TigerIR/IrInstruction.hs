@@ -6,7 +6,7 @@ module TigerIR.IrInstruction where
 import TigerIR.Types
 
 newtype LineNumber = LineNumber Int
-  deriving (Ord, Eq)
+  deriving (Show, Ord, Eq)
 
 data IrInstruction = IrInstruction
   { instruction :: Instruction

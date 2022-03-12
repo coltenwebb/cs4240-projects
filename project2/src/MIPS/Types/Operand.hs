@@ -52,4 +52,3 @@ data ArgReg
 -- sw k1, $addr_of_v1
 data MReg = M1 | M2
 
-data Label = Label String 

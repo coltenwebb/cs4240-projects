@@ -24,13 +24,15 @@ extra-source-files: CHANGELOG.md
 
 library
   exposed-modules:
-    MIPS.RegisterAllocator.Naive
+    --MIPS.RegisterAllocator.Naive
     MIPS.Types.Operand
     MIPS.Types.Physical
     MIPS.Types.Virtual
     MIPS.CallingConvention
     MIPS.Printer
     MIPS.Selection
+    MIPS.Liveness.Liveness
+    MIPS.StackAllocation
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , tiger-ir
@@ -39,4 +41,5 @@ library
                  , vector ^>=0.12.3.1
                  , mtl ^>=2.2.2
                  , QuickCheck ^>=2.14.2
+                 , pretty-show ^>=1.10
   default-language: Haskell2010

@@ -1,5 +1,5 @@
 -- TODO: IMPORTANT!!!! Re-enable this
---{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 module MIPS.Printer where
 
 import qualified MIPS.Types.Virtual as V
@@ -60,6 +60,7 @@ instance Print V.MipsVirtual where
 --    = "    return " ++ pr ret ++ "\n"
 --  pr (V.Return (Nothing))
 --    = "    return\n"
+  pr _ = "unimplemented"
 
 
 -- ============
@@ -72,27 +73,27 @@ instance Print P.PhysicalProgram where
 
 instance Print P.MipsPhys where
   pr (P.Addi r1 r2 im) = "    addi " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
-  pr (P.Add r1 r2 r3) = "    add " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
-  pr (P.Sub r1 r2 r3) = "    sub " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
-  pr (P.Mflo r1) = "    mflo " ++ pr r1
-  pr (P.Mult r1 r2) = "    add " ++ pr r1 ++ ", " ++ pr r2
-  pr (P.Div r1 r2) = "    div " ++ pr r1 ++ ", " ++ pr r2
+  pr (P.Add r1 r2 r3)  = "    add "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
+  pr (P.Sub r1 r2 r3)  = "    sub "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
+  pr (P.Mflo r1)       = "    mflo " ++ pr r1
+  pr (P.Mult r1 r2)    = "    add "  ++ pr r1 ++ ", " ++ pr r2
+  pr (P.Div r1 r2)     = "    div "  ++ pr r1 ++ ", " ++ pr r2
   pr (P.Andi r1 r2 im) = "    andi " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
-  pr (P.And r1 r2 r3) = "    and " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
-  pr (P.Ori r1 r2 im) = "    ori " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
-  pr (P.Or r1 r2 r3) = "    or " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
-  pr (P.Jal lab) = "    jal " ++ pr lab
-  pr (P.Jr r) = "    jr " ++ pr r
-  pr (P.J lab) = "    jr " ++ pr lab
-  pr (P.Beq r1 r2 lab) = "    beq " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
-  pr (P.Bne r1 r2 lab) = "    bne " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
-  pr (P.Bgtz r lab) = "    bgtz " ++ pr r ++ ", " ++ pr lab
-  pr (P.Blez r lab) = "    blez " ++ pr r ++ ", " ++ pr lab
-  pr (P.Lw r1 im r2) = "    lw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
-  pr (P.Sw r1 im r2) = "    sw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
-  pr (P.Label lab) = pr lab ++ ":"
-  pr (P.Syscall) = "syscall"
-  pr (P.Li r im) = "    li" ++ pr r ++ pr im
+  pr (P.And r1 r2 r3)  = "    and "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
+  pr (P.Ori r1 r2 im)  = "    ori "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
+  pr (P.Or r1 r2 r3)   = "    or "   ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
+  pr (P.Jal lab)       = "    jal "  ++ pr lab
+  pr (P.Jr r)          = "    jr "   ++ pr r
+  pr (P.J lab)         = "    jr "   ++ pr lab
+  pr (P.Beq r1 r2 lab) = "    beq "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
+  pr (P.Bne r1 r2 lab) = "    bne "  ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
+  pr (P.Bgtz r lab)    = "    bgtz " ++ pr r  ++ ", " ++ pr lab
+  pr (P.Blez r lab)    = "    blez " ++ pr r  ++ ", " ++ pr lab
+  pr (P.Lw r1 im r2)   = "    lw "   ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
+  pr (P.Sw r1 im r2)   = "    sw "   ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
+  pr (P.Label lab)     = pr lab ++ ":"
+  pr (P.Syscall)       = "syscall"
+  pr (P.Li r im)       = "    li" ++ pr r ++ pr im
 
 
 -- ============
