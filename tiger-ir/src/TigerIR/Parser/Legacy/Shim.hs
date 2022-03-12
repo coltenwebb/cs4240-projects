@@ -37,7 +37,7 @@ legacyCallArgs2FnArgs = map f
 
         L.VoidType -> error "void type not supported fn arg"
       
-      L.ConstantOperand (ConstantValue c) IntType
+      L.ConstantOperand (ConstantValue c) L.IntType
         -> T.Iarg (Imm c)
 
       L.ConstantOperand _ _ -> error "non-int constants unsupported"
@@ -50,13 +50,15 @@ legacyCallArgs2FnArgs = map f
 
 v2v :: L.Variable -> T.Variable
 v2v (L.Variable (VariableName vn) tp) = case tp of
-  IntType -> T.Variable vn
-  _ -> error $ "unsupported variable type " ++ show tp ++ " in v2v"
+  L.IntType -> T.Variable vn
+  _ -> error $ "Used v2v wrong, use a2a to convert old array to new arrays"
+    ++ " unsupported variable type " ++ show tp ++ " in v2v"
 
 c2i :: L.ConstantValue -> T.Imm
 c2i (ConstantValue str) = T.Imm str
 
 a2a :: L.Variable -> T.Array
 a2a (L.Variable (VariableName vn) tp) = case tp of
-  ArrayType (L.ArraySize sz) IntType ->  T.Array (T.Variable vn) (T.ArraySize sz)
+  ArrayType (L.ArraySize sz) L.IntType ->  T.Array (T.Variable vn) (T.ArraySize sz)
   _ -> error $ "unsupported variable type " ++ show tp ++ " in a2a"
+    ++ " used a2a wrong, use v2v to convert old variables to new variables"

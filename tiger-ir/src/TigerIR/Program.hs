@@ -8,9 +8,9 @@ data TigerIrFunction = TigerIrFunction
   -- Tiger-IR.pdf:
   -- Notes on semantics: The return value of a function cannot be array-typed.
   , returnsVal :: Bool -- int or void
-  , parameters :: Parameters
-  , localVars  :: LocalVars
-  , instrs     :: IrInstruction
+  , parameters :: [ParamVar]
+  , localVars  :: [LocalVar]
+  , instrs     :: [TigerIrIns]
   }
 
 newtype TigerIrProgram = TigerIrProgram { functions :: [TigerIrFunction] }
