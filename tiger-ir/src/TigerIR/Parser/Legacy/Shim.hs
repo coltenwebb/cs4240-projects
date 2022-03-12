@@ -49,7 +49,14 @@ legacyCallArgs2FnArgs = map f
       
 
 v2v :: L.Variable -> T.Variable
-v2v (L.Variable (VariableName vn) _) = T.Variable vn
+v2v (L.Variable (VariableName vn) tp) = case tp of
+  IntType -> T.Variable vn
+  _ -> error $ "unsupported variable type " ++ show tp ++ " in v2v"
 
 c2i :: L.ConstantValue -> T.Imm
 c2i (ConstantValue str) = T.Imm str
+
+a2a :: L.Variable -> T.Array
+a2a (L.Variable (VariableName vn) tp) = case tp of
+  ArrayType (L.ArraySize sz) IntType ->  T.Array (T.Variable vn) (T.ArraySize sz)
+  _ -> error $ "unsupported variable type " ++ show tp ++ " in a2a"

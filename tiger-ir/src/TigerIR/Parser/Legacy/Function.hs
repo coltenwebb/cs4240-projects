@@ -1,5 +1,7 @@
 module TigerIR.Parser.Legacy.Function where
 
+import TigerIR.IrInstruction
+
 import TigerIR.Parser.Legacy.Instruction
 import TigerIR.Parser.Legacy.Type
 
@@ -11,20 +13,20 @@ data Function = Function
   , returnType :: Type
   , parameters :: [Variable]
   , variables :: [Variable]
-  , instrs :: [Instruction]
+  , instrs :: [TigerIrIns]
   }
 
-instance Show Function where
-  show(Function fn rt ps vs is) =
-    "#start_function\n"
-    ++ show rt ++ " " ++ show fn
-    ++ "(" ++ show ps ++ "):\n"
-    ++ concatMap (\ins -> "    " ++ show ins ++ "\n") is
-    ++ "#end_function"
+--instance Show Function where
+--  show(Function fn rt ps vs is) =
+--    "#start_function\n"
+--    ++ show rt ++ " " ++ show fn
+--    ++ "(" ++ show ps ++ "):\n"
+--    ++ concatMap (\ins -> "    " ++ show ins ++ "\n") is
+--    ++ "#end_function"
 
 -- lineNumToInst :: Function -> M.Map LineNumber Instruction 
-getInstructionByLineNum :: Function -> LineNumber -> Instruction
-getInstructionByLineNum fn num = 
-  case L.find (\i -> lineNum i == num) (instrs fn) of
-    Nothing -> error $ "Cannot find valid Instruction for line number " ++ show num
-    Just i -> i 
+--getInstructionByLineNum :: Function -> LineNumber -> Instruction
+--getInstructionByLineNum fn num = 
+--  case L.find (\i -> lineNum i == num) (instrs fn) of
+--    Nothing -> error $ "Cannot find valid Instruction for line number " ++ show num
+--    Just i -> i 

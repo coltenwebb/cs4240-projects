@@ -160,6 +160,7 @@ parseInstruction =
     op <- parseOpCode
     commaSep
     instr <- case op of
+      ASSIGN -> try arrayAssignOp <|> assignmentOp
       -- Binary ops
       ADD  -> T.BinaryOperation T.Add <$> binaryOperands
       SUB  -> T.BinaryOperation T.Sub <$> binaryOperands
@@ -188,37 +189,13 @@ parseInstruction =
 
       -- ARRAY Operations
       ARRAY_STORE -> T.ArrStore <$> arrayStoreOperands
-      _ -> _
+      ARRAY_LOAD  -> T.ArrLoad  <$> arrayLoadOperands
 
-
-
+      -- Edge case since labels are represented as a pseudo-opcode,
+      -- handled with `labelOp`, not in the same format
+      LABEL -> error "Invalid opcode `label`"
 
     return $ T.Instruction instr ln
-    --return $ Instruction op operands ln
-    --case op of
-    --  ASSIGN -> try arrayAssignOp <|> assignmentOp
-    --  ADD -> binaryOp
-    --  SUB -> binaryOp
-    --  MULT -> binaryOp
-    --  DIV -> binaryOp
-    --  AND -> binaryOp
-    --  OR -> binaryOp
-    --  GOTO -> gotoOp
-    --  BREQ -> branchOp
-    --  BRNEQ -> branchOp
-    --  BRLT -> branchOp
-    --  BRGT -> branchOp
-    --  BRLEQ -> branchOp
-    --  BRGEQ -> branchOp
-    --  RETURN -> returnOp
-    --  CALL -> callOp
-    --  CALLR -> callrOp
-    --  ARRAY_STORE -> arrayStoreOp
-    --  ARRAY_LOAD -> arrayLoadOp
-    --  -- Edge case since labels are represented as a pseudo-opcode,
-    --  -- handled with `labelOp`
-    --  LABEL -> error "Invalid opcode `label`"
-
   where
     labelOp = do
       spaces
@@ -231,11 +208,23 @@ parseInstruction =
 
     -- Section 7.1
     assignmentOp = do
-      o1 <- parseConstOrVarOperand
-      commaSep
-      o2 <- parseConstOrVarOperand
+      -- should be safe, because variable operand
+      -- can only return variable operands lmao
+      (VariableOperand dst) <- parseVariableOperand
 
-      return [o1, o2]
+      commaSep
+      opr <- parseConstOrVarOperand
+
+      oprndns <- case opr of
+        VariableOperand v2
+          -> return $ T.AssignVarOpsDV (Shim.v2v dst) (Shim.v2v v2)
+
+        ConstantOperand c IntType
+          -> return $ T.AssignVarOpsDI (Shim.v2v dst) (Shim.c2i c)
+
+        _ -> error $ "unsupported 2nd argument to assign op: " ++ show opr
+
+      return $ T.AssignVar oprndns
 
     -- Section 7.2
     binaryOperands = do
@@ -282,9 +271,9 @@ parseInstruction =
         (ConstantOperand c2 IntType, ConstantOperand c3 IntType)
           -> return $ T.BrOpsII lab (Shim.c2i c2) (Shim.c2i c3)
 
-        (VariableOperand v2, ConstantOperand c3 _)
+        (VariableOperand v2, ConstantOperand c3 IntType)
           -> return $ T.BrOpsVI lab (Shim.v2v v2) (Shim.c2i c3)
-        
+
         _ -> fail $ "Unsupported branch operands: " ++ show o2 ++ " " ++ show o3
 
     -- Section 7.5
@@ -307,7 +296,7 @@ parseInstruction =
               (spaces >> parseConstOrVarOperand) `sepBy` char ','
           )
           <|> return [] -- in the case of no args
-        
+
       return $ T.Call fn (Shim.legacyCallArgs2FnArgs args)
 
     -- Section 7.7
@@ -326,39 +315,66 @@ parseInstruction =
               (spaces >> parseConstOrVarOperand) `sepBy` char ','
           )
           <|> return [] -- in the case of no args
-      
+
       return $ T.Callr (Shim.v2v dest) fn (Shim.legacyCallArgs2FnArgs args)
 
 
     -- Section 7.8
     arrayStoreOperands = do
       -- Differs from array_load in that first operand can be const.
-      op1 <- parseConstOrVarOperand
+      src <- parseConstOrVarOperand
 
       commaSep
-      arr <- parseVariableOperand
+      -- This should be ok since parseVariableOperand
+      -- can only return VarialbeOperands
+      (VariableOperand arr) <- parseVariableOperand
 
       commaSep
       index <- parseConstOrVarOperand
 
-      return [op1, arr, index]
+      case (src, index) of
+        (VariableOperand v, VariableOperand vix)
+          -> return $ T.ArrStoreVAV (Shim.v2v v) (Shim.a2a arr) (Shim.v2v vix)
+
+        (ConstantOperand c IntType, VariableOperand vix)
+          -> return $ T.ArrStoreIAV (Shim.c2i c) (Shim.a2a arr) (Shim.v2v vix)
+
+        (ConstantOperand c IntType, ConstantOperand cix IntType)
+          -> return $ T.ArrStoreIAI (Shim.c2i c) (Shim.a2a arr) (Shim.c2i cix)
+
+        (VariableOperand v, ConstantOperand cix IntType)
+          -> return $ T.ArrStoreVAI (Shim.v2v v) (Shim.a2a arr) (Shim.c2i cix)
+
+        _ -> error $
+          "invalid args to array_store"
+          ++ show [src, VariableOperand arr, index]
 
     -- Section 7.9
-    arrayLoadOp = do
+    arrayLoadOperands = do
       -- "The first operand must be a variable."
-      val <- parseVariableOperand
+      (VariableOperand dst) <- parseVariableOperand
 
       commaSep
-      arr <- parseVariableOperand
+      (VariableOperand arr) <- parseVariableOperand
 
       commaSep
       index <- parseConstOrVarOperand
 
-      return [val, arr, index]
+      case index of
+        VariableOperand v -> return $
+          T.ArrLoadDAV (Shim.v2v dst) (Shim.a2a arr) (Shim.v2v v)
+
+        ConstantOperand c IntType -> return $
+          T.ArrLoadDAI (Shim.v2v dst) (Shim.a2a arr) (Shim.c2i c)
+
+        _ -> error $ "unsupported argumetns to array_load: "
+          ++ show dst ++ " " ++ show arr ++ " "  ++ show index
+
 
     -- Section 7.10
     arrayAssignOp = do
-      arr <- parseVariableOperand
+      -- should be safe for the same reasons
+      (VariableOperand arr) <- parseVariableOperand
 
       commaSep
       count <- parseIntOperand
@@ -366,7 +382,24 @@ parseInstruction =
       commaSep
       val <- parseConstOrVarOperand
 
-      return [arr, count, val]
+      oprnds <- case (count, val) of 
+        (VariableOperand v1, VariableOperand v2)
+          -> return $ T.ArrAssignAVV (Shim.a2a arr) (Shim.v2v v1) (Shim.v2v v2)
+
+        (ConstantOperand c IntType, VariableOperand v)
+          -> return $ T.ArrAssignAIV (Shim.a2a arr) (Shim.c2i c) (Shim.v2v v)
+
+        (ConstantOperand c1 IntType, ConstantOperand c2 IntType)
+          -> return $ T.ArrAssignAII (Shim.a2a arr) (Shim.c2i c1) (Shim.c2i c2)
+
+        (VariableOperand v, ConstantOperand c IntType)
+          -> return $ T.ArrAssignAVI (Shim.a2a arr) (Shim.v2v v) (Shim.c2i c)
+
+        _ -> error $
+          "invalid args to array_store"
+          ++ show arr ++ " " ++ show count ++ " " ++ show val
+      
+      return $ T.AssignArr oprnds
 
 parseInt :: Parsec' Int
 parseInt = read <$> many1 digit
