@@ -15,7 +15,9 @@ newtype Label = Label   String             deriving (Show, Eq, Ord)
 newtype Variable = Variable String deriving (Eq, Ord, Show)
 data Array = Array Variable ArraySize deriving (Eq, Ord, Show)
 
-newtype FunctionName = FunctionName Label deriving (Eq, Ord, Show)
+newtype FunctionName = FunctionName Label deriving (Eq, Ord)
+instance Show FunctionName where 
+  show (FunctionName (Label name)) = name
 
 -- Parameters and local vars can't be 
 type Parameters = [ParamVar]

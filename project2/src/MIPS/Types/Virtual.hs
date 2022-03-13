@@ -35,6 +35,8 @@ data MipsVirtual
   -- arr[0] := a
   | ArrStr   VReg VReg VReg
   | ArrStri  VReg VReg Imm
+  | ArrStrii Imm VReg Imm 
+  | ArrStriv Imm VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
   | ArrLoad  VReg VReg VReg
@@ -51,8 +53,9 @@ data MipsVirtual
   | Returni  Imm                  -- [P]
   | EndFunction                   -- [P] void return
 
-data Cmp = Eq | Neq | Lt | Gt | Geq | Leq
+data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
+
 data CallArg = CVarg VReg | CIarg Imm
 
-newtype VirtualProgram = VirtualProgram { virtualInstructions :: [MipsVirtual] } deriving ()
-
+newtype VirtualProgram = VirtualProgram { virtualInstructions :: [VirtualFunction] } deriving ()
+data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName }

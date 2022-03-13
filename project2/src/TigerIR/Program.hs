@@ -2,7 +2,7 @@ module TigerIR.Program where
 
 import TigerIR.Types
 import TigerIR.IrInstruction
-
+import Data.List
 data TigerIrFunction = TigerIrFunction
   { name       :: FunctionName
   -- Tiger-IR.pdf:
@@ -12,7 +12,13 @@ data TigerIrFunction = TigerIrFunction
   , localVars  :: [LocalVar]
   , instrs     :: [TigerIrIns]
   }
-  deriving (Show)
+instance Show TigerIrFunction where
+  show fn@(TigerIrFunction fname rval params lvars instrs)
+    = if rval then "int " else "int[] " ++ " " ++ show fname ++ "(" ++ intercalate ", " (map show params) ++ "):\n"
+      ++ "int-list: " ++ intercalate ", " (map show lvars) ++ "\n"
+      ++ concatMap (\inst -> show inst ++ "\n") instrs
+
+
 
 newtype TigerIrProgram = TigerIrProgram { functions :: [TigerIrFunction] }
   deriving (Show)

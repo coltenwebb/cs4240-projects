@@ -196,10 +196,25 @@ virtToPhysMIPS rm mv = case mv of
     , P.Add (M M1) (M M1) (M M2)
     , P.Lw (M M2) (k s) Fp
     , P.Sw (M M2) (Imm "0") (M M1) ]
+  
+  V.ArrStriv s a i ->
+    [ P.Addi (M M1) ZeroReg imm4
+    , P.Lw (M M2) (k i) Fp
+    , P.Mult (M M1) (M M2)
+    , P.Mflo (M M1)
+    , P.Lw (M M2) (k a) Fp
+    , P.Add (M M1) (M M1) (M M2)
+    , P.Addi (M M2) ZeroReg s
+    , P.Sw (M M2) (Imm "0") (M M1) ]
 
   V.ArrStri s a i ->
     [ P.Lw (M M1) (k a) Fp
     , P.Lw (M M2) (k s) Fp
+    , P.Sw (M M2) (times4 i) (M M1) ]
+
+  V.ArrStrii s a i -> 
+     [ P.Lw (M M1) (k a) Fp
+    , P.Addi (M M2) ZeroReg s
     , P.Sw (M M2) (times4 i) (M M1) ]
 
   V.ArrLoad d a i ->

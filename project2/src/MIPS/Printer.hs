@@ -1,5 +1,5 @@
 -- TODO: IMPORTANT!!!! Re-enable this
---{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 module MIPS.Printer where
 
 import qualified MIPS.Types.Virtual as V
@@ -14,8 +14,19 @@ class Print p where
 -- ============
 
 instance Print V.VirtualProgram where
-  pr (V.VirtualProgram vinsts) =
-    concatMap (\ins -> pr ins) vinsts
+  pr (V.VirtualProgram vfuncs) =
+    concatMap pr vfuncs
+
+instance Print V.VirtualFunction where
+  pr (V.VirtualFunction vinsts (FunctionName (Label fname))) =
+    concatMap f vinsts
+    where
+      f (V.Label (Label s)) = pr $ V.Label (Label (fname ++ "_" ++ s))
+      f x         = pr x
+
+
+-- instance Print V.VirtualFunction  where 
+--   pr (V.VirtualFunction vinsts)
 
 instance Print V.MipsVirtual where
   pr (V.Addi dst src imm)
@@ -24,10 +35,16 @@ instance Print V.MipsVirtual where
     = "    add " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
   pr (V.Sub dst src1 src2)
     = "    sub " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+  pr (V.Subi dst src imm)
+    = "    subi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm ++ "\n"
   pr (V.Mult dst src1 src2)
     = "    mult " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+  pr (V.Multi dst src imm)
+    = "    multi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm ++ "\n"
   pr (V.Div dst src1 src2)
     = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+  pr (V.Divi dst src1 imm)
+    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm ++ "\n"
   pr (V.Andi dst src imm)
     = "    andi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm  ++ "\n"
   pr (V.And dst src1 src2)
@@ -36,6 +53,10 @@ instance Print V.MipsVirtual where
     = "    ori " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr src  ++ "\n"
   pr (V.Or dst src1 src2)
     = "    or " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+  pr (V.Bri c r1 imm label)
+    = "    bri " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr imm ++ ", " ++  pr label ++ "\n"
+  pr (V.Br c r1 r2 label)
+    = "    br " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr r2 ++ pr label ++ "\n"
 --  pr (V.Beq dst src label)
 --    = "    beq " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr label  ++ "\n"
 --  pr (V.Bne dst src label)
@@ -52,15 +73,53 @@ instance Print V.MipsVirtual where
     = pr label ++ ": \n"
   pr (V.Goto label )
     = "    goto " ++ pr label ++ "\n"
---  pr (V.Call label args)
---    = "    call " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
---  pr (V.Callr dst label args)
---    = "    callr " ++ pr dst ++ ", " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
+  pr (V.AssignI src imm)
+    = "    assigni " ++ pr src ++ ", " ++ pr imm ++ "\n"
+  pr (V.AssignV src v)
+    = "    assign " ++ pr src ++ ", " ++ pr v ++ "\n"
+  pr (V.Li dst imm)
+    = "    li " ++ pr dst ++ ", " ++ pr imm ++ "\n"
+  pr (V.Call label args)
+   = "    call " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
+  pr (V.Callr dst label args)
+   = "    callr " ++ pr dst ++ ", " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
+  pr (V.ArrStr src dst idx)
+   = "    arrStr " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+  pr (V.ArrStri src dst idx)
+   = "    arrStri " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+  pr (V.ArrStrii src dst idx)
+   = "    arrStrii " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+  pr (V.ArrStriv src dst idx)
+   = "    arrStriv " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+  pr (V.ArrLoad dst arr idx)
+   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx ++ "\n"
+  pr (V.ArrLoadi dst arr idx)
+   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx ++ "\n"
+  pr (V.ArrAssignII arr size val)
+   = "    arrAssignII " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+  pr (V.ArrAssignIV arr size val)
+   = "    arrAssignIV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+  pr (V.ArrAssignVI arr size val)
+   = "    arrAssignVI " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+  pr (V.ArrAssignVV arr size val)
+   = "    arrAssignVV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+  pr V.Nop
+   = "    nop\n"
+  pr (V.Return val)
+   = "    return " ++ pr val
+  pr (V.Returni val)
+   = "    returni " ++ pr val
+  pr V.EndFunction
+   = "    endFunc\n "
+
 --  pr (V.Return (Just ret))
 --    = "    return " ++ pr ret ++ "\n"
 --  pr (V.Return (Nothing))
 --    = "    return\n"
 
+instance Print V.CallArg where
+  pr (V.CVarg vreg) = pr vreg
+  pr (V.CIarg imm) = pr imm
 
 -- ============
 -- = Physical =
@@ -94,13 +153,14 @@ instance Print P.MipsPhys where
   pr (P.Syscall) = "syscall"
   pr (P.Li r im) = "    li" ++ pr r ++ pr im
 
-
+instance Print V.Cmp where
+  pr x = show x
 -- ============
 -- = Operands =
 -- ============
 
 instance Print VReg where
-  pr (VReg num) = "$sym" ++ show num 
+  pr (VReg num) = "$sym" ++ show num
 
 instance Print PReg where
   pr ZeroReg = "$zero"

@@ -1,10 +1,27 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 module MIPS.Selection where
 
 import TigerIR.IrInstruction as T
+import TigerIR.Program as T
+import TigerIR.Types as T
 import MIPS.Types.Virtual as V
 import MIPS.Types.Operand
 
 import Data.Bits
+
+programSelection :: T.TigerIrProgram -> VirtualProgram
+programSelection program = VirtualProgram vfuncs
+  where
+    vfuncs = map functionSelection $ T.functions program
+
+functionSelection :: T.TigerIrFunction -> VirtualFunction
+functionSelection fn = VirtualFunction vinsts (T.name fn)
+  where
+    vinsts :: [MipsVirtual]
+    vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
+    fnameStr :: T.TigerIrFunction -> String
+    fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
+    
 
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
@@ -31,13 +48,13 @@ instructionSelection ins = case ins of
   T.Return retvarOp -> case retvarOp of
     Retvar v -> V.Return (VReg v)
     Retimm i -> V.Returni i
-  
+
   T.Call (FunctionName lab) params
     -> V.Call lab (fnArgsToCallArgs params)
 
   T.Callr v (FunctionName lab) params
     -> V.Callr (VReg v) lab (fnArgsToCallArgs params)
-  
+
   T.Goto lab -> V.Goto lab
 
   T.ArrStore arrStrOps -> case arrStrOps of
@@ -46,7 +63,13 @@ instructionSelection ins = case ins of
 
     ArrStoreVAI v (Array arr _) i
       -> V.ArrStri (VReg v) (VReg arr) i
-  
+
+    ArrStoreIAI val (Array arr _) idx
+      -> V.ArrStrii val (VReg arr) idx
+
+    ArrStoreIAV val (Array arr _) idx
+      -> V.ArrStriv val (VReg arr) (VReg idx)
+
   T.ArrLoad arrLdOps -> case arrLdOps of
     ArrLoadDAV v1 (Array arr _) v2
       -> V.ArrLoad (VReg v1) (VReg arr) (VReg v2)
@@ -57,15 +80,16 @@ instructionSelection ins = case ins of
   T.AssignArr asses -> case asses of
     T.ArrAssignAII (Array arr _) i1 i2
       -> V.ArrAssignII (VReg arr) i1 i2
-    
+
     T.ArrAssignAIV (Array arr _) i v
       -> V.ArrAssignIV (VReg arr) i (VReg v)
-    
+
     T.ArrAssignAVI (Array arr _) v i
       -> V.ArrAssignVI (VReg arr) (VReg v) i
-    
+
     T.ArrAssignAVV (Array arr _) v1 v2
       -> V.ArrAssignVV (VReg arr) (VReg v1) (VReg v2)
+  T.LabelIns label -> V.Label label
 
 handleBinOp
   :: BinOperands
