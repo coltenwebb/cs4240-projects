@@ -15,14 +15,11 @@ class Print p where
 
 instance Print V.VirtualProgram where
   pr (V.VirtualProgram vfuncs) =
-    concatMap pr vfuncs
+    concatMap (\f -> pr f ++ "\n") vfuncs
 
 instance Print V.VirtualFunction where
   pr (V.VirtualFunction vinsts (FunctionName (Label fname))) =
-    concatMap f vinsts
-    where
-      f (V.Label (Label s)) = pr $ V.Label (Label (fname ++ "_" ++ s))
-      f x         = pr x
+    concatMap (\vinst -> pr vinst ++ "\n") vinsts
 
 
 -- instance Print V.VirtualFunction  where 
@@ -30,90 +27,90 @@ instance Print V.VirtualFunction where
 
 instance Print V.MipsVirtual where
   pr (V.Addi dst src imm)
-    = "    addi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm  ++ "\n"
+    = "    addi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm 
   pr (V.Add dst src1 src2)
-    = "    add " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    add " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Sub dst src1 src2)
-    = "    sub " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    sub " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Subi dst src imm)
-    = "    subi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm ++ "\n"
+    = "    subi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm 
   pr (V.Mult dst src1 src2)
-    = "    mult " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    mult " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Multi dst src imm)
-    = "    multi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm ++ "\n"
+    = "    multi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm 
   pr (V.Div dst src1 src2)
-    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Divi dst src1 imm)
-    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm ++ "\n"
+    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm 
   pr (V.Andi dst src imm)
-    = "    andi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm  ++ "\n"
+    = "    andi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm  
   pr (V.And dst src1 src2)
-    = "    and " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    and " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Ori dst src imm)
-    = "    ori " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr src  ++ "\n"
+    = "    ori " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr src  
   pr (V.Or dst src1 src2)
-    = "    or " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 ++ "\n"
+    = "    or " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2 
   pr (V.Bri c r1 imm label)
-    = "    bri " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr imm ++ ", " ++  pr label ++ "\n"
+    = "    bri " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr imm ++ ", " ++  pr label 
   pr (V.Br c r1 r2 label)
-    = "    br " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr r2 ++ pr label ++ "\n"
+    = "    br " ++ pr c ++ ", " ++ pr r1 ++ ", " ++ pr r2 ++ pr label 
 --  pr (V.Beq dst src label)
---    = "    beq " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr label  ++ "\n"
+--    = "    beq " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr label  
 --  pr (V.Bne dst src label)
---    = "    bne " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr label  ++ "\n"
+--    = "    bne " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr label  
 --  pr (V.Bgtz dst label)
---    = "    bgtz " ++ pr dst ++ ", " ++ pr label  ++ "\n"
+--    = "    bgtz " ++ pr dst ++ ", " ++ pr label  
 --  pr (V.Blez dst label)
---    = "    blez " ++ pr dst ++ ", " ++ pr label  ++ "\n"
+--    = "    blez " ++ pr dst ++ ", " ++ pr label  
   pr (V.Lw base imm src )
-    = "    lw " ++ pr src ++ ", " ++ pr imm ++ "(" ++ pr base  ++ ")\n"
+    = "    lw " ++ pr src ++ ", " ++ pr imm ++ "(" ++ pr base  ++ ")"
   pr (V.Sw src imm base )
-    = "    sw " ++ pr src ++ ", " ++ pr imm ++ "(" ++ pr base  ++ ")\n"
+    = "    sw " ++ pr src ++ ", " ++ pr imm ++ "(" ++ pr base  ++ ")"
   pr (V.Label label)
-    = pr label ++ ": \n"
+    = pr label ++ ":"
   pr (V.Goto label )
-    = "    goto " ++ pr label ++ "\n"
+    = "    goto " ++ pr label 
   pr (V.AssignI src imm)
-    = "    assigni " ++ pr src ++ ", " ++ pr imm ++ "\n"
+    = "    assigni " ++ pr src ++ ", " ++ pr imm 
   pr (V.AssignV src v)
-    = "    assign " ++ pr src ++ ", " ++ pr v ++ "\n"
+    = "    assign " ++ pr src ++ ", " ++ pr v 
   pr (V.Li dst imm)
-    = "    li " ++ pr dst ++ ", " ++ pr imm ++ "\n"
+    = "    li " ++ pr dst ++ ", " ++ pr imm 
   pr (V.Call label args)
-   = "    call " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
+   = "    call " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args 
   pr (V.Callr dst label args)
-   = "    callr " ++ pr dst ++ ", " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args ++ "\n"
+   = "    callr " ++ pr dst ++ ", " ++ pr label ++ concatMap (\reg -> ", " ++ pr reg) args 
   pr (V.ArrStr src dst idx)
-   = "    arrStr " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+   = "    arrStr " ++ pr dst ++ ", " ++ pr src ++ pr idx 
   pr (V.ArrStri src dst idx)
-   = "    arrStri " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+   = "    arrStri " ++ pr dst ++ ", " ++ pr src ++ pr idx 
   pr (V.ArrStrii src dst idx)
-   = "    arrStrii " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+   = "    arrStrii " ++ pr dst ++ ", " ++ pr src ++ pr idx 
   pr (V.ArrStriv src dst idx)
-   = "    arrStriv " ++ pr dst ++ ", " ++ pr src ++ pr idx ++ "\n"
+   = "    arrStriv " ++ pr dst ++ ", " ++ pr src ++ pr idx 
   pr (V.ArrLoad dst arr idx)
-   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx ++ "\n"
+   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx 
   pr (V.ArrLoadi dst arr idx)
-   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx ++ "\n"
+   = "    arrStr " ++ pr dst ++ ", " ++ pr arr ++ pr idx 
   pr (V.ArrAssignII arr size val)
-   = "    arrAssignII " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+   = "    arrAssignII " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val 
   pr (V.ArrAssignIV arr size val)
-   = "    arrAssignIV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+   = "    arrAssignIV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val 
   pr (V.ArrAssignVI arr size val)
-   = "    arrAssignVI " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+   = "    arrAssignVI " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val 
   pr (V.ArrAssignVV arr size val)
-   = "    arrAssignVV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val ++ "\n"
+   = "    arrAssignVV " ++ pr arr ++ ", " ++ pr size ++ ", " ++ pr val 
   pr V.Nop
-   = "    nop\n"
+   = "    nop"
   pr (V.Return val)
    = "    return " ++ pr val
   pr (V.Returni val)
    = "    returni " ++ pr val
   pr V.EndFunction
-   = "    endFunc\n "
+   = "    endFunc"
 
 --  pr (V.Return (Just ret))
---    = "    return " ++ pr ret ++ "\n"
+--    = "    return " ++ pr ret 
 --  pr (V.Return (Nothing))
 --    = "    return\n"
 

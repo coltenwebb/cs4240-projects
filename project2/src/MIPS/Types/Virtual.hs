@@ -8,7 +8,7 @@ import Data.Maybe
 -- pushin [P]
 data MipsVirtual
   = AssignI  VReg Imm         
-  | AssignV   VReg VReg
+  | AssignV  VReg VReg
   | Addi     VReg VReg Imm  
   | Li       VReg Imm          -- [P]
   | Add      VReg VReg VReg    -- 

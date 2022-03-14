@@ -28,17 +28,17 @@ data IrInstruction
   | LabelIns          Label
 instance Show IrInstruction where
   show inst = case inst of
-    AssignVar avo           -> fmtIr ["assign", show avo]
-    BinaryOperation bo bo'  -> fmtIr [show bo, show bo']
-    BranchOperation bo bo'  -> fmtIr [show bo, show bo']
-    Return ro               -> fmtIr ["return", show ro]
-    Call fn fas             -> fmtIr ["call", show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
-    Callr vari fn fas       -> fmtIr ["callr", show vari, show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
-    Goto la                 -> fmtIr ["goto", show la]
-    ArrStore aso            -> fmtIr ["store", show aso]
-    ArrLoad alo             -> fmtIr ["load", show alo]
-    AssignArr aao           -> fmtIr ["assign", show aao]
-    LabelIns la             -> fmtIr ["label", show la]
+    AssignVar avo           -> fmtIr ["    assign", show avo]
+    BinaryOperation bo bo'  -> fmtIr ["   ", show bo, show bo']
+    BranchOperation bo bo'  -> fmtIr ["   ", show bo, show bo']
+    Return ro               -> fmtIr ["    return", show ro]
+    Call fn fas             -> fmtIr ["    call", show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
+    Callr vari fn fas       -> fmtIr ["    callr", show vari, show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
+    Goto la                 -> fmtIr ["    goto", show la]
+    ArrStore aso            -> fmtIr ["    store", show aso]
+    ArrLoad alo             -> fmtIr ["    load", show alo]
+    AssignArr aao           -> fmtIr ["    assign", show aao]
+    LabelIns la             -> show la ++ ":"
 
 
 
@@ -171,7 +171,7 @@ data Instruction a = Instruction
   }
 
 instance (Show a) => Show (Instruction a) where
-  show (Instruction i (LineNumber n)) = "    " ++ show i
+  show (Instruction i _) = show i
 
 -- commas :: [String] -> String
 -- commas strs = init $ concatMap (++ ", ") strs

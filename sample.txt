@@ -1,60 +1,54 @@
-"divisible_divisible: 
-    div $symVariable "d", $symVariable "x", $symVariable "y"
-    mult $symVariable "d", $symVariable "d", $symVariable "y"
-    br Neq, $symVariable "x", $symVariable "d"label0
-    returni 1divisible_label0: 
-    returni 0main_main: 
-    assigni $symVariable "i", 0
-    assigni $symVariable "a", 2
-    assigni $symVariable "b", 3
-    assigni $symVariable "c", 6
-    assigni $symVariable "r0", 0
-    callr $symVariable "n", geti
-    bri Gt, $symVariable "n", 1, label0
-    assigni $symVariable "r", 0
-    assign $symVariable "rr", $symVariable "r"
-    goto print
-main_label0: 
-    bri Gt, $symVariable "n", 3, label1
-    assigni $symVariable "r", 1
-    assign $symVariable "rr", $symVariable "r"
-    goto print
-main_label1: 
-    callr $symVariable "t", divisible, $symVariable "n", $symVariable "a"
-    assign $symVariable "r", $symVariable "r0"
-    assign $symVariable "rr", $symVariable "r"
-    bri Eq, $symVariable "t", 1, label2
-    callr $symVariable "t", divisible, $symVariable "n", $symVariable "b"
-    assign $symVariable "r", $symVariable "r0"
-    assign $symVariable "rr", $symVariable "r"
-    bri Eq, $symVariable "t", 1, label2
-    goto label3
-main_label2: 
-    goto print
-main_label3: 
-    assigni $symVariable "i", 5
-main_loop: 
-    mult $symVariable "s", $symVariable "i", $symVariable "i"
-    br Gt, $symVariable "s", $symVariable "n"exit
-    callr $symVariable "t", divisible, $symVariable "n", $symVariable "i"
-    assign $symVariable "r", $symVariable "r0"
-    assigni $symVariable "t0", 0
-    assigni $symVariable "t2", 0
-    assign $symVariable "rr", $symVariable "r"
-    bri Eq, $symVariable "t", 1, label2
-    addi $symVariable "ti", $symVariable "i", 2
-    callr $symVariable "t", divisible, $symVariable "n", $symVariable "ti"
-    assign $symVariable "r", $symVariable "r0"
-    assign $symVariable "rr", $symVariable "r"
-    bri Eq, $symVariable "t", 1, label2
-    addi $symVariable "i", $symVariable "i", 6
-    goto loop
-main_exit: 
-    assign $symVariable "t1", $symVariable "t0"
-    assign $symVariable "r", $symVariable "t2"
-    assigni $symVariable "r", 1
-    assign $symVariable "rr", $symVariable "r"
-main_print: 
-    call puti, $symVariable "rr"
-    call putc, 10
-"
+"divisible_divisible:
+    div $symd, $symx, $symy
+    mult $symd, $symd, $symy
+    br Neq, $symx, $symdlabel0
+    returni 1
+divisible_label0:
+    returni 0
+main_main:
+    assigni $symi, 0
+    assigni $syma, 2
+    assigni $symb, 3
+    assigni $symc, 6
+    assigni $symr0, 0
+    callr $symn, geti
+    bri Gt, $symn, 1, label0
+    assigni $symr, 0
+    assign $symrr, $symr
+    goto printmain_label0:
+    bri Gt, $symn, 3, label1
+    assigni $symr, 1
+    assign $symrr, $symr
+    goto printmain_label1:
+    callr $symt, divisible, $symn, $syma
+    assign $symr, $symr0
+    assign $symrr, $symr
+    bri Eq, $symt, 1, label2
+    callr $symt, divisible, $symn, $symb
+    assign $symr, $symr0
+    assign $symrr, $symr
+    bri Eq, $symt, 1, label2
+    goto label3main_label2:
+    goto printmain_label3:
+    assigni $symi, 5main_loop:
+    mult $syms, $symi, $symi
+    br Gt, $syms, $symnexit
+    callr $symt, divisible, $symn, $symi
+    assign $symr, $symr0
+    assigni $symt0, 0
+    assigni $symt2, 0
+    assign $symrr, $symr
+    bri Eq, $symt, 1, label2
+    addi $symti, $symi, 2
+    callr $symt, divisible, $symn, $symti
+    assign $symr, $symr0
+    assign $symrr, $symr
+    bri Eq, $symt, 1, label2
+    addi $symi, $symi, 6
+    goto loopmain_exit:
+    assign $symt1, $symt0
+    assign $symr, $symt2
+    assigni $symr, 1
+    assign $symrr, $symrmain_print:
+    call puti, $symrr
+    call putc, 10\n"

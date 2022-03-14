@@ -5,23 +5,35 @@ import TigerIR.IrInstruction as T
 import TigerIR.Program as T
 import TigerIR.Types as T
 import MIPS.Types.Virtual as V
+import MIPS.Types.Physical as P
+import MIPS.Types.Operand
+import MIPS.RegisterAllocator.Naive
+import MIPS.CallingConvention
+import Data.Bits
+import Data.List
 import MIPS.Types.Operand
 
-import Data.Bits
-
-programSelection :: T.TigerIrProgram -> VirtualProgram
-programSelection program = VirtualProgram vfuncs
+programSelection :: T.TigerIrProgram -> PhysicalProgram 
+programSelection program = PhysicalProgram vfuncs
   where
-    vfuncs = map functionSelection $ T.functions program
+    vfuncs = concatMap functionSelection $ T.functions program
 
-functionSelection :: T.TigerIrFunction -> VirtualFunction
-functionSelection fn = VirtualFunction vinsts (T.name fn)
+functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
+functionSelection fn = foldl' v2p [] vinsts
   where
-    vinsts :: [MipsVirtual]
+    v2p :: [P.MipsPhys] -> V.MipsVirtual -> [P.MipsPhys]
+    v2p acc vinst = acc ++ virtToPhysMIPS regMap vinst 
+
+    vinsts :: [V.MipsVirtual]
     vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
+
+    regMap :: RegMap
+    regMap = genRegMap vregs 
+      where 
+        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
+
     fnameStr :: T.TigerIrFunction -> String
     fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
-    
 
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
