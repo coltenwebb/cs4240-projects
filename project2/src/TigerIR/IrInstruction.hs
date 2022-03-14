@@ -8,10 +8,10 @@ newtype LineNumber = LineNumber Int
 type TigerIrIns = Instruction IrInstruction
 type DestVar = Variable
 
-fmtIr :: [String] -> String 
-fmtIr strs = head strs ++ concatMap (++ " ") (tail strs)
+fmtIr :: [String] -> String
+fmtIr strs = head strs ++ " " ++ concatMap (++ " ") (tail strs)
 
-spaceBtwn :: [String] -> String 
+spaceBtwn :: [String] -> String
 spaceBtwn strs = init $ concatMap (++ " ") strs
 
 data IrInstruction
@@ -27,13 +27,13 @@ data IrInstruction
   | AssignArr         ArrAssignOperands
   | LabelIns          Label
 instance Show IrInstruction where
-  show inst = case inst of 
+  show inst = case inst of
     AssignVar avo           -> fmtIr ["assign", show avo]
     BinaryOperation bo bo'  -> fmtIr [show bo, show bo']
     BranchOperation bo bo'  -> fmtIr [show bo, show bo']
     Return ro               -> fmtIr ["return", show ro]
-    Call fn fas             -> fmtIr ["call", show fn, show fas]
-    Callr vari fn fas       -> fmtIr ["callr", show vari, show fn, show fas]
+    Call fn fas             -> fmtIr ["call", show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
+    Callr vari fn fas       -> fmtIr ["callr", show vari, show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
     Goto la                 -> fmtIr ["goto", show la]
     ArrStore aso            -> fmtIr ["store", show aso]
     ArrLoad alo             -> fmtIr ["load", show alo]
@@ -45,9 +45,9 @@ instance Show IrInstruction where
 data AssignVarOperands
   = AssignVarOpsDV DestVar Variable
   | AssignVarOpsDI DestVar Imm
-instance Show AssignVarOperands where 
-  show (AssignVarOpsDV dst var) = commas [show dst, show var] ++ "\n"
-  show (AssignVarOpsDI dst imm) = commas [show dst, show imm] ++ "\n"
+instance Show AssignVarOperands where
+  show (AssignVarOpsDV dst var) = spaceBtwn [show dst, show var]
+  show (AssignVarOpsDI dst imm) = spaceBtwn [show dst, show imm]
 
 
 data BinOp
@@ -57,7 +57,7 @@ data BinOp
   | Div
   | And
   | Or
-instance Show BinOp where 
+instance Show BinOp where
   show op = case op of
     Add   -> "add"
     Sub   -> "sub"
@@ -73,7 +73,7 @@ data BrOp
   | Brgt
   | Brgeq
   | Brleq
-instance Show BrOp where 
+instance Show BrOp where
   show op = case op of
     Breq  -> "breq"
     Brneq -> "brneq"
@@ -87,8 +87,8 @@ data BinOperands
   | BinOpsDIV DestVar Imm      Variable
   | BinOpsDII DestVar Imm      Imm
   | BinOpsDVI DestVar Variable Imm
-instance Show BinOperands where 
-  show binops = case binops of 
+instance Show BinOperands where
+  show binops = case binops of
     BinOpsDVV vari vari' vari2  -> spaceBtwn [show vari, show vari', show vari2]
     BinOpsDIV vari imm vari'    -> spaceBtwn [show vari, show imm, show vari']
     BinOpsDII vari imm imm'     -> spaceBtwn [show vari, show imm, show imm']
@@ -101,14 +101,14 @@ data BrOperands
   | BrOpsVI Label Variable Imm
   | BrOpsIV Label Imm      Variable
   | BrOpsII Label Imm      Imm
-instance Show BrOperands where 
-  show brops = case brops of 
+instance Show BrOperands where
+  show brops = case brops of
     BrOpsVV la vari vari' -> spaceBtwn [show la, show vari, show vari']
     BrOpsVI la vari imm   -> spaceBtwn [show la, show vari, show imm]
     BrOpsIV la imm vari   -> spaceBtwn [show la, show imm, show vari]
     BrOpsII la imm imm'   -> spaceBtwn [show la, show imm, show imm']
 
-  
+
 
 data ArrStoreOperands
   -- array_store, a, arr, 0
@@ -117,8 +117,8 @@ data ArrStoreOperands
   | ArrStoreVAV Variable Array Variable
   | ArrStoreIAI Imm      Array Imm
   | ArrStoreIAV Imm      Array Variable
-instance Show ArrStoreOperands where 
-  show asops = case asops of 
+instance Show ArrStoreOperands where
+  show asops = case asops of
     ArrStoreVAI vari ar imm   -> spaceBtwn [show vari, show ar, show imm]
     ArrStoreVAV vari ar vari' -> spaceBtwn [show vari, show ar, show vari']
     ArrStoreIAI imm ar imm'   -> spaceBtwn [show imm, show ar, show imm']
@@ -130,12 +130,12 @@ data ArrLoadOperands
   -- a := arr[0]
   = ArrLoadDAI DestVar Array Imm
   | ArrLoadDAV DestVar Array Variable
-instance Show ArrLoadOperands where 
+instance Show ArrLoadOperands where
   show alops = case alops of
     ArrLoadDAI vari ar imm    -> spaceBtwn [show vari, show ar, show imm]
     ArrLoadDAV vari ar vari'  -> spaceBtwn [show vari, show ar, show vari']
 
-  
+
 
 data ArrAssignOperands
   -- Array X implicit
@@ -146,32 +146,32 @@ data ArrAssignOperands
   | ArrAssignAIV Array Imm Variable
   | ArrAssignAVI Array Variable Imm
   | ArrAssignAVV Array Variable Variable
-instance Show ArrAssignOperands where 
-  show aaops = case aaops of 
+instance Show ArrAssignOperands where
+  show aaops = case aaops of
     ArrAssignAII ar imm imm'    -> spaceBtwn [show ar, show imm, show imm']
     ArrAssignAIV ar imm vari    -> spaceBtwn [show ar, show imm, show vari]
     ArrAssignAVI ar vari imm    -> spaceBtwn [show ar, show vari, show imm]
     ArrAssignAVV ar vari vari'  -> spaceBtwn [show ar, show vari, show vari']
 
-  
+
 
 data RetvarOperand
   = Retvar Variable
   | Retimm Imm
-instance Show RetvarOperand where 
-  show rvops = case rvops of 
+instance Show RetvarOperand where
+  show rvops = case rvops of
     Retvar vari -> show vari
     Retimm imm -> show imm
 
-  
+
 
 data Instruction a = Instruction
   { instruction :: a
   , lineNum     :: LineNumber
   }
 
-instance (Show a) => Show (Instruction a) where 
-  show (Instruction i (LineNumber n)) = show n ++ ":    " ++ show i
+instance (Show a) => Show (Instruction a) where
+  show (Instruction i (LineNumber n)) = "    " ++ show i
 
-commas :: (Show a) => [a] -> String
-commas strs = init $ concatMap (\str -> show str ++ ", ") strs
+-- commas :: [String] -> String
+-- commas strs = init $ concatMap (++ ", ") strs

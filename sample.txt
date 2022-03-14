@@ -1,0 +1,60 @@
+"divisible_divisible: 
+    div $symVariable "d", $symVariable "x", $symVariable "y"
+    mult $symVariable "d", $symVariable "d", $symVariable "y"
+    br Neq, $symVariable "x", $symVariable "d"label0
+    returni 1divisible_label0: 
+    returni 0main_main: 
+    assigni $symVariable "i", 0
+    assigni $symVariable "a", 2
+    assigni $symVariable "b", 3
+    assigni $symVariable "c", 6
+    assigni $symVariable "r0", 0
+    callr $symVariable "n", geti
+    bri Gt, $symVariable "n", 1, label0
+    assigni $symVariable "r", 0
+    assign $symVariable "rr", $symVariable "r"
+    goto print
+main_label0: 
+    bri Gt, $symVariable "n", 3, label1
+    assigni $symVariable "r", 1
+    assign $symVariable "rr", $symVariable "r"
+    goto print
+main_label1: 
+    callr $symVariable "t", divisible, $symVariable "n", $symVariable "a"
+    assign $symVariable "r", $symVariable "r0"
+    assign $symVariable "rr", $symVariable "r"
+    bri Eq, $symVariable "t", 1, label2
+    callr $symVariable "t", divisible, $symVariable "n", $symVariable "b"
+    assign $symVariable "r", $symVariable "r0"
+    assign $symVariable "rr", $symVariable "r"
+    bri Eq, $symVariable "t", 1, label2
+    goto label3
+main_label2: 
+    goto print
+main_label3: 
+    assigni $symVariable "i", 5
+main_loop: 
+    mult $symVariable "s", $symVariable "i", $symVariable "i"
+    br Gt, $symVariable "s", $symVariable "n"exit
+    callr $symVariable "t", divisible, $symVariable "n", $symVariable "i"
+    assign $symVariable "r", $symVariable "r0"
+    assigni $symVariable "t0", 0
+    assigni $symVariable "t2", 0
+    assign $symVariable "rr", $symVariable "r"
+    bri Eq, $symVariable "t", 1, label2
+    addi $symVariable "ti", $symVariable "i", 2
+    callr $symVariable "t", divisible, $symVariable "n", $symVariable "ti"
+    assign $symVariable "r", $symVariable "r0"
+    assign $symVariable "rr", $symVariable "r"
+    bri Eq, $symVariable "t", 1, label2
+    addi $symVariable "i", $symVariable "i", 6
+    goto loop
+main_exit: 
+    assign $symVariable "t1", $symVariable "t0"
+    assign $symVariable "r", $symVariable "t2"
+    assigni $symVariable "r", 1
+    assign $symVariable "rr", $symVariable "r"
+main_print: 
+    call puti, $symVariable "rr"
+    call putc, 10
+"
