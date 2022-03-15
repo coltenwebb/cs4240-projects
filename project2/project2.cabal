@@ -24,17 +24,25 @@ extra-source-files: CHANGELOG.md
 
 library
   exposed-modules:
+    TigerIR.Parser.Reader
+    MIPS.Backend
+  other-modules:
+    TigerIR.Parser.Legacy.Function
+    TigerIR.Parser.Legacy.Instruction
+    TigerIR.Parser.Legacy.Program
+    TigerIR.Parser.Legacy.Shim
+    TigerIR.Parser.Legacy.Type
     MIPS.RegisterAllocator.Naive
+    TigerIR.IrInstruction
+    TigerIR.Program 
+    TigerIR.Types 
     MIPS.Types.Operand
     MIPS.Types.Physical
     MIPS.Types.Virtual
     MIPS.CallingConvention
+    MIPS.Intrinsics
     MIPS.Printer
     MIPS.Selection
-    TigerIR.IrInstruction
-    TigerIR.Program 
-    TigerIR.Types 
-    TigerIR.Parser.Reader
   hs-source-dirs: src
   build-depends: base ^>=4.14.3.0
                  , parsec ^>=3.1.15.0
@@ -42,5 +50,4 @@ library
                  , vector ^>=0.12.3.1
                  , mtl ^>=2.2.2
                  , QuickCheck ^>=2.14.2
-                 , lens
   default-language: Haskell2010

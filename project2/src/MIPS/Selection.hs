@@ -6,34 +6,32 @@ import TigerIR.Program as T
 import TigerIR.Types as T
 import MIPS.Types.Virtual as V
 import MIPS.Types.Physical as P
-import MIPS.Types.Operand
 import MIPS.RegisterAllocator.Naive
 import MIPS.CallingConvention
 import Data.Bits
 import Data.List
 import MIPS.Types.Operand
 
-programSelection :: T.TigerIrProgram -> PhysicalProgram 
-programSelection program = PhysicalProgram vfuncs
-  where
-    vfuncs = concatMap functionSelection $ T.functions program
+-- note: (. instruction) record selector, discard the line number
+virtFnSelection :: TigerIrFunction -> V.VirtualFunction
+virtFnSelection = instrSelectionPass (instructionSelection . instruction)
 
-functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
-functionSelection fn = foldl' v2p [] vinsts
-  where
-    v2p :: [P.MipsPhys] -> V.MipsVirtual -> [P.MipsPhys]
-    v2p acc vinst = acc ++ virtToPhysMIPS regMap vinst 
-
-    vinsts :: [V.MipsVirtual]
-    vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
-
-    regMap :: RegMap
-    regMap = genRegMap vregs 
-      where 
-        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
-
-    fnameStr :: T.TigerIrFunction -> String
-    fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
+--functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
+--functionSelection fn = foldl' v2p [] vinsts
+--  where
+--    v2p :: [P.MipsPhys] -> V.MipsVirtual -> [P.MipsPhys]
+--    v2p acc vinst = acc ++ virtToPhysMIPS regMap vinst 
+--
+--    vinsts :: [V.MipsVirtual]
+--    vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
+--
+--    regMap :: RegMap
+--    regMap = genRegMap vregs 
+--      where 
+--        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
+--
+--    fnameStr :: T.TigerIrFunction -> String
+--    fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
 
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
@@ -60,6 +58,8 @@ instructionSelection ins = case ins of
   T.Return retvarOp -> case retvarOp of
     Retvar v -> V.Return (VReg v)
     Retimm i -> V.Returni i
+  
+  T.EndFunction -> V.EndFunction
 
   T.Call (FunctionName lab) params
     -> V.Call lab (fnArgsToCallArgs params)
@@ -101,7 +101,9 @@ instructionSelection ins = case ins of
 
     T.ArrAssignAVV (Array arr _) v1 v2
       -> V.ArrAssignVV (VReg arr) (VReg v1) (VReg v2)
+
   T.LabelIns label -> V.Label label
+
 
 handleBinOp
   :: BinOperands

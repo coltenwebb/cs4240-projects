@@ -1,8 +1,13 @@
 module MIPS.Types.Virtual where
 
 import MIPS.Types.Operand
-import TigerIR.Types (Imm, Label)
 import Data.Maybe
+
+import TigerIR.Program
+import TigerIR.IrInstruction
+
+type VirtualFunction = Function MipsVirtual
+type VirtualProgram  = Program  MipsVirtual
 
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
@@ -56,6 +61,3 @@ data MipsVirtual
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
 
 data CallArg = CVarg VReg | CIarg Imm
-
-newtype VirtualProgram = VirtualProgram { virtualInstructions :: [VirtualFunction] } deriving ()
-data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName }

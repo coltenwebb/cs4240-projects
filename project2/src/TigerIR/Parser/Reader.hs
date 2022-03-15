@@ -149,11 +149,14 @@ parseFunction = do
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
   let tp' = returnsInt tp
-  let params' = map var2Param params
-  let vars' = map var2Local vars 
-  -- let ins' = map T.IrInstruction ins
+      params' = map var2Param params
+      vars' = map var2Local vars 
+      -- so that we can return/jmp $ra in MIPS
+      ins' = case tp of
+        VoidType -> ins' ++ [T.Instruction T.EndFunction (T.LineNumber (-1))]
+        _        -> ins'
 
-  return $ T.TigerIrFunction (T.FunctionName (T.Label fname)) tp' params' vars' ins 
+  return $ T.Function (T.FunctionName (T.Label fname)) tp' params' vars' ins
   where 
     returnsInt IntType  = True
     returnsInt _        = False
@@ -170,7 +173,7 @@ parseFunction = do
     
 
 parseProgram :: Parsec' T.TigerIrProgram
-parseProgram = T.TigerIrProgram <$> parseFunction `sepEndBy` skipMany1 endOfLine
+parseProgram = T.Program <$> parseFunction `sepEndBy` skipMany1 endOfLine
 
 parseInstruction :: Parsec' T.TigerIrIns
 parseInstruction =
