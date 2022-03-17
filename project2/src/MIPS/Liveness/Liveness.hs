@@ -8,12 +8,15 @@ import Data.Maybe
 import Debug.Trace
 import Data.List
 import qualified Data.Set as S
+import qualified Data.Map as M
 
 import Control.Monad.State.Lazy
 
 import qualified MIPS.Types.Virtual as V
 import qualified MIPS.Types.Physical as P
 
+import MIPS.CallingConvention
+import TigerIR.Program
 
 -- a live range consists of a virtual register, start instruction, end instruction, use count (def count will always be 1)
 -- we generate a set of live ranges
@@ -27,6 +30,23 @@ testInst :: [MVLine]
 testInst = [
     MVLine (V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "d"))) 1
   ]
+
+tfunc :: Function V.MipsVirtual
+tfunc = Function
+  { name = FunctionName (Label "tFunc")
+  , returnsVal = False
+  , parameters =
+    [
+    ]
+  , localVars =
+    [ LocalV (Variable "d")
+    ]
+  , instrs =
+    [
+      V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "d"))
+    ]
+  }
+
 --testInst = [
 --    --MVLine (Add (VReg (Variable "a")) (VReg (Variable "d")) (VReg (Variable "d"))) 1,
 --    MVLine (V.Add (VReg (Variable "a")) (VReg (Variable "c")) (VReg (Variable "d"))) 1,
@@ -119,6 +139,9 @@ secondUsed mv
 
 type Line = Integer
 data MVLine = MVLine V.MipsVirtual Line deriving Show
+
+lined :: [V.MipsVirtual] -> [MVLine]
+lined vins = zipWith MVLine vins [1..]
 
 data LiveRange = LiveRange 
   { unVReg :: VReg
@@ -227,64 +250,88 @@ allocatePRegs lrs = foldl' f [] (reverse $ sortOn unUses lrs)
 -- allocatedLoadInst vreg preg = P.Lw preg (Imm "0") Fp
 -- allocatedStoreInst vreg preg = P.Sw preg (Imm "0") Fp
 
-doLoadsStores :: [ALR] -> [MVLine] -> [P.MipsPhys]
-doLoadsStores alrs = concatMap (composedALROps alrs)
+doLoadsStores :: Function V.MipsVirtual -> [MVLine] -> [P.MipsPhys]
+doLoadsStores vf = concatMap (composedALROps vf)
 
 composedALROps alrs his 
   = (allocatedLoads alrs his) ++ (spilledLoads alrs his) 
   ++ (spilledInst alrs his) ++ (spilledStores alrs his)
   ++ (allocatedStores alrs his)
 
-piped inst = let x = (allocatePRegs . buildLiveRanges $ inst) in concatMap (composedALROps x) inst
+--piped inst = let x = (allocatePRegs . buildLiveRanges $ inst) in concatMap (composedALROps x) inst
+piped vf = concatMap (composedALROps vf) (lined . instrs $ vf)
 
 -- if the line is at the start of a live range that has no def
-allocatedLoads :: [ALR] -> MVLine -> [P.MipsPhys]
-allocatedLoads alrs (MVLine mv ln) = mapMaybe load $ filter cond alrs 
+allocatedLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+allocatedLoads vf (MVLine mv ln) = mapMaybe load $ filter cond alrs 
   where
     cond (ALR preg lr) = (ln == unStart lr) && (unHasDef lr == False)
-    load (ALR (Just preg) lr) = Just $ P.Lw (T preg) (Imm "0") Fp
+    load (ALR (Just preg) lr) = Just $ P.Lw (T preg) (k $ unVReg lr) Fp
     load (ALR (Nothing) lr) = Nothing
+    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    k = toImm . (M.!) (calcRegMap vf)
 
 -- line is at start of live range AND doStore is true
-allocatedStores :: [ALR] -> MVLine -> [P.MipsPhys]
-allocatedStores alrs (MVLine mv ln) = mapMaybe store $ filter cond alrs 
+allocatedStores :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+allocatedStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs 
   where
     cond (ALR preg lr) = (ln == unStart lr) && (unNeedsStore lr == True)
-    store (ALR (Just preg) lr) = Just $ P.Sw (T preg) (Imm "0") Fp
+    store (ALR (Just preg) lr) = Just $ P.Sw (T preg) (k $ unVReg lr) Fp
     store (ALR (Nothing) lr) = Nothing
+    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    k = toImm . (M.!) (calcRegMap vf)
 
 -- start of a live range that has no def OR
 -- live range starts strictly before line
-spilledLoads :: [ALR] -> MVLine -> [P.MipsPhys]
-spilledLoads alrs (MVLine mv ln) = mapMaybe load $ filter cond alrs
+spilledLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledLoads vf (MVLine mv ln) = mapMaybe load $ filter cond alrs
   where
     cond alr = (cond0 alr) || (cond1 alr)
     cond0 (ALR preg lr) = (unStart lr) == ln && (unHasDef lr) == False
     cond1 (ALR preg lr) = (unStart lr) < ln && (unEnd lr) >= ln
     load (ALR (Just preg) lr) = Nothing
     load (ALR (Nothing) lr) 
-      | firstUsed mv == Just (unVReg lr) = Just $ P.Lw (M M1) (Imm "0") Fp
-      | secondUsed mv == Just (unVReg lr) = Just $ P.Lw (M M2) (Imm "0") Fp
+      | firstUsed mv == Just (unVReg lr) = Just $ P.Lw (M M1) (k $ unVReg lr) Fp
+      | secondUsed mv == Just (unVReg lr) = Just $ P.Lw (M M2) (k $ unVReg lr) Fp
       | otherwise = Nothing
+    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    k = toImm . (M.!) (calcRegMap vf)
 
 -- start of a live range AND hasDef
-spilledStores :: [ALR] -> MVLine -> [P.MipsPhys]
-spilledStores alrs (MVLine mv ln) = mapMaybe store $ filter cond alrs
+spilledStores :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs
   where
     cond (ALR preg lr) = (unStart lr == ln) && (unHasDef lr) == True
     store (ALR (Just preg) lr) = Nothing
-    store (ALR (Nothing) lr) = Just $ P.Sw (M M1) (Imm "0") Fp -- spill stores to m1
+    store (ALR (Nothing) lr) = Just $ P.Sw spillRegDef (k $ unVReg lr) Fp -- spill stores to m1
+    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    k = toImm . (M.!) (calcRegMap vf)
 
-spilledInst :: [ALR] -> MVLine -> [P.MipsPhys]
-spilledInst alrs (MVLine mv ln) = undefined--case mv of 
---  V.Add d s t -> [ P.Add (M M1) (M M1) (M M2) ]
---  where
---    rm :: RegMap
---    rm = calcRegMap vf
---    -- This is safe because genRegMap has assigned
---    -- every virtual register its own unique index
---    k :: VReg -> Imm
---    k = toImm . (M.!) rm
+spilledInst :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledInst vf (MVLine mv ln) = case mv of 
+  V.Add d s t -> [ P.Add defPReg usedPreg1 usedPreg2 ]
+  where
+    k = toImm . (M.!) (calcRegMap vf)
+    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    defPReg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr) alrs of
+      [ALR Nothing _] -> spillRegDef
+      [ALR (Just preg) _] -> T preg
+      otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
+    -- get preg for first arg
+    usableCond lr = (unStart lr < ln || (unStart lr == ln && (unHasDef lr) == False)) && unEnd lr >= ln
+    usedPreg1 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == firstUsed mv) alrs of
+      [ALR Nothing _] -> spillRegUse1
+      [ALR (Just preg) _] -> T preg
+      otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
+    usedPreg2 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == secondUsed mv) alrs of
+      [ALR Nothing _] -> spillRegUse2
+      [ALR (Just preg) _] -> T preg
+      otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
+
+
+spillRegDef = M M1
+spillRegUse1 = M M1
+spillRegUse2 = M M2
 
 --insertLoadsStores hinsts alrs = foldr (composeInserts) alrs hinsts
 
