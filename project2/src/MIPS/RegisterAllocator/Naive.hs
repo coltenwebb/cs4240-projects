@@ -255,8 +255,7 @@ virtToPhysMIPS vf mv = case mv of
 
   V.Returni i -> setupReturnImm i
 
-  -- TODO: pushing for colten first
-  V.BeginFunction -> []
+  V.BeginFunction -> fnEntry vf
 
   V.EndFunction -> setupReturnVoid
 
