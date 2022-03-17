@@ -18,6 +18,15 @@ programSelection program = PhysicalProgram vfuncs
   where
     vfuncs = concatMap functionSelection $ T.functions program
 
+programSelectionIR2V :: T.TigerIrProgram -> V.VirtualProgram 
+programSelectionIR2V program = V.VirtualProgram $ map (functionSelectionIR2V) $ T.functions program
+
+functionSelectionIR2V :: T.TigerIrFunction -> V.VirtualFunction
+functionSelectionIR2V fn = V.VirtualFunction (V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)) $ name fn
+
+fnameStr :: T.TigerIrFunction -> String
+fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
+
 functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
 functionSelection fn = foldl' v2p [] vinsts
   where
@@ -32,8 +41,6 @@ functionSelection fn = foldl' v2p [] vinsts
       where 
         vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
 
-    fnameStr :: T.TigerIrFunction -> String
-    fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
 
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of

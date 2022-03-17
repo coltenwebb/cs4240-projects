@@ -6,10 +6,19 @@ import Data.Maybe
 
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
+
+class Mips a where
+  isBranching :: a -> Bool
+  isLabel     :: a -> Bool
+  isReturnOp  :: a -> Bool
+  isGotoOp    :: a -> Bool
+  -- If it is a branch / goto / etc. it will have a label
+  -- to jump to, used for determining consecutive blocks 
+
 data MipsVirtual
-  = AssignI  VReg Imm         
+  = AssignI  VReg Imm
   | AssignV  VReg VReg
-  | Addi     VReg VReg Imm  
+  | Addi     VReg VReg Imm
   | Li       VReg Imm          -- [P]
   | Add      VReg VReg VReg    -- 
   | Sub      VReg VReg VReg
@@ -35,7 +44,7 @@ data MipsVirtual
   -- arr[0] := a
   | ArrStr   VReg VReg VReg
   | ArrStri  VReg VReg Imm
-  | ArrStrii Imm VReg Imm 
+  | ArrStrii Imm VReg Imm
   | ArrStriv Imm VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
@@ -52,10 +61,28 @@ data MipsVirtual
   | Return   VReg                 -- [P]
   | Returni  Imm                  -- [P]
   | EndFunction                   -- [P] void return
+  deriving (Show)
+
+
+instance Mips MipsVirtual where
+  isBranching Br {}       = True
+  isBranching Bri {}      = True
+  isBranching _           = False 
+
+  isLabel MIPS.Types.Virtual.Label {} = True 
+  isLabel _               = False 
+
+  isReturnOp Return {}    = True 
+  isReturnOp Returni {}   = True 
+  isReturnOp _            = False 
+
+  isGotoOp Goto {}        = True 
+  isGotoOp _              = False
+
 
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
 
-data CallArg = CVarg VReg | CIarg Imm
+data CallArg = CVarg VReg | CIarg Imm deriving (Show)
 
 newtype VirtualProgram = VirtualProgram { virtualInstructions :: [VirtualFunction] } deriving ()
-data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName }
+data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName } deriving (Show)
