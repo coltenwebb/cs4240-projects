@@ -1,5 +1,5 @@
 -- TODO: IMPORTANT!!!! Re-enable this
--- {-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 {-# LANGUAGE FlexibleInstances #-}
 module MIPS.Printer where
 
@@ -149,7 +149,7 @@ instance Print P.PhysicalFunction where
       pr' (P.Add r1 r2 r3)  = "    add " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Sub r1 r2 r3)  = "    sub " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Mflo r1)       = "    mflo " ++ pr r1
-      pr' (P.Mult r1 r2)    = "    add " ++ pr r1 ++ ", " ++ pr r2
+      pr' (P.Mult r1 r2)    = "    mult " ++ pr r1 ++ ", " ++ pr r2
       pr' (P.Div r1 r2)     = "    div " ++ pr r1 ++ ", " ++ pr r2
       pr' (P.Andi r1 r2 im) = "    andi " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
       pr' (P.And r1 r2 r3)  = "    and " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
@@ -157,7 +157,7 @@ instance Print P.PhysicalFunction where
       pr' (P.Or r1 r2 r3)   = "    or " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Jal lab)       = "    jal " ++ isIntrinsic lab
       pr' (P.Jr r)          = "    jr " ++ pr r
-      pr' (P.J lab)         = "    jr " ++ isIntrinsic lab
+      pr' (P.J lab)         = "    j  " ++ isIntrinsic lab
       pr' (P.Beq r1 r2 lab) = "    beq " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ isIntrinsic lab
       pr' (P.Bne r1 r2 lab) = "    bne " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ isIntrinsic lab
       pr' (P.Bgtz r lab)    = "    bgtz " ++ pr r ++ ", " ++ isIntrinsic lab

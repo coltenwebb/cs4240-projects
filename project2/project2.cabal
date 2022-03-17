@@ -23,10 +23,35 @@ extra-source-files: CHANGELOG.md
 
 executable backend
   main-is: Main.hs
+  
+  other-modules:
+        MIPS.Backend
+        MIPS.CallingConvention
+        MIPS.Intrinsics
+        MIPS.Printer
+        MIPS.RegisterAllocator.Naive
+        MIPS.Selection
+        MIPS.Types.Operand
+        MIPS.Types.Physical
+        MIPS.Types.Virtual
+        TigerIR.IrInstruction
+        TigerIR.Parser.Legacy.Function
+        TigerIR.Parser.Legacy.Instruction
+        TigerIR.Parser.Legacy.Program
+        TigerIR.Parser.Legacy.Shim
+        TigerIR.Parser.Legacy.Type
+        TigerIR.Parser.Reader
+        TigerIR.Program
+        TigerIR.Types
 
   build-depends: base ^>=4.14.3.0
+                 , containers ^>=0.6.5.1
+                 , parsec ^>=3.1.15.0
+                 , vector ^>=0.12.3.1
+                 , mtl ^>=2.2.2
   hs-source-dirs: src
   default-language: Haskell2010
+  ghc-options: -fwarn-incomplete-patterns -Werror
 
 library
   exposed-modules:
@@ -57,3 +82,4 @@ library
                  , mtl ^>=2.2.2
                  , QuickCheck ^>=2.14.2
   default-language: Haskell2010
+  ghc-options: -fwarn-incomplete-patterns -Werror

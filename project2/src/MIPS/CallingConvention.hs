@@ -57,7 +57,7 @@ fnEntry fn =
     ]
   else [ P.Addi Sp Sp (toImm offst) ]
   where
-    offst = OffsetIdx 0 .+ netLocalVarSize fn
+    offst = OffsetIdx 0 .- netLocalVarSize fn
 
 {-
 hi addr
