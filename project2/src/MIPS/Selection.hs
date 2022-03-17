@@ -16,23 +16,6 @@ import MIPS.Types.Operand
 virtFnSelection :: TigerIrFunction -> V.VirtualFunction
 virtFnSelection = instrSelectionPass (instructionSelection . instruction)
 
---functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
---functionSelection fn = foldl' v2p [] vinsts
---  where
---    v2p :: [P.MipsPhys] -> V.MipsVirtual -> [P.MipsPhys]
---    v2p acc vinst = acc ++ virtToPhysMIPS regMap vinst 
---
---    vinsts :: [V.MipsVirtual]
---    vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
---
---    regMap :: RegMap
---    regMap = genRegMap vregs 
---      where 
---        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
---
---    fnameStr :: T.TigerIrFunction -> String
---    fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
-
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
   AssignVar avops -> case avops of

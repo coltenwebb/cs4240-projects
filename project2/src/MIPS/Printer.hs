@@ -10,7 +10,7 @@ import MIPS.Intrinsics
 
 import TigerIR.Program
 
-import Data.List (intercalate)
+import Data.List (intercalate, intersperse, elem)
 import Control.Monad.Writer
 
 class Print p where
@@ -101,13 +101,13 @@ instance Print V.MipsVirtual where
    = "    returni " ++ pr val
   pr V.EndFunction
    = "    endFunc"
-  pr V.BeginFunction 
+  pr V.BeginFunction
    = "    beginFunc"
 
   -- TODO: Not urgent, only virtual instructions after all
   pr (V.DivIV dst src1 imm)
     =  ""
-  
+
   pr (V.DivVI _ _ _)
     = ""
 
@@ -128,11 +128,15 @@ instance Print V.CallArg where
 -- = Physical =
 -- ============
 
+intrinsicFunctionNames :: [String]
+intrinsicFunctionNames = map (show . name) intrinsicFunctions
+
 instance Print P.PhysicalProgram where
   pr (Program funcs) = intercalate "\n" $
     [".text"]
-    ++ map pr intrinsicFunctions
     ++ [".globl main"]
+    ++ map (".globl " ++) intrinsicFunctionNames
+    ++ map pr intrinsicFunctions
     ++ map pr funcs
     --concatMap (\ins -> pr ins ++ "\n") pinsts
 
@@ -151,19 +155,25 @@ instance Print P.PhysicalFunction where
       pr' (P.And r1 r2 r3)  = "    and " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Ori r1 r2 im)  = "    ori " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
       pr' (P.Or r1 r2 r3)   = "    or " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
-      pr' (P.Jal lab)       = "    jal " ++ pr lab
+      pr' (P.Jal lab)       = "    jal " ++ isIntrinsic lab
       pr' (P.Jr r)          = "    jr " ++ pr r
-      pr' (P.J lab)         = "    jr " ++ pr lab
-      pr' (P.Beq r1 r2 lab) = "    beq " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
-      pr' (P.Bne r1 r2 lab) = "    bne " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
-      pr' (P.Bgtz r lab)    = "    bgtz " ++ pr r ++ ", " ++ pr lab
-      pr' (P.Blez r lab)    = "    blez " ++ pr r ++ ", " ++ pr lab
-      pr' (P.Lw r1 im r2)   = "    lw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
-      pr' (P.Sw r1 im r2)   = "    sw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
+      pr' (P.J lab)         = "    jr " ++ isIntrinsic lab
+      pr' (P.Beq r1 r2 lab) = "    beq " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ isIntrinsic lab
+      pr' (P.Bne r1 r2 lab) = "    bne " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ isIntrinsic lab
+      pr' (P.Bgtz r lab)    = "    bgtz " ++ pr r ++ ", " ++ isIntrinsic lab
+      pr' (P.Blez r lab)    = "    blez " ++ pr r ++ ", " ++ isIntrinsic lab
+      pr' (P.Lw r1 im r2)   = "    lw " ++ pr r1 ++ ", " ++ pr im ++ "(" ++ pr r2 ++ ")"
+      pr' (P.Sw r1 im r2)   = "    sw " ++ pr r1 ++ ", " ++ pr im ++ "(" ++ pr r2 ++ ")"
       pr' (P.Label (Label lab)) = fname ++ "_" ++ lab ++ ":"
       pr' P.Syscall         = "    syscall"
       pr' (P.Li r im)       = "    li" ++ ", " ++ pr r ++ ", " ++ pr im
 
+      isIntrinsic :: Label -> String
+      isIntrinsic (Label lab) 
+        | lab `elem` intrinsicFunctionNames = lab
+        | otherwise                         = fname ++ "_" ++ lab
+          
+          
 instance Print V.Cmp where
   pr x = show x
 -- ============
