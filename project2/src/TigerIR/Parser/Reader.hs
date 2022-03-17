@@ -148,15 +148,18 @@ parseFunction = do
 
   -- last newline handled by the `endBy` in `sepEndBy`
   parseEndFunc
+
   let tp' = returnsInt tp
       params' = map var2Param params
       vars' = map var2Local vars 
-      -- so that we can return/jmp $ra in MIPS
-      ins' = case tp of
-        VoidType -> ins' ++ [T.Instruction T.EndFunction (T.LineNumber (-1))]
-        _        -> ins'
+      -- BeginFunction for subroutine entry logic later
+      -- EndFunction so that we can return/jmp $ra in MIPS
+      ins' = T.Instruction T.BeginFunction (T.LineNumber (-1)) :
+        case tp of
+          VoidType -> ins ++ [T.Instruction T.EndFunction (T.LineNumber (-1))]
+          _        -> ins
 
-  return $ T.Function (T.FunctionName (T.Label fname)) tp' params' vars' ins
+  return $ T.Function (T.FunctionName (T.Label fname)) tp' params' vars' ins'
   where 
     returnsInt IntType  = True
     returnsInt _        = False
