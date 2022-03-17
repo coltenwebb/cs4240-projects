@@ -58,6 +58,8 @@ instructionSelection ins = case ins of
   T.Return retvarOp -> case retvarOp of
     Retvar v -> V.Return (VReg v)
     Retimm i -> V.Returni i
+
+  T.BeginFunction -> V.BeginFunction
   
   T.EndFunction -> V.EndFunction
 

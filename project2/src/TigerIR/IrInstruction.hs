@@ -24,6 +24,7 @@ data IrInstruction
   | BinaryOperation   BinOp BinOperands
   | BranchOperation   BrOp BrOperands
   | Return            RetvarOperand
+  | BeginFunction
   | EndFunction
   | Call              FunctionName FnArgs
   | Callr             DestVar FunctionName FnArgs
@@ -46,6 +47,7 @@ instance Show IrInstruction where
     ArrLoad alo             -> fmtIr ["    load", show alo]
     AssignArr aao           -> fmtIr ["    assign", show aao]
     LabelIns la             -> show la ++ ":"
+    BeginFunction           -> ""
     EndFunction             -> ""
 
 data AssignVarOperands

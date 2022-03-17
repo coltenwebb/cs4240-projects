@@ -45,6 +45,18 @@ toImm :: OffsetIdx -> Imm
 toImm (OffsetIdx i) = Imm (show (i * 4))
 
 
+-- Stack/Fp setup upon entry into function
+fnEntry :: Function a -> [P.MipsPhys]
+fnEntry fn =
+  -- fp <- sp
+  -- already done by setupCallStack, but necessary for `main`,
+  -- since fp is zero-initialized
+  [ P.Add Fp Sp ZeroReg
+  , P.Addi Sp Sp (toImm offst)
+  ]
+  where
+    offst = OffsetIdx 0 .+ netLocalVarSize fn
+
 {-
 hi addr
         ----------------------
@@ -85,7 +97,7 @@ hi
 lo
 
 -}
-calcRegMap :: TigerIrFunction -> RegMap
+calcRegMap :: Function a -> RegMap
 calcRegMap fn =
   M.union
     -- arg0 to argn offsets
@@ -126,13 +138,13 @@ localVarSize iv = case iv of
   LocalV (Variable _) -> OffsetSize 1
   LocalA (Array _ (ArraySize k)) -> OffsetSize k
 
-netLocalVarSize :: TigerIrFunction -> OffsetSize
+netLocalVarSize :: Function a -> OffsetSize
 netLocalVarSize fn = foldl1' (^+) (map localVarSize lvs)
   where
     lvs :: LocalVars
     lvs = localVars fn
 
-netParamSize :: TigerIrFunction -> OffsetSize
+netParamSize :: Function a -> OffsetSize
 netParamSize fn = paramVarSize .* length pvs
   where
     pvs :: Parameters
@@ -210,7 +222,7 @@ setupCallStack fn args loadReg =
     pushArgs :: [P.MipsPhys]
     pushArgs = flip concatMap (zip [1..] args) $ \(argno, arg) ->
       let offset = Imm . show . (*(-4)) $ argno
-      in 
+      in
         -- NOTE: Sp and Fp are the same at this point in time
         case arg of
           V.CVarg vreg ->
@@ -240,7 +252,7 @@ setupReturn retVal loadReg =
 setupReturnImm
   :: Imm
   -> [P.MipsPhys]
-setupReturnImm retImm = 
+setupReturnImm retImm =
   [ P.Li Retval retImm
   , P.Jr RetAddr
   ]

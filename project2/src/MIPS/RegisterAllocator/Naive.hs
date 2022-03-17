@@ -10,25 +10,23 @@ import qualified Data.Map as M
 import Data.Foldable
 import TigerIR.Program (instrSelectionPassFlatten, Function (parameters, localVars))
 
-genRegMap :: [VReg] -> RegMap
-genRegMap = fst . foldl' f (mempty, 0)
-  where
-    f (c, idx) vr = (c <> M.singleton vr (OffsetIdx idx), idx+1)
+--genRegMap :: [VReg] -> RegMap
+--genRegMap = fst . foldl' f (mempty, 0)
+--  where
+--    f (c, idx) vr = (c <> M.singleton vr (OffsetIdx idx), idx+1)
 
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
 physFnSelection fn =
-    instrSelectionPassFlatten (virtToPhysMIPS regMap) fn
+    instrSelectionPassFlatten (virtToPhysMIPS fn) fn
   where
     regMap :: RegMap
-    regMap = genRegMap vregs
-      where
-        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
+    regMap = calcRegMap fn
 
 virtToPhysMIPS
-  :: RegMap
+  :: V.VirtualFunction
   -> V.MipsVirtual
   -> [P.MipsPhys]
-virtToPhysMIPS rm mv = case mv of
+virtToPhysMIPS vf mv = case mv of
   V.Addi t s i ->
     [ P.Lw (M M1) (k s) Fp
     , P.Addi (M M1) (M M1) i
@@ -247,6 +245,9 @@ virtToPhysMIPS rm mv = case mv of
 
   V.Returni i -> setupReturnImm i
 
+  -- TODO: pushing for colten first
+  V.BeginFunction -> []
+
   V.EndFunction -> setupReturnVoid
 
   V.ArrAssignVV v1 v2 v3 -> setupCallStack (Label "memset")
@@ -262,6 +263,8 @@ virtToPhysMIPS rm mv = case mv of
     [V.CVarg v1, V.CIarg i2, V.CVarg v3] loadReg
 
   where
+    rm :: RegMap
+    rm = calcRegMap vf
     -- This is safe because genRegMap has assigned
     -- every virtual register its own unique index
     k :: VReg -> Imm

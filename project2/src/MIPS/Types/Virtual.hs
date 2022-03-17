@@ -56,6 +56,7 @@ data MipsVirtual
   | Nop                           -- [P]
   | Return   VReg                 -- [P]
   | Returni  Imm                  -- [P]
+  | BeginFunction                 -- [P] for initialization
   | EndFunction                   -- [P] void return
 
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
