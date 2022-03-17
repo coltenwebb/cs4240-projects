@@ -204,7 +204,9 @@ setupCallStack fn args loadReg =
   [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
   , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
   , P.Jal fn                                        -- Call subroutine
-  , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
+
+  -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
+  , P.Add Sp Fp ZeroReg
   ]
   ++
   -- Callee returned, teardown / restoring registers

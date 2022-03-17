@@ -18,4 +18,13 @@ float-list:
   assign, b, 2
   callr, c, divisible, a, b
   call, puti, c
+  call, putc, 10
+  call, putc, 112
+  call, putc, 111
+  call, putc, 103
+  call, putc, 103
+  call, putc, 101
+  call, putc, 114
+  call, putc, 115
+  call, putc, 10
 #end_function
