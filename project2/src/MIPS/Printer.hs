@@ -1,5 +1,5 @@
 -- TODO: IMPORTANT!!!! Re-enable this
-{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
+-- {-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 {-# LANGUAGE FlexibleInstances #-}
 module MIPS.Printer where
 
@@ -9,7 +9,9 @@ import MIPS.Types.Operand
 import MIPS.Intrinsics
 
 import TigerIR.Program
+
 import Data.List (intercalate)
+import Control.Monad.Writer
 
 class Print p where
   pr :: p -> String
@@ -33,16 +35,16 @@ instance Print V.MipsVirtual where
     = "    add " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2
   pr (V.Sub dst src1 src2)
     = "    sub " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2
-  pr (V.Subi dst src imm)
-    = "    subi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
+  --pr (V.Subi dst src imm)
+  --  = "    subi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
   pr (V.Mult dst src1 src2)
     = "    mult " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2
   pr (V.Multi dst src imm)
     = "    multi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
   pr (V.Div dst src1 src2)
     = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2
-  pr (V.Divi dst src1 imm)
-    = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm
+  --pr (V.Divi dst src1 imm)
+  --  = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm
   pr (V.Andi dst src imm)
     = "    andi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
   pr (V.And dst src1 src2)

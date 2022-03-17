@@ -10,11 +10,6 @@ import qualified Data.Map as M
 import Data.Foldable
 import TigerIR.Program (instrSelectionPassFlatten, Function (parameters, localVars))
 
---genRegMap :: [VReg] -> RegMap
---genRegMap = fst . foldl' f (mempty, 0)
---  where
---    f (c, idx) vr = (c <> M.singleton vr (OffsetIdx idx), idx+1)
-
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
 physFnSelection fn =
     instrSelectionPassFlatten (virtToPhysMIPS fn) fn
@@ -47,9 +42,17 @@ virtToPhysMIPS vf mv = case mv of
     , P.Sw (M M1) (k d) Fp
     ]
 
-  V.Subi t s i ->
+  V.SubVI t s i ->
     [ P.Lw (M M1) (k s) Fp
-    , P.Addi (M M1) (M M1) (negateImm i)
+    , P.Li (M M2) i
+    , P.Sub (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k t) Fp
+    ]
+  
+  V.SubIV t i s ->
+    [ P.Li (M M1) i
+    , P.Lw (M M2) (k s) Fp
+    , P.Sub (M M1) (M M2) (M M2)
     , P.Sw (M M1) (k t) Fp
     ]
 
@@ -76,10 +79,18 @@ virtToPhysMIPS vf mv = case mv of
     , P.Mflo (M M1)
     , P.Sw (M M1) (k d) Fp
     ]
-
-  V.Divi t s i ->
+  
+  V.DivVI t s i ->
     [ P.Lw (M M1) (k s) Fp
-    , P.Addi (M M2) ZeroReg i
+    , P.Li (M M2) i
+    , P.Div (M M1) (M M2)
+    , P.Mflo (M M1)
+    , P.Sw (M M1) (k t) Fp
+    ]
+
+  V.DivIV t i s ->
+    [ P.Li (M M1) i
+    , P.Lw (M M2) (k s) Fp
     , P.Div (M M1) (M M2)
     , P.Mflo (M M1)
     , P.Sw (M M1) (k t) Fp
@@ -272,9 +283,6 @@ virtToPhysMIPS vf mv = case mv of
 
     imm4 = Imm "4"
     imm0 = Imm "0"
-
-    negateImm :: Imm -> Imm
-    negateImm (Imm i) = Imm (show $ (read i :: Int) * (-1))
 
     times4 :: Imm -> Imm
     times4 (Imm i) = Imm (show $ (read i :: Int) * 4)

@@ -40,12 +40,13 @@ instructionSelection ins = case ins of
     AssignVarOpsDV v1 v2 -> V.AssignV (VReg v1) (VReg v2)
 
   BinaryOperation op bops -> case op of
-    T.Add  -> handleBinOp bops addImm  V.Addi   V.Add
-    T.Sub  -> handleBinOp bops subImm  V.Subi   V.Sub
-    T.Mult -> handleBinOp bops multImm V.Multi  V.Mult
-    T.Div  -> handleBinOp bops divImm  V.Divi   V.Div
-    T.And  -> handleBinOp bops andImm  V.Andi   V.And
-    T.Or   -> handleBinOp bops orImm   V.Ori    V.Or
+    T.Add  -> handleCommutativeBinOp bops addImm  V.Addi   V.Add
+    T.Mult -> handleCommutativeBinOp bops multImm V.Multi  V.Mult
+    T.And  -> handleCommutativeBinOp bops andImm  V.Andi   V.And
+    T.Or   -> handleCommutativeBinOp bops orImm   V.Ori    V.Or
+    
+    T.Sub  -> handleNonCommutativeBinOp bops subImm V.SubVI V.SubIV V.Sub
+    T.Div  -> handleNonCommutativeBinOp bops divImm V.DivVI V.DivIV V.Div
 
   BranchOperation op brops -> case op of
     T.Breq  -> handleBrOp brops Eq
@@ -107,17 +108,31 @@ instructionSelection ins = case ins of
   T.LabelIns label -> V.Label label
 
 
-handleBinOp
+handleCommutativeBinOp
   :: BinOperands
   -> (Imm -> Imm -> Imm)
   -> (VReg -> VReg -> Imm -> MipsVirtual)
   -> (VReg -> VReg -> VReg -> MipsVirtual)
   -> MipsVirtual
-handleBinOp bops immHandler immIns regIns =
+handleCommutativeBinOp bops immHandler immIns regIns =
   case bops of
-    BinOpsDII v1 i2 i3 -> V.Li (VReg v1) (immHandler i2 i3)
+    BinOpsDII v1 i2 i3 -> V.Li   (VReg v1) (immHandler i2 i3)
     BinOpsDIV v1 i2 v3 -> immIns (VReg v1) (VReg v3) i2
     BinOpsDVI v1 v2 i3 -> immIns (VReg v1) (VReg v2) i3
+    BinOpsDVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
+
+handleNonCommutativeBinOp
+  :: BinOperands
+  -> (Imm -> Imm -> Imm)
+  -> (VReg -> VReg -> Imm -> MipsVirtual)
+  -> (VReg -> Imm  -> VReg -> MipsVirtual)
+  -> (VReg -> VReg -> VReg -> MipsVirtual)
+  -> MipsVirtual
+handleNonCommutativeBinOp bops immHandler viIns ivIns regIns =
+  case bops of
+    BinOpsDII v1 i2 i3 -> V.Li   (VReg v1) (immHandler i2 i3)
+    BinOpsDIV v1 i2 v3 -> ivIns  (VReg v1) i2 (VReg v3)
+    BinOpsDVI v1 v2 i3 -> viIns  (VReg v1) (VReg v2) i3
     BinOpsDVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
 
 liftImm :: (Int -> Int -> Int) -> Imm -> Imm -> Imm

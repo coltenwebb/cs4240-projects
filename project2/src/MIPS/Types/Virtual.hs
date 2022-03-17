@@ -14,19 +14,24 @@ type VirtualProgram  = Program  MipsVirtual
 data MipsVirtual
   = AssignI  VReg Imm         
   | AssignV  VReg VReg
-  | Addi     VReg VReg Imm  
   | Li       VReg Imm          -- [P]
+  -- Commutative bin-ops
+  | Addi     VReg VReg Imm  
   | Add      VReg VReg VReg    -- 
-  | Sub      VReg VReg VReg
-  | Subi     VReg VReg Imm     -- [P]
   | Mult     VReg VReg VReg
   | Multi    VReg VReg Imm     -- [P]
-  | Div      VReg VReg VReg
-  | Divi     VReg VReg Imm
   | Andi     VReg VReg Imm
   | And      VReg VReg VReg
   | Ori      VReg VReg Imm
   | Or       VReg VReg VReg
+  -- Special case for non-commutativity
+  | Sub      VReg VReg VReg
+  | SubVI    VReg VReg Imm     -- [P]
+  | SubIV    VReg Imm  VReg
+  | Div      VReg VReg VReg
+  | DivVI    VReg VReg Imm
+  | DivIV    VReg Imm  VReg
+
   | Bri      Cmp  VReg Imm  Label
   | Br       Cmp  VReg VReg Label
   | Lw       VReg Imm VReg
