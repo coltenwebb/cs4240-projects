@@ -12,9 +12,10 @@ data BasicBlockGeneral a = BasicBlock
   , lastIns :: a
   , blockId :: BlockId
   }
-instance (Show a) => Show (BasicBlockGeneral a) where
-  show (BasicBlock i l (BlockId id)) = "\n" ++ show id ++ ": " ++ show i
-
+instance (Show a) => Show (BasicBlockGeneral a) where 
+  show (BasicBlock insts lastInst (BlockId bid)) = "\n" ++ show bid ++ ": {  " ++ 
+    intercalate "\n     , " (map show (NE.head insts : NE.tail insts)) ++ " }"
+    
 
 newtype BlockId = BlockId Int
   deriving (Eq, Ord, Show)
@@ -25,7 +26,7 @@ newtype InstId = InstId Int
   deriving (Eq, Ord, Show)
 
 
-splitIntoBasicBlocks :: [MipsVirtual ] -> [BasicBlockGeneral MipsVirtual ]
+splitIntoBasicBlocks :: (Mips a) => [a] -> [BasicBlockGeneral a]
 splitIntoBasicBlocks [] = []
 splitIntoBasicBlocks (x:xs) = g . foldl f (x :| [] , [], 0) $ xs
   where
@@ -42,9 +43,9 @@ splitIntoBasicBlocks (x:xs) = g . foldl f (x :| [] , [], 0) $ xs
 
     -- We also process the prevIns in order to use NonEmpty list logic
     f (currBlk, res, cnt) currIns
-      | isBranching (prevIns currBlk) = trace (show "currInst: " ++ show currIns ++ ", currBlock: " ++ show (NE.init currBlk)) (currIns :| [], res', cnt+1)
-      | isLabel currIns               = trace (show "currInst: " ++ show currIns ++ ", currBlock: " ++ show (NE.init currBlk)) (currIns :| [], res', cnt+1)
-      | otherwise                     = trace (show "currInst: " ++ show currIns ++ ", currBlock: " ++ show (NE.init currBlk)) (currBlk `appendIns` currIns, res, cnt)
+      | isBranching (prevIns currBlk) = (currIns :| [], res', cnt+1)
+      | isLabel currIns               = (currIns :| [], res', cnt+1)
+      | otherwise                     = (currBlk `appendIns` currIns, res, cnt)
       where
         curr = prevIns currBlk
         res' = toBlk currBlk cnt : res

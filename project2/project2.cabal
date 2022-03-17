@@ -31,6 +31,8 @@ library
     MIPS.CallingConvention
     MIPS.Printer
     MIPS.Selection
+    MIPS.Liveness.Liveness
+    MIPS.Liveness.MipsCFG
     TigerIR.IrInstruction
     TigerIR.Program 
     TigerIR.Types 

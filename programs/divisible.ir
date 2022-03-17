@@ -1,0 +1,9 @@
+#start_function
+int divisible(int x, int y):
+int-list: d
+float-list:
+    div, d, x, y
+    mult, d, d, y
+    brneq, label0, x, d
+    mult, x, y, x
+#end_function
