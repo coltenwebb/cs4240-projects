@@ -8,11 +8,10 @@ import qualified MIPS.Types.Virtual  as V
 
 import qualified Data.Map as M
 import Data.Foldable
-import TigerIR.Program (instrSelectionPassFlatten, Function (parameters, localVars))
+import TigerIR.Program as Prog
 
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
-physFnSelection fn =
-    instrSelectionPassFlatten (virtToPhysMIPS fn) fn
+physFnSelection fn = instrSelectionPassFlatten (virtToPhysMIPS fn) fn
   where
     regMap :: RegMap
     regMap = calcRegMap fn
@@ -48,7 +47,7 @@ virtToPhysMIPS vf mv = case mv of
     , P.Sub (M M1) (M M1) (M M2)
     , P.Sw (M M1) (k t) Fp
     ]
-  
+
   V.SubIV t i s ->
     [ P.Li (M M1) i
     , P.Lw (M M2) (k s) Fp
@@ -79,7 +78,7 @@ virtToPhysMIPS vf mv = case mv of
     , P.Mflo (M M1)
     , P.Sw (M M1) (k d) Fp
     ]
-  
+
   V.DivVI t s i ->
     [ P.Lw (M M1) (k s) Fp
     , P.Li (M M2) i

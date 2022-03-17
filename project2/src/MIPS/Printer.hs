@@ -43,8 +43,6 @@ instance Print V.MipsVirtual where
     = "    multi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
   pr (V.Div dst src1 src2)
     = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr src2
-  --pr (V.Divi dst src1 imm)
-  --  = "    div " ++ pr dst ++ ", " ++ pr src1 ++ ", " ++ pr imm
   pr (V.Andi dst src imm)
     = "    andi " ++ pr dst ++ ", " ++ pr src ++ ", " ++ pr imm
   pr (V.And dst src1 src2)
@@ -105,6 +103,17 @@ instance Print V.MipsVirtual where
    = "    endFunc"
   pr V.BeginFunction 
    = "    beginFunc"
+
+  -- TODO: Not urgent, only virtual instructions after all
+  pr (V.DivIV dst src1 imm)
+    =  ""
+  
+  pr (V.DivVI _ _ _)
+    = ""
+
+  pr (V.SubVI _ _ _) = ""
+
+  pr (V.SubIV _ _ _) = ""
 
 --  pr (V.Return (Just ret))
 --    = "    return " ++ pr ret 

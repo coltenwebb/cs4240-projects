@@ -195,13 +195,13 @@ setupCallStack fn args loadReg =
   , P.Sw   RetAddr (Imm "-36") Sp
   , P.Sw   Fp      (Imm "-40") Sp
   , P.Addi Sp      Sp         (Imm "-40")
-  , P.Add  Fp      Sp         ZeroReg
   ]
   ++
   pushArgs
   ++
-  [ P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
-  , P.Jal fn                                      -- Call subroutine
+  [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
+  , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
+  , P.Jal fn                                        -- Call subroutine
   , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
   ]
   ++
@@ -227,10 +227,10 @@ setupCallStack fn args loadReg =
         case arg of
           V.CVarg vreg ->
             let (preg, loadInstrs) = loadReg vreg
-            in loadInstrs ++ [P.Sw preg offset Fp]
+            in loadInstrs ++ [P.Sw preg offset Sp]
           V.CIarg i ->
             [ P.Li (M M1) i
-            , P.Sw (M M1) offset Fp
+            , P.Sw (M M1) offset Sp
             ]
 
 setupGoto :: Label -> [P.MipsPhys]
