@@ -8,6 +8,11 @@ newtype LineNumber = LineNumber Int
 type TigerIrIns = Instruction IrInstruction
 type DestVar = Variable
 
+data Instruction a = Instruction
+  { instruction :: a
+  , lineNum     :: LineNumber
+  }
+
 fmtIr :: [String] -> String
 fmtIr strs = head strs ++ " " ++ concatMap (++ " ") (tail strs)
 
@@ -19,6 +24,8 @@ data IrInstruction
   | BinaryOperation   BinOp BinOperands
   | BranchOperation   BrOp BrOperands
   | Return            RetvarOperand
+  | BeginFunction
+  | EndFunction
   | Call              FunctionName FnArgs
   | Callr             DestVar FunctionName FnArgs
   | Goto              Label
@@ -26,6 +33,7 @@ data IrInstruction
   | ArrLoad           ArrLoadOperands
   | AssignArr         ArrAssignOperands
   | LabelIns          Label
+
 instance Show IrInstruction where
   show inst = case inst of
     AssignVar avo           -> fmtIr ["    assign", show avo]
@@ -39,8 +47,8 @@ instance Show IrInstruction where
     ArrLoad alo             -> fmtIr ["    load", show alo]
     AssignArr aao           -> fmtIr ["    assign", show aao]
     LabelIns la             -> show la ++ ":"
-
-
+    BeginFunction           -> ""
+    EndFunction             -> ""
 
 data AssignVarOperands
   = AssignVarOpsDV DestVar Variable
@@ -162,13 +170,6 @@ instance Show RetvarOperand where
   show rvops = case rvops of
     Retvar vari -> show vari
     Retimm imm -> show imm
-
-
-
-data Instruction a = Instruction
-  { instruction :: a
-  , lineNum     :: LineNumber
-  }
 
 instance (Show a) => Show (Instruction a) where
   show (Instruction i _) = show i

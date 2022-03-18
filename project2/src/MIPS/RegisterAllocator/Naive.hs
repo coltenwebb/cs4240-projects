@@ -8,18 +8,19 @@ import qualified MIPS.Types.Virtual  as V
 
 import qualified Data.Map as M
 import Data.Foldable
-import MIPS.CallingConvention (setupCallStack)
+import TigerIR.Program as Prog
 
-genRegMap :: [VReg] -> RegMap
-genRegMap = fst . foldl' f (mempty, 0)
+physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
+physFnSelection fn = instrSelectionPassFlatten (virtToPhysMIPS fn) fn
   where
-    f (c, idx) vr = (c <> M.singleton vr (OffsetIdx idx), idx+1)
+    regMap :: RegMap
+    regMap = calcRegMap fn
 
 virtToPhysMIPS
-  :: RegMap
+  :: V.VirtualFunction
   -> V.MipsVirtual
   -> [P.MipsPhys]
-virtToPhysMIPS rm mv = case mv of
+virtToPhysMIPS vf mv = case mv of
   V.Addi t s i ->
     [ P.Lw (M M1) (k s) Fp
     , P.Addi (M M1) (M M1) i
@@ -40,9 +41,17 @@ virtToPhysMIPS rm mv = case mv of
     , P.Sw (M M1) (k d) Fp
     ]
 
-  V.Subi t s i ->
+  V.SubVI t s i ->
     [ P.Lw (M M1) (k s) Fp
-    , P.Addi (M M1) (M M1) (negateImm i)
+    , P.Li (M M2) i
+    , P.Sub (M M1) (M M1) (M M2)
+    , P.Sw (M M1) (k t) Fp
+    ]
+
+  V.SubIV t i s ->
+    [ P.Li (M M1) i
+    , P.Lw (M M2) (k s) Fp
+    , P.Sub (M M1) (M M2) (M M2)
     , P.Sw (M M1) (k t) Fp
     ]
 
@@ -70,9 +79,17 @@ virtToPhysMIPS rm mv = case mv of
     , P.Sw (M M1) (k d) Fp
     ]
 
-  V.Divi t s i ->
+  V.DivVI t s i ->
     [ P.Lw (M M1) (k s) Fp
-    , P.Addi (M M2) ZeroReg i
+    , P.Li (M M2) i
+    , P.Div (M M1) (M M2)
+    , P.Mflo (M M1)
+    , P.Sw (M M1) (k t) Fp
+    ]
+
+  V.DivIV t i s ->
+    [ P.Li (M M1) i
+    , P.Lw (M M2) (k s) Fp
     , P.Div (M M1) (M M2)
     , P.Mflo (M M1)
     , P.Sw (M M1) (k t) Fp
@@ -196,7 +213,7 @@ virtToPhysMIPS rm mv = case mv of
     , P.Add (M M1) (M M1) (M M2)
     , P.Lw (M M2) (k s) Fp
     , P.Sw (M M2) (Imm "0") (M M1) ]
-  
+
   V.ArrStriv s a i ->
     [ P.Addi (M M1) ZeroReg imm4
     , P.Lw (M M2) (k i) Fp
@@ -212,7 +229,7 @@ virtToPhysMIPS rm mv = case mv of
     , P.Lw (M M2) (k s) Fp
     , P.Sw (M M2) (times4 i) (M M1) ]
 
-  V.ArrStrii s a i -> 
+  V.ArrStrii s a i ->
      [ P.Lw (M M1) (k a) Fp
     , P.Addi (M M2) ZeroReg s
     , P.Sw (M M2) (times4 i) (M M1) ]
@@ -234,25 +251,30 @@ virtToPhysMIPS rm mv = case mv of
 
   V.Nop -> []
 
-  V.Return r -> setupReturn r loadReg 
+  V.Return r -> setupReturn r loadReg
 
   V.Returni i -> setupReturnImm i
 
+  -- TODO: pushing for colten first
+  V.BeginFunction -> []
+
   V.EndFunction -> setupReturnVoid
 
-  V.ArrAssignVV v1 v2 v3 -> setupCallStack (Label "memset") 
+  V.ArrAssignVV v1 v2 v3 -> setupCallStack (Label "memset")
     (map V.CVarg [v1, v2, v3]) loadReg
-  
+
   V.ArrAssignVI v1 v2 i3 -> setupCallStack (Label "memset")
     [V.CVarg v1, V.CVarg v2, V.CIarg i3] loadReg
-  
+
   V.ArrAssignII v1 i2 i3 -> setupCallStack (Label "memset")
     [V.CVarg v1, V.CIarg i2, V.CIarg i3] loadReg
-  
+
   V.ArrAssignIV v1 i2 v3 -> setupCallStack (Label "memset")
     [V.CVarg v1, V.CIarg i2, V.CVarg v3] loadReg
 
   where
+    rm :: RegMap
+    rm = calcRegMap vf
     -- This is safe because genRegMap has assigned
     -- every virtual register its own unique index
     k :: VReg -> Imm
@@ -260,9 +282,6 @@ virtToPhysMIPS rm mv = case mv of
 
     imm4 = Imm "4"
     imm0 = Imm "0"
-
-    negateImm :: Imm -> Imm 
-    negateImm (Imm i) = Imm (show $ (read i :: Int) * (-1))
 
     times4 :: Imm -> Imm
     times4 (Imm i) = Imm (show $ (read i :: Int) * 4)

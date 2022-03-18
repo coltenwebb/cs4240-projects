@@ -1,9 +1,11 @@
 module MIPS.Types.Physical where
 
 import MIPS.Types.Operand
+import TigerIR.Program
+import TigerIR.IrInstruction
 
-f :: FnArg -> Int 
-f = undefined
+type PhysicalProgram  = Program  MipsPhys
+type PhysicalFunction = Function MipsPhys
 
 data MipsPhys
   = Addi  PReg PReg Imm
@@ -28,5 +30,4 @@ data MipsPhys
   | J     Label
   | Syscall
   | Li    PReg Imm
-
-newtype PhysicalProgram = PhysicalProgram { physicalInstructions :: [MipsPhys] } deriving ()
+  deriving Show

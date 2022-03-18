@@ -6,41 +6,15 @@ import TigerIR.Program as T
 import TigerIR.Types as T
 import MIPS.Types.Virtual as V
 import MIPS.Types.Physical as P
-import MIPS.Types.Operand
 import MIPS.RegisterAllocator.Naive
 import MIPS.CallingConvention
 import Data.Bits
 import Data.List
 import MIPS.Types.Operand
 
-programSelection :: T.TigerIrProgram -> PhysicalProgram 
-programSelection program = PhysicalProgram vfuncs
-  where
-    vfuncs = concatMap functionSelection $ T.functions program
-
-programSelectionIR2V :: T.TigerIrProgram -> V.VirtualProgram 
-programSelectionIR2V program = V.VirtualProgram $ map (functionSelectionIR2V) $ T.functions program
-
-functionSelectionIR2V :: T.TigerIrFunction -> V.VirtualFunction
-functionSelectionIR2V fn = V.VirtualFunction (V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)) $ name fn
-
-fnameStr :: T.TigerIrFunction -> String
-fnameStr (T.TigerIrFunction (T.FunctionName (T.Label fname)) _ _ _ _) = fname
-
-functionSelection :: T.TigerIrFunction -> [P.MipsPhys]
-functionSelection fn = foldl' v2p [] vinsts
-  where
-    v2p :: [P.MipsPhys] -> V.MipsVirtual -> [P.MipsPhys]
-    v2p acc vinst = acc ++ virtToPhysMIPS regMap vinst 
-
-    vinsts :: [V.MipsVirtual]
-    vinsts = V.Label (T.Label (fnameStr fn)) : map (instructionSelection . instruction) (T.instrs fn)
-
-    regMap :: RegMap
-    regMap = genRegMap vregs 
-      where 
-        vregs = map toVReg (parameters fn) ++ map toVReg (localVars fn)
-
+-- note: (. instruction) record selector, discard the line number
+virtFnSelection :: TigerIrFunction -> V.VirtualFunction
+virtFnSelection = instrSelectionPass (instructionSelection . instruction)
 
 instructionSelection :: T.IrInstruction -> MipsVirtual
 instructionSelection ins = case ins of
@@ -49,12 +23,13 @@ instructionSelection ins = case ins of
     AssignVarOpsDV v1 v2 -> V.AssignV (VReg v1) (VReg v2)
 
   BinaryOperation op bops -> case op of
-    T.Add  -> handleBinOp bops addImm  V.Addi   V.Add
-    T.Sub  -> handleBinOp bops subImm  V.Subi   V.Sub
-    T.Mult -> handleBinOp bops multImm V.Multi  V.Mult
-    T.Div  -> handleBinOp bops divImm  V.Divi   V.Div
-    T.And  -> handleBinOp bops andImm  V.Andi   V.And
-    T.Or   -> handleBinOp bops orImm   V.Ori    V.Or
+    T.Add  -> handleCommutativeBinOp bops addImm  V.Addi   V.Add
+    T.Mult -> handleCommutativeBinOp bops multImm V.Multi  V.Mult
+    T.And  -> handleCommutativeBinOp bops andImm  V.Andi   V.And
+    T.Or   -> handleCommutativeBinOp bops orImm   V.Ori    V.Or
+    
+    T.Sub  -> handleNonCommutativeBinOp bops subImm V.SubVI V.SubIV V.Sub
+    T.Div  -> handleNonCommutativeBinOp bops divImm V.DivVI V.DivIV V.Div
 
   BranchOperation op brops -> case op of
     T.Breq  -> handleBrOp brops Eq
@@ -67,6 +42,10 @@ instructionSelection ins = case ins of
   T.Return retvarOp -> case retvarOp of
     Retvar v -> V.Return (VReg v)
     Retimm i -> V.Returni i
+
+  T.BeginFunction -> V.BeginFunction
+  
+  T.EndFunction -> V.EndFunction
 
   T.Call (FunctionName lab) params
     -> V.Call lab (fnArgsToCallArgs params)
@@ -108,19 +87,35 @@ instructionSelection ins = case ins of
 
     T.ArrAssignAVV (Array arr _) v1 v2
       -> V.ArrAssignVV (VReg arr) (VReg v1) (VReg v2)
+
   T.LabelIns label -> V.Label label
 
-handleBinOp
+
+handleCommutativeBinOp
   :: BinOperands
   -> (Imm -> Imm -> Imm)
   -> (VReg -> VReg -> Imm -> MipsVirtual)
   -> (VReg -> VReg -> VReg -> MipsVirtual)
   -> MipsVirtual
-handleBinOp bops immHandler immIns regIns =
+handleCommutativeBinOp bops immHandler immIns regIns =
   case bops of
-    BinOpsDII v1 i2 i3 -> V.Li (VReg v1) (immHandler i2 i3)
+    BinOpsDII v1 i2 i3 -> V.Li   (VReg v1) (immHandler i2 i3)
     BinOpsDIV v1 i2 v3 -> immIns (VReg v1) (VReg v3) i2
     BinOpsDVI v1 v2 i3 -> immIns (VReg v1) (VReg v2) i3
+    BinOpsDVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
+
+handleNonCommutativeBinOp
+  :: BinOperands
+  -> (Imm -> Imm -> Imm)
+  -> (VReg -> VReg -> Imm -> MipsVirtual)
+  -> (VReg -> Imm  -> VReg -> MipsVirtual)
+  -> (VReg -> VReg -> VReg -> MipsVirtual)
+  -> MipsVirtual
+handleNonCommutativeBinOp bops immHandler viIns ivIns regIns =
+  case bops of
+    BinOpsDII v1 i2 i3 -> V.Li   (VReg v1) (immHandler i2 i3)
+    BinOpsDIV v1 i2 v3 -> ivIns  (VReg v1) i2 (VReg v3)
+    BinOpsDVI v1 v2 i3 -> viIns  (VReg v1) (VReg v2) i3
     BinOpsDVV v1 v2 v3 -> regIns (VReg v1) (VReg v2) (VReg v3)
 
 liftImm :: (Int -> Int -> Int) -> Imm -> Imm -> Imm

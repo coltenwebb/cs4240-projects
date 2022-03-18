@@ -1,8 +1,13 @@
 module MIPS.Types.Virtual where
 
 import MIPS.Types.Operand
-import TigerIR.Types (Imm, Label)
 import Data.Maybe
+
+import TigerIR.Program
+import TigerIR.IrInstruction
+
+type VirtualFunction = Function MipsVirtual
+type VirtualProgram  = Program  MipsVirtual
 
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
@@ -18,19 +23,24 @@ class Mips a where
 data MipsVirtual
   = AssignI  VReg Imm
   | AssignV  VReg VReg
-  | Addi     VReg VReg Imm
   | Li       VReg Imm          -- [P]
+  -- Commutative bin-ops
+  | Addi     VReg VReg Imm  
   | Add      VReg VReg VReg    -- 
-  | Sub      VReg VReg VReg
-  | Subi     VReg VReg Imm     -- [P]
   | Mult     VReg VReg VReg
   | Multi    VReg VReg Imm     -- [P]
-  | Div      VReg VReg VReg
-  | Divi     VReg VReg Imm
   | Andi     VReg VReg Imm
   | And      VReg VReg VReg
   | Ori      VReg VReg Imm
   | Or       VReg VReg VReg
+  -- Special case for non-commutativity
+  | Sub      VReg VReg VReg
+  | SubVI    VReg VReg Imm     -- [P]
+  | SubIV    VReg Imm  VReg
+  | Div      VReg VReg VReg
+  | DivVI    VReg VReg Imm
+  | DivIV    VReg Imm  VReg
+
   | Bri      Cmp  VReg Imm  Label
   | Br       Cmp  VReg VReg Label
   | Lw       VReg Imm VReg
@@ -60,6 +70,7 @@ data MipsVirtual
   | Nop                           -- [P]
   | Return   VReg                 -- [P]
   | Returni  Imm                  -- [P]
+  | BeginFunction                 -- [P] for initialization
   | EndFunction                   -- [P] void return
   deriving (Show)
 
@@ -72,17 +83,14 @@ instance Mips MipsVirtual where
   isLabel MIPS.Types.Virtual.Label {} = True 
   isLabel _               = False 
 
-  isReturnOp Return {}    = True 
+  isReturnOp MIPS.Types.Virtual.Return {}    = True 
   isReturnOp Returni {}   = True 
   isReturnOp _            = False 
 
-  isGotoOp Goto {}        = True 
+  isGotoOp MIPS.Types.Virtual.Goto {}        = True 
   isGotoOp _              = False
 
 
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
 
 data CallArg = CVarg VReg | CIarg Imm deriving (Show)
-
-newtype VirtualProgram = VirtualProgram { virtualInstructions :: [VirtualFunction] } deriving ()
-data VirtualFunction = VirtualFunction { unMipsVirtuals :: [MipsVirtual], unFname :: FunctionName } deriving (Show)
