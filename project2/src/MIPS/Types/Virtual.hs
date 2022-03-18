@@ -11,8 +11,17 @@ type VirtualProgram  = Program  MipsVirtual
 
 -- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
 -- pushin [P]
+
+class Mips a where
+  isBranching :: a -> Bool
+  isLabel     :: a -> Bool
+  isReturnOp  :: a -> Bool
+  isGotoOp    :: a -> Bool
+  -- If it is a branch / goto / etc. it will have a label
+  -- to jump to, used for determining consecutive blocks 
+
 data MipsVirtual
-  = AssignI  VReg Imm         
+  = AssignI  VReg Imm
   | AssignV  VReg VReg
   | Li       VReg Imm          -- [P]
   -- Commutative bin-ops
@@ -45,7 +54,7 @@ data MipsVirtual
   -- arr[0] := a
   | ArrStr   VReg VReg VReg
   | ArrStri  VReg VReg Imm
-  | ArrStrii Imm VReg Imm 
+  | ArrStrii Imm VReg Imm
   | ArrStriv Imm VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
@@ -63,7 +72,24 @@ data MipsVirtual
   | Returni  Imm                  -- [P]
   | BeginFunction                 -- [P] for initialization
   | EndFunction                   -- [P] void return
-  deriving Show
+  deriving (Show)
+
+
+instance Mips MipsVirtual where
+  isBranching Br {}       = True
+  isBranching Bri {}      = True
+  isBranching _           = False 
+
+  isLabel MIPS.Types.Virtual.Label {} = True 
+  isLabel _               = False 
+
+  isReturnOp MIPS.Types.Virtual.Return {}    = True 
+  isReturnOp Returni {}   = True 
+  isReturnOp _            = False 
+
+  isGotoOp MIPS.Types.Virtual.Goto {}        = True 
+  isGotoOp _              = False
+
 
 data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
 

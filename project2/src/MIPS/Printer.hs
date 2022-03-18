@@ -1,5 +1,5 @@
 -- TODO: IMPORTANT!!!! Re-enable this
--- {-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns -Werror #-}
 {-# LANGUAGE FlexibleInstances #-}
 module MIPS.Printer where
 
@@ -10,8 +10,11 @@ import MIPS.Intrinsics
 
 import TigerIR.Program
 
-import Data.List (intercalate)
+import Data.List (intercalate, intersperse, elem)
 import Control.Monad.Writer
+import qualified MIPS.Types.Physical as P
+import qualified MIPS.Types.Physical as P
+import qualified MIPS.Types.Physical as P
 
 class Print p where
   pr :: p -> String
@@ -101,13 +104,13 @@ instance Print V.MipsVirtual where
    = "    returni " ++ pr val
   pr V.EndFunction
    = "    endFunc"
-  pr V.BeginFunction 
+  pr V.BeginFunction
    = "    beginFunc"
 
   -- TODO: Not urgent, only virtual instructions after all
   pr (V.DivIV dst src1 imm)
     =  ""
-  
+
   pr (V.DivVI _ _ _)
     = ""
 
@@ -128,12 +131,40 @@ instance Print V.CallArg where
 -- = Physical =
 -- ============
 
+intrinsicFunctionNames :: [String]
+intrinsicFunctionNames = map (show . name) intrinsicFunctions
+
 instance Print P.PhysicalProgram where
   pr (Program funcs) = intercalate "\n" $
     [".text"]
-    ++ map pr intrinsicFunctions
     ++ [".globl main"]
-    ++ map pr funcs
+    ++ map (".globl " ++) intrinsicFunctionNames
+    ++ map pr intrinsicFunctions
+    ++ map pr funcs'
+    where
+      funcNames :: [String]
+      funcNames = map (show . name) funcs ++ intrinsicFunctionNames
+
+      funcs' :: [Function P.MipsPhys]
+      funcs' = map (\(Function fname r p l instrs) -> Function fname r p l (map (renameInst fname) instrs)) funcs
+        where
+          renameInst :: FunctionName -> P.MipsPhys -> P.MipsPhys
+          renameInst fname i = case i of
+            P.Label (Label lab)     -> if lab `notElem` funcNames 
+                                        then P.Label (Label (show fname ++ "_" ++ lab)) else i
+            P.Jal (Label lab)       -> if lab `notElem` funcNames 
+                                        then P.Jal (Label (show fname ++ "_" ++ lab)) else i
+            P.J (Label lab)         -> if lab `notElem` funcNames 
+                                        then P.J (Label (show fname ++ "_" ++ lab)) else i
+            P.Beq r1 r2 (Label lab) -> if lab `notElem` funcNames 
+                                        then P.Beq r1 r2 (Label (show fname ++ "_" ++ lab)) else i
+            P.Bne r1 r2 (Label lab) -> if lab `notElem` funcNames 
+                                        then P.Bne r1 r2 (Label (show fname ++ "_" ++ lab)) else i
+            P.Bgtz r (Label lab)    -> if lab `notElem` funcNames 
+                                        then P.Bgtz r (Label (show fname ++ "_" ++ lab)) else i
+            P.Blez r (Label lab)    -> if lab `notElem` funcNames 
+                                        then P.Blez r (Label (show fname ++ "_" ++ lab)) else i 
+            _                       -> i
     --concatMap (\ins -> pr ins ++ "\n") pinsts
 
 instance Print P.PhysicalFunction where
@@ -145,7 +176,7 @@ instance Print P.PhysicalFunction where
       pr' (P.Add r1 r2 r3)  = "    add " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Sub r1 r2 r3)  = "    sub " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Mflo r1)       = "    mflo " ++ pr r1
-      pr' (P.Mult r1 r2)    = "    add " ++ pr r1 ++ ", " ++ pr r2
+      pr' (P.Mult r1 r2)    = "    mult " ++ pr r1 ++ ", " ++ pr r2
       pr' (P.Div r1 r2)     = "    div " ++ pr r1 ++ ", " ++ pr r2
       pr' (P.Andi r1 r2 im) = "    andi " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr im
       pr' (P.And r1 r2 r3)  = "    and " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
@@ -153,16 +184,17 @@ instance Print P.PhysicalFunction where
       pr' (P.Or r1 r2 r3)   = "    or " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr r3
       pr' (P.Jal lab)       = "    jal " ++ pr lab
       pr' (P.Jr r)          = "    jr " ++ pr r
-      pr' (P.J lab)         = "    jr " ++ pr lab
+      pr' (P.J lab)         = "    j  " ++ pr lab
       pr' (P.Beq r1 r2 lab) = "    beq " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
       pr' (P.Bne r1 r2 lab) = "    bne " ++ pr r1 ++ ", " ++ pr r2 ++ ", " ++ pr lab
       pr' (P.Bgtz r lab)    = "    bgtz " ++ pr r ++ ", " ++ pr lab
       pr' (P.Blez r lab)    = "    blez " ++ pr r ++ ", " ++ pr lab
-      pr' (P.Lw r1 im r2)   = "    lw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
-      pr' (P.Sw r1 im r2)   = "    sw " ++ pr r1 ++ ", " ++ pr im ++ ", " ++ pr r2
-      pr' (P.Label (Label lab)) = fname ++ "_" ++ lab ++ ":"
+      pr' (P.Lw r1 im r2)   = "    lw " ++ pr r1 ++ ", " ++ pr im ++ "(" ++ pr r2 ++ ")"
+      pr' (P.Sw r1 im r2)   = "    sw " ++ pr r1 ++ ", " ++ pr im ++ "(" ++ pr r2 ++ ")"
+      pr' (P.Label lab)     = pr lab ++ ": "
       pr' P.Syscall         = "    syscall"
       pr' (P.Li r im)       = "    li" ++ ", " ++ pr r ++ ", " ++ pr im
+
 
 instance Print V.Cmp where
   pr x = show x
