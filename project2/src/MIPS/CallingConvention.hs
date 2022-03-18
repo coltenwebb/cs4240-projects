@@ -48,14 +48,16 @@ toImm (OffsetIdx i) = Imm (show (i * 4))
 -- Stack/Fp setup upon entry into function
 fnEntry :: Function a -> [P.MipsPhys]
 fnEntry fn =
-  -- fp <- sp
-  -- already done by setupCallStack, but necessary for `main`,
-  -- since fp is zero-initialized
-  [ P.Add Fp Sp ZeroReg
-  , P.Addi Sp Sp (toImm offst)
-  ]
+  if name fn == FunctionName (Label "main")
+  then 
+  -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
+  -- calling convention since fp is zero-initialized
+    [ P.Add Fp Sp ZeroReg
+    , P.Addi Sp Sp (toImm offst)
+    ]
+  else [ P.Addi Sp Sp (toImm offst) ]
   where
-    offst = OffsetIdx 0 .+ netLocalVarSize fn
+    offst = OffsetIdx 0 .- netLocalVarSize fn
 
 {-
 hi addr
@@ -202,7 +204,9 @@ setupCallStack fn args loadReg =
   [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
   , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
   , P.Jal fn                                        -- Call subroutine
-  , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
+
+  -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
+  , P.Add Sp Fp ZeroReg
   ]
   ++
   -- Callee returned, teardown / restoring registers
