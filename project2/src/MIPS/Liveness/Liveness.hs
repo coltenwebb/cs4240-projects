@@ -36,16 +36,36 @@ tfunc = Function
   { name = FunctionName (Label "tFunc")
   , returnsVal = False
   , parameters =
-    [
+    [ ParamV (Variable "x")
     ]
   , localVars =
-    [ LocalV (Variable "d")
+    [ LocalV (Variable "a")
+    , LocalV (Variable "b")
+    , LocalV (Variable "c")
+    , LocalV (Variable "d")
     ]
   , instrs =
-    [
-      V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "d"))
+    [ V.AssignV (VReg (Variable "d")) (VReg (Variable "a"))
+    , V.Mult (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "x"))
+    , V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "b"))
+    , V.Mult (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "x"))
+    , V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "c"))
     ]
   }
+-- tfunc generates the below instructions
+-- [Lw (T T0) -8 Fp,
+-- Addi (T T1) (T T0) 0,
+-- Lw (T T0) -4 Fp,
+-- Mult (T T1) (T T0),
+-- Mflo (T T3),
+-- Lw (T T1) -12 Fp,
+-- Add (T T2) (T T3) (T T1),
+-- Mult (T T2) (T T0),
+-- Mflo (T T1),
+-- Lw (T T0) -16 Fp,
+-- Add (T T2) (T T1) (T T0),
+-- Sw (T T2) -20 Fp]
+
 
 --testInst = [
 --    --MVLine (Add (VReg (Variable "a")) (VReg (Variable "d")) (VReg (Variable "d"))) 1,
@@ -56,6 +76,7 @@ tfunc = Function
 --    MVLine (V.Add (VReg (Variable "e")) (VReg (Variable "c")) (VReg (Variable "a"))) 5 
 --  ]
 
+-- used to generate live ranges
 defVar :: V.MipsVirtual -> Maybe VReg
 defVar vinst = case vinst of
   V.AssignI vreg _    -> Just vreg
@@ -64,8 +85,13 @@ defVar vinst = case vinst of
   V.Li vreg _         -> Just vreg
   V.Add vreg _ _      -> Just vreg
   V.Sub vreg _ _      -> Just vreg
+  V.SubVI vreg _ _      -> Just vreg
+  V.SubIV vreg _ _      -> Just vreg
   V.Mult vreg _ _     -> Just vreg 
+  V.Multi vreg _ _     -> Just vreg 
   V.Div vreg _ _      -> Just vreg 
+  V.DivVI vreg _ _      -> Just vreg 
+  V.DivIV vreg _ _      -> Just vreg 
   V.Andi vreg _ _     -> Just vreg 
   V.And vreg _ _      -> Just vreg  
   V.Ori vreg _ _      -> Just vreg  
@@ -80,6 +106,8 @@ defVar vinst = case vinst of
   V.Callr vreg _ _    -> Just vreg
   V.ArrStr _ _ _      -> Nothing
   V.ArrStri _ _ _     -> Nothing
+  V.ArrStrii _ _ _     -> Nothing
+  V.ArrStriv _ _ _     -> Nothing
   V.ArrLoad vreg _ _  -> Just vreg
   V.ArrLoadi vreg _ _ -> Just vreg
   V.ArrAssignVV _ _ _ -> Nothing
@@ -89,7 +117,10 @@ defVar vinst = case vinst of
   V.Nop               -> Nothing
   V.Return _          -> Nothing
   V.Returni _         -> Nothing 
+  V.BeginFunction         -> Nothing 
+  V.EndFunction         -> Nothing 
 
+-- used to generate live ranges
 usedVars :: V.MipsVirtual -> [VReg]
 usedVars vinst = case vinst of
   V.AssignI _ _              -> []
@@ -98,8 +129,13 @@ usedVars vinst = case vinst of
   V.Li _ _                   -> []
   V.Add _ vreg1 vreg2        -> [vreg1, vreg2]
   V.Sub _ vreg1 vreg2        -> [vreg1, vreg2]
+  V.SubVI _ vreg _      -> [vreg]
+  V.SubIV _ _ vreg      -> [vreg]
   V.Mult _ vreg1 vreg2       -> [vreg1, vreg2] 
+  V.Multi _ vreg _       -> [vreg] 
   V.Div _ vreg1 vreg2        -> [vreg1, vreg2] 
+  V.DivVI _ vreg _        -> [vreg] 
+  V.DivIV _ _ vreg        -> [vreg] 
   V.Andi _ vreg1 _           -> [vreg1] 
   V.And _ vreg1 vreg2        -> [vreg1, vreg2]  
   V.Ori _ vreg1 _            -> [vreg1]  
@@ -114,6 +150,8 @@ usedVars vinst = case vinst of
   V.Callr _ _ args           -> mapMaybe vRegArg args
   V.ArrStr vreg1 vreg2 vreg3 -> [vreg1, vreg2, vreg3]
   V.ArrStri vreg1 vreg2 _    -> [vreg1, vreg2]
+  V.ArrStrii _ vreg _    -> [vreg]
+  V.ArrStriv _ vreg1 vreg2    -> [vreg1, vreg2]
   V.ArrLoad _ vreg1 vreg2    -> [vreg1, vreg2]
   V.ArrLoadi _ vreg _        -> [vreg]
   V.ArrAssignVV vr1 vr2 vr3  -> [vr1, vr2, vr3]
@@ -123,6 +161,8 @@ usedVars vinst = case vinst of
   V.Nop                      -> []
   V.Return vreg              -> [vreg]
   V.Returni _                -> []
+  V.BeginFunction                -> []
+  V.EndFunction                -> []
   where vRegArg arg = case arg of
           V.CVarg vreg -> Just vreg
           V.CIarg _    -> Nothing
@@ -303,35 +343,164 @@ spilledStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs
   where
     cond (ALR preg lr) = (unStart lr == ln) && (unHasDef lr) == True
     store (ALR (Just preg) lr) = Nothing
-    store (ALR (Nothing) lr) = Just $ P.Sw spillRegDef (k $ unVReg lr) Fp -- spill stores to m1
+    store (ALR (Nothing) lr) = Just $ P.Sw (M M1) (k $ unVReg lr) Fp -- spill stores to m1
     alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
     k = toImm . (M.!) (calcRegMap vf)
 
 spilledInst :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
 spilledInst vf (MVLine mv ln) = case mv of 
-  V.Add d s t -> [ P.Add defPReg usedPreg1 usedPreg2 ]
+  V.Addi t s i -> 
+    [ P.Addi defPReg usedPreg1 i 
+    ]
+  V.Add d s t -> 
+    [ P.Add defPReg usedPreg1 usedPreg2 
+    ]
+  V.Sub d s t -> 
+    [ P.Sub defPReg usedPreg1 usedPreg2 
+    ]
+  V.SubVI t s i -> 
+    [ P.Li (M M2) i
+    , P.Sub defPReg usedPreg1 (M M2)
+    ]
+  V.SubIV t i s -> 
+    [ P.Li (M M2) i
+    , P.Add defPReg (M M2) usedPreg1
+    ]
+  V.Mult d s t -> 
+    [ P.Mult usedPreg1 usedPreg2 
+    , P.Mflo defPReg
+    ]
+  V.Multi t s i -> 
+    [ P.Li (M M2) i
+    , P.Mult usedPreg1 (M M2) 
+    , P.Mflo defPReg
+    ]
+  V.Div d s t -> 
+    [ P.Div usedPreg1 usedPreg2 
+    , P.Mflo defPReg
+    ]
+  V.DivVI t s i -> 
+    [ P.Li (M M2) i
+    , P.Div usedPreg1 (M M2) 
+    , P.Mflo defPReg
+    ]
+  V.DivIV t i s -> 
+    [ P.Li (M M2) i
+    , P.Div (M M2) usedPreg1 
+    , P.Mflo defPReg
+    ]
+  V.Andi t s i -> 
+    [ P.Andi defPReg usedPreg1 i 
+    ]
+  V.And d s t -> 
+    [ P.And defPReg usedPreg1 usedPreg2 
+    ]
+  V.Ori t s i -> 
+    [ P.Ori defPReg usedPreg1 i 
+    ]
+  V.Or d s t -> 
+    [ P.Or defPReg usedPreg1 usedPreg2 
+    ]
+
+  V.Br c a b l -> case c of
+    V.Eq -> 
+      [ P.Beq usedPreg1 usedPreg2 l
+      ]
+    V.Neq -> 
+      [ P.Bne usedPreg1 usedPreg2 l
+      ]
+    V.Lt -> 
+      [ P.Sub (M M1) usedPreg1 usedPreg2
+      , P.Bgtz (M M1) l
+      ]
+    V.Gt -> 
+      [ P.Sub (M M1) usedPreg2 usedPreg1
+      , P.Bgtz (M M1) l
+      ]
+    V.Geq -> 
+      [ P.Sub (M M1) usedPreg2 usedPreg1
+      , P.Blez (M M1) l
+      ]
+    V.Leq -> 
+      [ P.Sub (M M1) usedPreg1 usedPreg2
+      , P.Blez (M M1) l
+      ]
+
+  V.Bri c a i l -> case c of
+    V.Eq -> 
+      [ P.Li (M M2) i
+      , P.Beq usedPreg1 (M M2) l
+      ]
+    V.Neq -> 
+      [ P.Li (M M2) i
+      , P.Bne usedPreg1 (M M2) l
+      ]
+    V.Lt -> 
+      [ P.Li (M M2) i
+      , P.Sub (M M1) (M M2) usedPreg1
+      , P.Bgtz (M M1) l
+      ]
+    V.Gt -> 
+      [ P.Li (M M2) i
+      , P.Sub (M M1) usedPreg1 (M M2)
+      , P.Bgtz (M M1) l
+      ]
+    V.Geq -> 
+      [ P.Li (M M2) i
+      , P.Sub (M M1) (M M2) usedPreg1
+      , P.Blez (M M1) l
+      ]
+    V.Leq -> 
+      [ P.Li (M M2) i
+      , P.Sub (M M1) usedPreg1 (M M2)
+      , P.Blez (M M1) l
+      ]
+
+  V.Lw t i s ->
+    [ P.Lw defPReg i usedPreg1
+    ]
+
+  V.Li t i ->
+    [ P.Li defPReg i
+    ]
+
+--  V.Sw t i s ->
+--    [ P.Li defPReg i
+--    ]
+--
+  V.Label lab -> 
+    [ P.Label lab
+    ]
+
+--  V.Goto lab -> 
+--    [ setupGoto lab
+--    ]
+  
+  V.AssignI d i ->
+    [ P.Li defPReg i
+    ]
+
+  V.AssignV d s ->
+    [ P.Addi defPReg usedPreg1 (Imm "0")
+    ]
+  
   where
     k = toImm . (M.!) (calcRegMap vf)
     alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
     defPReg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr) alrs of
-      [ALR Nothing _] -> spillRegDef
+      [ALR Nothing _] -> (M M1)
       [ALR (Just preg) _] -> T preg
       otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
     -- get preg for first arg
     usableCond lr = (unStart lr < ln || (unStart lr == ln && (unHasDef lr) == False)) && unEnd lr >= ln
     usedPreg1 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == firstUsed mv) alrs of
-      [ALR Nothing _] -> spillRegUse1
+      [ALR Nothing _] -> (M M1)
       [ALR (Just preg) _] -> T preg
       otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
     usedPreg2 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == secondUsed mv) alrs of
-      [ALR Nothing _] -> spillRegUse2
+      [ALR Nothing _] -> if firstUsed mv == secondUsed mv then (M M1) else (M M2)
       [ALR (Just preg) _] -> T preg
       otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
-
-
-spillRegDef = M M1
-spillRegUse1 = M M1
-spillRegUse2 = M M2
 
 --insertLoadsStores hinsts alrs = foldr (composeInserts) alrs hinsts
 
