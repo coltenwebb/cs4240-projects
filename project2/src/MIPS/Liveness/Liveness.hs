@@ -91,21 +91,21 @@ selectFnInstructions :: V.VirtualFunction -> [P.MipsPhys]
 selectFnInstructions vf = concatMap (selectBB vf) (MipsCFG.splitIntoBasicBlocks . instrs $ vf)
 
 selectBB :: V.VirtualFunction -> MipsCFG.BasicBlockMips -> [P.MipsPhys]
-selectBB vf bb = selectInstructions vf . NE.toList $ MipsCFG.instrs bb
+selectBB vf bb = trace (show bb) $ selectInstructions vf . NE.toList $ MipsCFG.instrs bb
 
 selectInstructions :: V.VirtualFunction -> [V.MipsVirtual] -> [P.MipsPhys]
 selectInstructions vf vinsts = concatMap expand (lined vinsts)
   where
     alrs = allocatePRegs . buildLiveRanges . lined $ vinsts
     k = toImm . (M.!) (calcRegMap vf)
-    expand mvl@(MVLine mv ln) = loads ++ select ++ stores
+    expand mvl@(MVLine mv ln) = trace (show loads) loads ++ select ++ stores
       where
-        loads = allocatedLoads vf mvl ++ spilledLoads vf mvl
+        loads = allocatedLoads alrs k mvl ++ spilledLoads alrs k mvl
         select = inst $ intermediateForm vf use def k mv
           where
             use vr = fromJust . lookup vr $ usable alrs mvl
             def vr = trace (show vr) $ fromJust . lookup vr $ defable alrs mvl
-        stores = spilledStores vf mvl ++ allocatedStores vf mvl
+        stores = spilledStores alrs k mvl ++ allocatedStores alrs k mvl
 
 -- ====================
 -- Building Live Ranges
@@ -188,44 +188,35 @@ allocatePRegs :: [LiveRange] -> [ALR]
 allocatePRegs lrs = foldl' f [] (reverse $ sortOn unUses lrs)
   where
     f :: [ALR] -> LiveRange -> [ALR]
-    f alrs lr = (ALR (allocatePReg lr alrs) lr : alrs)
+    f alrs lr = ALR (allocatePReg lr alrs) lr : alrs
 
 -- if the line is at the start of a live range that has no def
-allocatedLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-allocatedLoads vf (MVLine mv ln) = mapMaybe load $ filter acond alrs 
+--allocatedLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+allocatedLoads alrs k (MVLine mv ln) = mapMaybe load $ filter acond alrs 
   where
-    acond (ALR preg lr) = (ln == unStart lr) && (unHasDef lr == False)
+    acond (ALR preg lr) = trace (show lr) $ (ln == unStart lr) && not (unHasDef lr)
     load (ALR (Just preg) lr) = Just $ P.Lw (T preg) (k $ unVReg lr) Fp
-    load (ALR (Nothing) lr) = Nothing
-    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
-    k = toImm . (M.!) (calcRegMap vf)
+    load (ALR Nothing lr) = Nothing
 
-spilledLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-spilledLoads vf mvl@(MVLine mv ln) = map told (spilledLoadsArr vf mvl)
+--spilledLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledLoads alrs k mvl@(MVLine mv ln) = map told (spilledLoadsArr alrs k mvl)
   where
-    told (vreg,preg) = P.Lw preg (k $ vreg) Fp
-    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
-    k = toImm . (M.!) (calcRegMap vf)
+    told (vreg,preg) = P.Lw preg (k vreg) Fp
 
 -- start of a live range that has no def OR
 -- live range starts strictly before line
-spilledLoadsArr :: (Function V.MipsVirtual) -> MVLine -> [(VReg,PReg)]
-spilledLoadsArr vf (MVLine mv ln) = zip (mapMaybe load $ filter scond alrs) (map M [M1 .. M4])
+spilledLoadsArr :: [ALR] -> (VReg -> Imm) -> MVLine -> [(VReg,PReg)]
+spilledLoadsArr alrs k (MVLine mv ln) = zip (mapMaybe load $ filter scond alrs) (map M [M1 .. M4])
   where
-    scond alr = ((scond0 alr) || (scond1 alr)) && (scond2 alr)
-    scond0 (ALR preg lr) = (unStart lr) == ln && (unHasDef lr) == False
-    scond1 (ALR preg lr) = (unStart lr) < ln && (unEnd lr) >= ln
-    scond2 (ALR preg lr) = (unVReg lr) `elem` usedVars mv
+    scond alr = (scond0 alr || scond1 alr) && scond2 alr
+    scond0 (ALR preg lr) = unStart lr == ln && not (unHasDef lr)
+    scond1 (ALR preg lr) = unStart lr < ln && unEnd lr >= ln
+    scond2 (ALR preg lr) = unVReg lr `elem` usedVars mv
     load (ALR (Just preg) lr) = Nothing
-    load (ALR (Nothing) lr) = Just (unVReg lr)
-    -- | firstUsed mv == Just (unVReg lr) = Just $ P.Lw (M M1) (k $ unVReg lr) Fp
-    -- | secondUsed mv == Just (unVReg lr) = Just $ P.Lw (M M2) (k $ unVReg lr) Fp
-    -- | otherwise = Nothing
-    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
-    k = toImm . (M.!) (calcRegMap vf)
+    load (ALR Nothing lr) = Just (unVReg lr)
 
 loadPInsts :: [ALR] -> (VReg -> Imm) -> MVLine -> [P.MipsPhys]
-loadPInsts alrs k mvl = map f $ [ x|x@(_, M _) <- (usable alrs mvl) ]
+loadPInsts alrs k mvl = map f $ [ x|x@(_, M _) <- usable alrs mvl ]
   where
     f (vreg,preg) = P.Lw preg (k vreg) Fp
 
@@ -266,24 +257,20 @@ defable alrs (MVLine mv ln)
 
 
 -- line is at start of live range AND doStore is true
-allocatedStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
-allocatedStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs 
+--allocatedStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
+allocatedStores alrs k (MVLine mv ln) = mapMaybe store $ filter cond alrs 
   where
     cond (ALR preg lr) = (ln == unStart lr) && unNeedsStore lr
     store (ALR (Just preg) lr) = Just $ P.Sw (T preg) (k $ unVReg lr) Fp
     store (ALR Nothing lr) = Nothing
-    alrs = allocatePRegs . buildLiveRanges . lined . instrs $ vf
-    k = toImm . (M.!) (calcRegMap vf)
 
 -- start of a live range AND hasDef
-spilledStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
-spilledStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs
+--spilledStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
+spilledStores alrs k (MVLine mv ln) = mapMaybe store $ filter cond alrs
   where
     cond (ALR preg lr) = (unStart lr == ln) && unHasDef lr
     store (ALR (Just preg) lr) = Nothing
     store (ALR Nothing lr) = Just $ P.Sw (M M1) (k $ unVReg lr) Fp -- spill stores to m1
-    alrs = allocatePRegs . buildLiveRanges . lined . instrs $ vf
-    k = toImm . (M.!) (calcRegMap vf)
 
 -- an intermediate form approach:
 -- so we create the intermediate form from mips virtual

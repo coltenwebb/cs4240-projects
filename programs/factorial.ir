@@ -6,9 +6,11 @@ float-list:
     assign, acc, 1
     assign, n, 5
 loop:
-    breq, end_loop, i, n
+    brgt, end_loop, i, n
     mult, acc, acc, i
+    add, i, i, 1
     goto, loop
 end_loop:
     call, puti, acc
+    return, 0
 #end_function

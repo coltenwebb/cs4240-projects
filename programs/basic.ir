@@ -1,0 +1,7 @@
+#start_function
+int main():
+int-list: x
+float-list: 
+    assign, x, 5
+    return, x
+#end_function
