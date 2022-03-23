@@ -1,0 +1,14 @@
+#start_function
+int main():
+int-list: i, n, acc
+float-list: 
+    assign, i, 1
+    assign, acc, 1
+    assign, n, 5
+loop:
+    breq, end_loop, i, n
+    mult, acc, acc, i
+    goto, loop
+end_loop:
+    call, puti, acc
+#end_function

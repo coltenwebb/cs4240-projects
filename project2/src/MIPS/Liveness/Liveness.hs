@@ -9,6 +9,7 @@ import Debug.Trace
 import Data.List
 import qualified Data.Set as S
 import qualified Data.Map as M
+import qualified Data.List.NonEmpty as NE
 
 import Control.Monad.State.Lazy
 
@@ -17,6 +18,8 @@ import qualified MIPS.Types.Physical as P
 
 import MIPS.CallingConvention
 import TigerIR.Program
+
+import qualified MIPS.Liveness.MipsCFG as MipsCFG
 
 -- a live range consists of a virtual register, start instruction, end instruction, use count (def count will always be 1)
 -- we generate a set of live ranges
@@ -45,7 +48,8 @@ tfunc = Function
     , LocalV (Variable "d")
     ]
   , instrs =
-    [ V.AssignV (VReg (Variable "d")) (VReg (Variable "a"))
+    [ V.Label (Label "hi") 
+    , V.AssignV (VReg (Variable "d")) (VReg (Variable "a"))
     , V.Mult (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "x"))
     , V.Add (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "b"))
     , V.Mult (VReg (Variable "d")) (VReg (Variable "d")) (VReg (Variable "x"))
@@ -76,106 +80,42 @@ tfunc = Function
 --    MVLine (V.Add (VReg (Variable "e")) (VReg (Variable "c")) (VReg (Variable "a"))) 5 
 --  ]
 
--- used to generate live ranges
+-- ============
+-- Driving Code
+-- ============
+
+physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
+physFnSelection vf = vf { instrs = selectFnInstructions vf }
+
+selectFnInstructions :: V.VirtualFunction -> [P.MipsPhys]
+selectFnInstructions vf = concatMap (selectBB vf) (MipsCFG.splitIntoBasicBlocks . instrs $ vf)
+
+selectBB :: V.VirtualFunction -> MipsCFG.BasicBlockMips -> [P.MipsPhys]
+selectBB vf bb = selectInstructions vf . NE.toList $ MipsCFG.instrs bb
+
+selectInstructions :: V.VirtualFunction -> [V.MipsVirtual] -> [P.MipsPhys]
+selectInstructions vf vinsts = concatMap expand (lined vinsts)
+  where
+    alrs = allocatePRegs . buildLiveRanges . lined $ vinsts
+    k = toImm . (M.!) (calcRegMap vf)
+    expand mvl@(MVLine mv ln) = loads ++ select ++ stores
+      where
+        loads = allocatedLoads vf mvl ++ spilledLoads vf mvl
+        select = inst $ intermediateForm vf use def k mv
+          where
+            use vr = fromJust . lookup vr $ usable alrs mvl
+            def vr = trace (show vr) $ fromJust . lookup vr $ defable alrs mvl
+        stores = spilledStores vf mvl ++ allocatedStores vf mvl
+
+-- ====================
+-- Building Live Ranges
+-- ====================
+
 defVar :: V.MipsVirtual -> Maybe VReg
-defVar vinst = case vinst of
-  V.AssignI vreg _    -> Just vreg
-  V.AssignV vreg _    -> Just vreg
-  V.Addi vreg _ _     -> Just vreg
-  V.Li vreg _         -> Just vreg
-  V.Add vreg _ _      -> Just vreg
-  V.Sub vreg _ _      -> Just vreg
-  V.SubVI vreg _ _      -> Just vreg
-  V.SubIV vreg _ _      -> Just vreg
-  V.Mult vreg _ _     -> Just vreg 
-  V.Multi vreg _ _     -> Just vreg 
-  V.Div vreg _ _      -> Just vreg 
-  V.DivVI vreg _ _      -> Just vreg 
-  V.DivIV vreg _ _      -> Just vreg 
-  V.Andi vreg _ _     -> Just vreg 
-  V.And vreg _ _      -> Just vreg  
-  V.Ori vreg _ _      -> Just vreg  
-  V.Or vreg _ _       -> Just vreg 
-  V.Bri _ _ _ _       -> Nothing
-  V.Br _ _ _ _        -> Nothing
-  V.Lw vreg _ _       -> Just vreg
-  V.Sw _ _ _          -> Nothing
-  V.Label _             -> Nothing
-  V.Goto _            -> Nothing
-  V.Call _ _          -> Nothing 
-  V.Callr vreg _ _    -> Just vreg
-  V.ArrStr _ _ _      -> Nothing
-  V.ArrStri _ _ _     -> Nothing
-  V.ArrStrii _ _ _     -> Nothing
-  V.ArrStriv _ _ _     -> Nothing
-  V.ArrLoad vreg _ _  -> Just vreg
-  V.ArrLoadi vreg _ _ -> Just vreg
-  V.ArrAssignVV _ _ _ -> Nothing
-  V.ArrAssignVI _ _ _ -> Nothing
-  V.ArrAssignII _ _ _ -> Nothing
-  V.ArrAssignIV _ _ _ -> Nothing
-  V.Nop               -> Nothing
-  V.Return _          -> Nothing
-  V.Returni _         -> Nothing 
-  V.BeginFunction         -> Nothing 
-  V.EndFunction         -> Nothing 
+defVar mv = let (IF _ _ defd) = intermediateFormNoPhys mv in defd
 
--- used to generate live ranges
 usedVars :: V.MipsVirtual -> [VReg]
-usedVars vinst = case vinst of
-  V.AssignI _ _              -> []
-  V.AssignV _ vreg           -> [vreg]
-  V.Addi _ vreg _            -> [vreg]
-  V.Li _ _                   -> []
-  V.Add _ vreg1 vreg2        -> [vreg1, vreg2]
-  V.Sub _ vreg1 vreg2        -> [vreg1, vreg2]
-  V.SubVI _ vreg _      -> [vreg]
-  V.SubIV _ _ vreg      -> [vreg]
-  V.Mult _ vreg1 vreg2       -> [vreg1, vreg2] 
-  V.Multi _ vreg _       -> [vreg] 
-  V.Div _ vreg1 vreg2        -> [vreg1, vreg2] 
-  V.DivVI _ vreg _        -> [vreg] 
-  V.DivIV _ _ vreg        -> [vreg] 
-  V.Andi _ vreg1 _           -> [vreg1] 
-  V.And _ vreg1 vreg2        -> [vreg1, vreg2]  
-  V.Ori _ vreg1 _            -> [vreg1]  
-  V.Or _ vreg1 vreg2         -> [vreg1, vreg2] 
-  V.Bri _ vreg _ _           -> [vreg]
-  V.Br _ vreg1 vreg2 _       -> [vreg1, vreg2]
-  V.Lw _ _ _                 -> []
-  V.Sw _ _ _                 -> []
-  V.Label _                    -> []
-  V.Goto _                   -> []
-  V.Call _ args              -> mapMaybe vRegArg args
-  V.Callr _ _ args           -> mapMaybe vRegArg args
-  V.ArrStr _ vreg2 vreg3 -> [vreg2, vreg3] -- we spill the first reg, which is the array
-  V.ArrStri vreg1 vreg2 _    -> [vreg1, vreg2]
-  V.ArrStrii _ vreg _    -> [vreg]
-  V.ArrStriv _ vreg1 vreg2    -> [vreg1, vreg2]
-  V.ArrLoad _ vreg1 vreg2    -> [vreg1, vreg2]
-  V.ArrLoadi _ vreg _        -> [vreg]
-  V.ArrAssignVV vr1 vr2 vr3  -> [vr1, vr2, vr3]
-  V.ArrAssignVI vr1 vr2 _    -> [vr1, vr2]
-  V.ArrAssignII vreg _ _     -> [vreg]
-  V.ArrAssignIV vr1 _ vr2    -> [vr1, vr2]
-  V.Nop                      -> []
-  V.Return vreg              -> [vreg]
-  V.Returni _                -> []
-  V.BeginFunction                -> []
-  V.EndFunction                -> []
-  where vRegArg arg = case arg of
-          V.CVarg vreg -> Just vreg
-          V.CIarg _    -> Nothing
-
-firstUsed :: V.MipsVirtual -> Maybe VReg
-firstUsed mv
-  | length (usedVars mv) == 0 = Nothing
-  | otherwise = Just $ head $ usedVars mv
-
-secondUsed :: V.MipsVirtual -> Maybe VReg
-secondUsed mv
-  | length (usedVars mv) <= 1 = Nothing
-  | otherwise = Just $ head . tail $ usedVars mv
+usedVars mv = let (IF used _ _) = intermediateFormNoPhys mv in used
 
 type Line = Integer
 data MVLine = MVLine V.MipsVirtual Line deriving Show
@@ -202,7 +142,7 @@ buildLiveRanges :: [MVLine] -> [LiveRange]
 buildLiveRanges vinsts = finish $ foldr f ([],[]) vinsts
   where
     f :: MVLine -> BuildLiveRangesState -> ([PartialLiveRange], [LiveRange])
-    f vinst = (use vinst) . (kill vinst)
+    f vinst = use vinst . kill vinst
     kill :: MVLine -> BuildLiveRangesState -> BuildLiveRangesState
     kill (MVLine vinst line) st@(plrs, lrs) = case defVar vinst of
       Nothing -> st
@@ -211,9 +151,10 @@ buildLiveRanges vinsts = finish $ foldr f ([],[]) vinsts
         Just plr -> insertUsedLiveRange plr vreg
       where
         findPartialLiveRange vreg = find (\plr -> Just (unPVReg plr) == defVar vinst) plrs
-        insertUnusedLiveRange vreg  = (plrs, (LiveRange vreg line line 0 (needsStore vreg) True) : lrs)
-        insertUsedLiveRange plr vreg = (filter (((/=) vreg) . unPVReg) plrs, ((LiveRange (unPVReg plr) line (unPEnd plr) (unPUses plr) (needsStore vreg) True):lrs))
-        needsStore vreg = not $ any (\lr -> unVReg lr == vreg) lrs
+        insertUnusedLiveRange vreg  = (plrs, LiveRange vreg line line 0 (needsStore vreg) True : lrs)
+        insertUsedLiveRange plr vreg = (filter ((/=) vreg . unPVReg) plrs, LiveRange (unPVReg plr) line (unPEnd plr) (unPUses plr) (needsStore vreg) True:lrs)
+        --needsStore vreg = not $ any (\lr -> unVReg lr == vreg) lrs
+        needsStore vreg = True -- always store for calling convention to work
     use :: MVLine -> BuildLiveRangesState -> BuildLiveRangesState
     -- make sure works with x = y+y
     use (MVLine vinst line) st = foldl' doUse st (nub $ usedVars vinst)
@@ -222,12 +163,12 @@ buildLiveRanges vinsts = finish $ foldr f ([],[]) vinsts
         doUse st@(plrs, lrs) vreg
           | isVRegLive plrs vreg = usePartialLiveRange st vreg
           | otherwise            = insertPartialLiveRange st vreg
-        insertPartialLiveRange (plrs, lrs) vreg = ((PartialLiveRange vreg line 1 : plrs), lrs)
+        insertPartialLiveRange (plrs, lrs) vreg = (PartialLiveRange vreg line 1 : plrs, lrs)
         usePartialLiveRange (plrs, lrs) vreg
-          = ([if (vreg == unPVReg plr) then (incPartialLiveRangeUses plr) else plr | plr <- plrs], lrs)
+          = ([if vreg == unPVReg plr then incPartialLiveRangeUses plr else plr | plr <- plrs], lrs)
         incPartialLiveRangeUses (PartialLiveRange vreg end uses) = PartialLiveRange vreg end (uses + 1)
     finish :: BuildLiveRangesState -> [LiveRange]
-    finish (plrs, lrs) = lrs ++ [(LiveRange vreg (findFirstUse vreg) end uses False False) | (PartialLiveRange vreg end uses) <- plrs]
+    finish (plrs, lrs) = lrs ++ [LiveRange vreg (findFirstUse vreg) end uses False False | (PartialLiveRange vreg end uses) <- plrs]
       where
         findFirstUse :: VReg -> Line
         findFirstUse vreg = case find (\(MVLine vinst line) -> vreg `elem` usedVars vinst) vinsts of
@@ -236,8 +177,6 @@ buildLiveRanges vinsts = finish $ foldr f ([],[]) vinsts
 
 -- Allocated Live Range
 data ALR = ALR { unATmpReg :: Maybe TmpReg, unALR :: LiveRange } deriving Show
-
-
 
 allocatePReg :: LiveRange -> [ALR] -> Maybe TmpReg
 allocatePReg lr alrs 
@@ -251,343 +190,530 @@ allocatePRegs lrs = foldl' f [] (reverse $ sortOn unUses lrs)
     f :: [ALR] -> LiveRange -> [ALR]
     f alrs lr = (ALR (allocatePReg lr alrs) lr : alrs)
 
-
--- data HybridInstruction
---   = HiVirt MVLine
---   | HIPhys P.MipsPhys
--- 
--- toHybridInstructions :: [MVLine] -> [HybridInstruction]
--- toHybridInstructions = map HiVirt
--- 
--- insertPred :: (a -> Bool) -> a -> [a] -> [a]
--- insertPred pred el lst = let (x,y) = span pred lst in x ++ [el] ++ y
--- 
--- insertBefore :: Line -> P.MipsPhys -> [HybridInstruction] -> [HybridInstruction]
--- insertBefore ln inst hybrid = insertPred above (HIPhys inst) hybrid
---   where
---     above (HIPhys _) = True
---     above (HiVirt (MVLine _ hln)) = hln < ln
--- 
--- insertAfter :: Line -> P.MipsPhys -> [HybridInstruction] -> [HybridInstruction]
--- insertAfter ln inst hybrid = insertPred above (HIPhys inst) hybrid
---   where
---     above (HIPhys _) = True
---     above (HiVirt (MVLine _ hln)) = hln <= ln
--- 
--- indexByLine :: [HybridInstruction] -> Line -> V.MipsVirtual
--- indexByLine hi ln = g $ find f hi
---   where
---     f (HiVirt (MVLine _ cln)) = ln == cln
---     f _ = False
---     g (Just (HiVirt (MVLine inst _))) = inst
---     g _ = error "failed to index by line"
--- 
--- spilled :: ALR -> Bool
--- spilled (ALR tmpreg _) = case tmpreg of
---   Just _ -> False
---   Nothing -> True
--- 
--- allocatedLoadInst vreg preg = P.Lw preg (Imm "0") Fp
--- allocatedStoreInst vreg preg = P.Sw preg (Imm "0") Fp
-
-doLoadsStores :: Function V.MipsVirtual -> [MVLine] -> [P.MipsPhys]
-doLoadsStores vf = concatMap (composedALROps vf)
-
-composedALROps alrs his 
-  = (allocatedLoads alrs his) ++ (spilledLoads alrs his) 
-  ++ (spilledInst alrs his) ++ (spilledStores alrs his)
-  ++ (allocatedStores alrs his)
-
---piped inst = let x = (allocatePRegs . buildLiveRanges $ inst) in concatMap (composedALROps x) inst
-piped vf = concatMap (composedALROps vf) (lined . instrs $ vf)
-
 -- if the line is at the start of a live range that has no def
 allocatedLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-allocatedLoads vf (MVLine mv ln) = mapMaybe load $ filter cond alrs 
+allocatedLoads vf (MVLine mv ln) = mapMaybe load $ filter acond alrs 
   where
-    cond (ALR preg lr) = (ln == unStart lr) && (unHasDef lr == False)
+    acond (ALR preg lr) = (ln == unStart lr) && (unHasDef lr == False)
     load (ALR (Just preg) lr) = Just $ P.Lw (T preg) (k $ unVReg lr) Fp
     load (ALR (Nothing) lr) = Nothing
     alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
     k = toImm . (M.!) (calcRegMap vf)
 
--- line is at start of live range AND doStore is true
-allocatedStores :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-allocatedStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs 
+spilledLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledLoads vf mvl@(MVLine mv ln) = map told (spilledLoadsArr vf mvl)
   where
-    cond (ALR preg lr) = (ln == unStart lr) && (unNeedsStore lr == True)
-    store (ALR (Just preg) lr) = Just $ P.Sw (T preg) (k $ unVReg lr) Fp
-    store (ALR (Nothing) lr) = Nothing
+    told (vreg,preg) = P.Lw preg (k $ vreg) Fp
     alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
     k = toImm . (M.!) (calcRegMap vf)
 
 -- start of a live range that has no def OR
 -- live range starts strictly before line
-spilledLoads :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-spilledLoads vf (MVLine mv ln) = mapMaybe load $ filter cond alrs
+spilledLoadsArr :: (Function V.MipsVirtual) -> MVLine -> [(VReg,PReg)]
+spilledLoadsArr vf (MVLine mv ln) = zip (mapMaybe load $ filter scond alrs) (map M [M1 .. M4])
   where
-    cond alr = (cond0 alr) || (cond1 alr)
-    cond0 (ALR preg lr) = (unStart lr) == ln && (unHasDef lr) == False
-    cond1 (ALR preg lr) = (unStart lr) < ln && (unEnd lr) >= ln
+    scond alr = ((scond0 alr) || (scond1 alr)) && (scond2 alr)
+    scond0 (ALR preg lr) = (unStart lr) == ln && (unHasDef lr) == False
+    scond1 (ALR preg lr) = (unStart lr) < ln && (unEnd lr) >= ln
+    scond2 (ALR preg lr) = (unVReg lr) `elem` usedVars mv
     load (ALR (Just preg) lr) = Nothing
-    load (ALR (Nothing) lr) 
-      | firstUsed mv == Just (unVReg lr) = Just $ P.Lw (M M1) (k $ unVReg lr) Fp
-      | secondUsed mv == Just (unVReg lr) = Just $ P.Lw (M M2) (k $ unVReg lr) Fp
-      | otherwise = Nothing
+    load (ALR (Nothing) lr) = Just (unVReg lr)
+    -- | firstUsed mv == Just (unVReg lr) = Just $ P.Lw (M M1) (k $ unVReg lr) Fp
+    -- | secondUsed mv == Just (unVReg lr) = Just $ P.Lw (M M2) (k $ unVReg lr) Fp
+    -- | otherwise = Nothing
     alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
     k = toImm . (M.!) (calcRegMap vf)
 
+loadPInsts :: [ALR] -> (VReg -> Imm) -> MVLine -> [P.MipsPhys]
+loadPInsts alrs k mvl = map f $ [ x|x@(_, M _) <- (usable alrs mvl) ]
+  where
+    f (vreg,preg) = P.Lw preg (k vreg) Fp
+
+-- returns a list of (key,value) pairs mapping
+-- useable (may appear on right hand side of operation)
+-- vregs to pregs. spilled have M registers, allocated have
+-- T registers
+usable :: [ALR] -> MVLine -> [(VReg, PReg)]
+usable alrs (MVLine mv ln) 
+  = let toload = filter (\x -> (acond x || scond x) && cond x) alrs
+    in zip [ unVReg lr | (ALR Nothing lr) <- toload ] (map M [M1 .. M4])
+    ++ [ (unVReg lr, T pr) | (ALR (Just pr) lr) <- toload ]
+  where
+    -- does the live ranges vreg match?
+    cond (ALR preg lr) = unVReg lr `elem` usedVars mv
+
+    -- is the live range allocated during this line?
+    acond (ALR preg lr) = (ln == unStart lr) && not (unHasDef lr)
+
+    -- is the live range spilled on this line?
+    scond alr = scond0 alr || scond1 alr
+    scond0 (ALR preg lr) = unStart lr == ln && not (unHasDef lr)
+    scond1 (ALR preg lr) = unStart lr < ln && unEnd lr >= ln
+
+-- returns (key,value) pairs mapping
+-- virtual registers that appear on the LHS 
+-- to physical registers. in reality, this list will
+-- either be empty or have a single element.
+defable :: [ALR] -> MVLine -> [(VReg, PReg)]
+defable alrs (MVLine mv ln)
+  = let tostore = filter (\x -> (acond x || scond x) && cond x) alrs
+    in zip [ unVReg lr | (ALR Nothing lr) <- tostore ] (map M [M1 .. M4])
+    ++ [ (unVReg lr, T pr) | (ALR (Just pr) lr) <- tostore ]
+  where
+    cond (ALR preg lr) = Just (unVReg lr) == defVar mv
+    acond (ALR preg lr) = (ln == unStart lr) && unNeedsStore lr
+    scond (ALR preg lr) = (unStart lr == ln) && unHasDef lr
+
+
+-- line is at start of live range AND doStore is true
+allocatedStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
+allocatedStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs 
+  where
+    cond (ALR preg lr) = (ln == unStart lr) && unNeedsStore lr
+    store (ALR (Just preg) lr) = Just $ P.Sw (T preg) (k $ unVReg lr) Fp
+    store (ALR Nothing lr) = Nothing
+    alrs = allocatePRegs . buildLiveRanges . lined . instrs $ vf
+    k = toImm . (M.!) (calcRegMap vf)
+
 -- start of a live range AND hasDef
-spilledStores :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
+spilledStores :: Function V.MipsVirtual -> MVLine -> [P.MipsPhys]
 spilledStores vf (MVLine mv ln) = mapMaybe store $ filter cond alrs
   where
-    cond (ALR preg lr) = (unStart lr == ln) && (unHasDef lr) == True
+    cond (ALR preg lr) = (unStart lr == ln) && unHasDef lr
     store (ALR (Just preg) lr) = Nothing
-    store (ALR (Nothing) lr) = Just $ P.Sw (M M1) (k $ unVReg lr) Fp -- spill stores to m1
-    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+    store (ALR Nothing lr) = Just $ P.Sw (M M1) (k $ unVReg lr) Fp -- spill stores to m1
+    alrs = allocatePRegs . buildLiveRanges . lined . instrs $ vf
     k = toImm . (M.!) (calcRegMap vf)
 
 -- an intermediate form approach:
 -- so we create the intermediate form from mips virtual
--- it specifices loads before spills so they have different lines (makes logic easier)
--- we do liveness analysis on the IF, then loads/stores
--- passing in a different use/store function (since we only know registers after analysis)
--- this way the structure is captured all in one place
---data IF =
---  | IFL [VReg]
---  | IFD VReg
---  | IFI P.MipsPhys
---
---intermediateForm :: (Function V.MipsVirtual) -> MVLine -> [IF]
---intermediateForm vf (MVLine mv ln) = case mv of 
---  V.Add d s t -> 
---    [ load [s, t]
---    , IFI $ P.Add (def d) (use s) (use t) 
---    , store [d]
---    ]
---
---  V.Mult d s t -> 
---    ( load [s, t],
---      [ P.Mult (use s) (use t) 
---      , P.Mflo (def d)
---      ], 
---    store [d] )
+-- it holds everything needed to do liveness, allocation and v->p
 
-spilledInst :: (Function V.MipsVirtual) -> MVLine -> [P.MipsPhys]
-spilledInst vf (MVLine mv ln) = case mv of 
+data IF = IF 
+  { uses :: [VReg]
+  , inst :: [P.MipsPhys]
+  , defs :: Maybe VReg
+  }
+    
+intermediateFormNoPhys :: V.MipsVirtual -> IF
+intermediateFormNoPhys 
+  = intermediateForm undefined undefined undefined undefined
+
+-- max 3 items used
+-- 0 or 1 items def'd
+intermediateForm :: Function V.MipsVirtual
+                 -> (VReg -> PReg) 
+                 -> (VReg -> PReg) 
+                 -> (VReg -> Imm)
+                 -> V.MipsVirtual
+                 -> IF
+intermediateForm vf use def k mv = case mv of 
   V.Addi t s i -> 
-    [ P.Addi (def t) (use s) i 
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Addi (def t) (use s) i 
+         ]
+       , defs = Just t
+       }
   V.Add d s t -> 
-    [ P.Add (def d) (use s) (use t) 
-    ]
+    IF { uses = [s, t]
+       , inst =
+         [ P.Add (def d) (use s) (use t) 
+         ]
+       , defs = Just d
+       }
   V.Sub d s t -> 
-    [ P.Sub (def d) (use s) (use t) 
-    ]
+    IF { uses = [s, t]
+       , inst =
+         [ P.Sub (def d) (use s) (use t) 
+         ]
+       , defs = Just d
+       }
   V.SubVI t s i -> 
-    [ P.Li (M M2) i
-    , P.Sub (def t) (use s) (M M2)
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Li (M M2) i
+         , P.Sub (def t) (use s) (M M2) 
+         ]
+       , defs = Just t
+       }
   V.SubIV t i s -> 
-    [ P.Li (M M2) i
-    , P.Add (def t) (M M2) (use s)
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Li (M M2) i
+         , P.Sub (def t) (M M2) (use s)
+         ]
+       , defs = Just t
+       }
   V.Mult d s t -> 
-    [ P.Mult (use s) (use t) 
-    , P.Mflo (def d)
-    ]
+    IF { uses = [s, t]
+       , inst =
+         [ P.Mult (use s) (use t) 
+         , P.Mflo (def d)
+         ]
+       , defs = Just d
+       }
   V.Multi t s i -> 
-    [ P.Li (M M2) i
-    , P.Mult (use s) (M M2) 
-    , P.Mflo (def t)
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Li (M M2) i
+         , P.Mult (use s) (M M2) 
+         , P.Mflo (def t)
+         ]
+       , defs = Just t
+       }
   V.Div d s t -> 
-    [ P.Div (use s) (use t) 
-    , P.Mflo (def d)
-    ]
+    IF { uses = [s, t]
+       , inst =
+         [ P.Div (use s) (use t) 
+         , P.Mflo (def d)
+         ]
+       , defs = Just d
+       }
   V.DivVI t s i -> 
-    [ P.Li (M M2) i
-    , P.Div (use s) (M M2) 
-    , P.Mflo (def t)
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Li (M M2) i
+         , P.Mult (use s) (M M2) 
+         , P.Mflo (def t)
+         ]
+       , defs = Just t
+       }
   V.DivIV t i s -> 
-    [ P.Li (M M2) i
-    , P.Div (M M2) (use s) 
-    , P.Mflo (def t)
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Li (M M2) i
+         , P.Mult (M M2) (use s)
+         , P.Mflo (def t)
+         ]
+       , defs = Just t
+       }
   V.Andi t s i -> 
-    [ P.Andi (def t) (use s) i 
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Andi (def t) (use s) i 
+         ]
+       , defs = Just t
+       }
   V.And d s t -> 
-    [ P.And (def d) (use s) (use t) 
-    ]
+    IF { uses = [s, t]
+       , inst =
+         [ P.And (def d) (use s) (use t) 
+         ]
+       , defs = Just d
+       }
   V.Ori t s i -> 
-    [ P.Ori (def t) (use s) i 
-    ]
+    IF { uses = [s]
+       , inst =
+         [ P.Ori (def t) (use s) i 
+         ]
+       , defs = Just t
+       }
   V.Or d s t -> 
-    [ P.Or (def d) (use s) (use t) 
-    ]
-
+    IF { uses = [s, t]
+       , inst =
+         [ P.Or (def d) (use s) (use t) 
+         ]
+       , defs = Just d
+       }
   V.Br c a b l -> case c of
-    V.Eq -> 
-      [ P.Beq (use a) (use b) l
-      ]
-    V.Neq -> 
-      [ P.Bne (use a) (use b) l
-      ]
-    V.Lt -> 
-      [ P.Sub (M M1) (use a) (use b)
-      , P.Bgtz (M M1) l
-      ]
-    V.Gt -> 
-      [ P.Sub (M M1) (use b) (use a)
-      , P.Bgtz (M M1) l
-      ]
-    V.Geq -> 
-      [ P.Sub (M M1) (use b) (use a)
-      , P.Blez (M M1) l
-      ]
-    V.Leq -> 
-      [ P.Sub (M M1) (use a) (use b)
-      , P.Blez (M M1) l
-      ]
-
+    V.Eq ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Beq (use a) (use b) l
+           ]
+         , defs = Nothing
+         }
+    V.Neq ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Bne (use a) (use b) l
+           ]
+         , defs = Nothing
+         }
+    V.Lt ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Sub (M M4) (use b) (use a)
+           , P.Bgtz (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Gt ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Sub (M M4) (use a) (use b)
+           , P.Bgtz (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Geq ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Sub (M M4) (use b) (use a)
+           , P.Blez (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Leq ->
+      IF { uses = [a, b]
+         , inst =
+           [ P.Sub (M M4) (use a) (use b)
+           , P.Blez (M M4) l
+           ]
+         , defs = Nothing
+         }
   V.Bri c a i l -> case c of
-    V.Eq -> 
-      [ P.Li (M M2) i
-      , P.Beq (use a) (M M2) l
-      ]
-    V.Neq -> 
-      [ P.Li (M M2) i
-      , P.Bne (use a) (M M2) l
-      ]
-    V.Lt -> 
-      [ P.Li (M M2) i
-      , P.Sub (M M1) (M M2) (use a)
-      , P.Bgtz (M M1) l
-      ]
-    V.Gt -> 
-      [ P.Li (M M2) i
-      , P.Sub (M M1) (use a) (M M2)
-      , P.Bgtz (M M1) l
-      ]
-    V.Geq -> 
-      [ P.Li (M M2) i
-      , P.Sub (M M1) (M M2) (use a)
-      , P.Blez (M M1) l
-      ]
-    V.Leq -> 
-      [ P.Li (M M2) i
-      , P.Sub (M M1) (use a) (M M2)
-      , P.Blez (M M1) l
-      ]
+    V.Eq ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Beq (use a) (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Neq ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Bne (use a) (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Lt ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Sub (M M4) (M M4) (use a)
+           , P.Bgtz (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Gt ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Sub (M M4) (use a) (M M4)
+           , P.Bgtz (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Geq ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Sub (M M4) (M M4) (use a)
+           , P.Blez (M M4) l
+           ]
+         , defs = Nothing
+         }
+    V.Leq ->
+      IF { uses = [a]
+         , inst =
+           [ P.Li (M M4) i
+           , P.Sub (M M4) (use a) (M M4)
+           , P.Blez (M M4) l
+           ]
+         , defs = Nothing
+         }
 
-  V.Lw t i s ->
-    [ P.Lw (def t) i (use s)
-    ]
-
-  V.Li t i -> undefined
+  V.Lw t i s -> undefined
   V.Sw t i s -> undefined
-
+  V.Li d i -> 
+    IF { uses = []
+       , inst =
+         [ P.Li (use d) i
+         ]
+       , defs = Just d
+       }
   V.Label lab -> 
-    [ P.Label lab
-    ]
+    IF { uses = []
+       , inst =
+         [ P.Label lab
+         ]
+       , defs = Nothing
+       }
+  V.Goto lab ->
+    IF { uses = []
+       , inst = setupGoto lab
+       , defs = Nothing
+       }
 
-  V.Goto lab -> setupGoto lab
+  V.Call fn args -> 
+    IF { uses = [ vreg | (V.CVarg vreg) <- args ]
+       , inst = setupCallStack fn args loadReg
+       , defs = Nothing
+       }
 
-  V.Call fn args -> setupCallStack fn args loadReg
-  V.Callr retReg fn args -> setupCallStack fn args loadReg
+  V.Callr retvreg fn args -> 
+    IF { uses = [ vreg | (V.CVarg vreg) <- args ]
+       , inst = setupCallStack fn args loadReg
+             ++ [ P.Addi (def retvreg) Retval (Imm "0") ]
+       , defs = Just retvreg
+       }
+  V.AssignI d i -> 
+    IF { uses = []
+       , inst =
+         [ P.Li (def d) i
+         ]
+       , defs = Just d
+       }
+  V.AssignV d s -> 
+    IF { uses = [s]
+       , inst =
+         [ P.Addi (def d) (use s) (Imm "0")
+         ]
+       , defs = Just d
+       }
+
+  -- solution to array problems: use a couple s registers :/
+  -- a[i] = s
+  V.ArrStr s a i ->
+    IF { uses = [s, a, i]
+       , inst =
+         [ P.Addi (M M4) ZeroReg (Imm "4") -- this should left shift
+         , P.Mult (M M4) (use i)
+         , P.Mflo (M M4) -- m1=4*i
+         , P.Add (M M4) (M M4) (use a)
+         , P.Sw (use s) (Imm "0") (M M4) -- mem[m1]=m2
+         ]
+       , defs = Nothing
+       }
+  V.ArrStriv s a i ->
+    IF { uses = [a, i]
+       , inst =
+         [ P.Addi (M M4) ZeroReg (Imm "4")
+         , P.Mult (M M4) (use i)
+         , P.Mflo (M M4)
+         , P.Add (M M4) (M M4) (use a)
+         , P.Li (M M3) s
+         , P.Sw (M M3) (Imm "0") (M M4)
+         ]
+       , defs = Nothing
+       }
+  V.ArrStri s a i ->
+    IF { uses = [s, a]
+       , inst =
+         [ P.Sw (use s) (times4 i) (use a)
+         ]
+       , defs = Nothing
+       }
+  V.ArrStrii s a i ->
+    IF { uses = [a]
+       , inst =
+         [ P.Li (M M4) s
+         , P.Sw (M M4) (times4 i) (use a)
+         ]
+       , defs = Nothing
+       }
+  -- s = a[i]
+  V.ArrLoad s a i ->
+    IF { uses = [a, i]
+       , inst =
+         [ P.Addi (M M4) ZeroReg (Imm "4")
+         , P.Mult (M M4) (use i)
+         , P.Mflo (M M4)
+         , P.Add (M M4) (M M4) (use a)
+         , P.Lw (def s) (Imm "0") (M M4)
+         ]
+       , defs = Just s
+       }
+  V.ArrLoadi s a i ->
+    IF { uses = [a]
+       , inst =
+         [ P.Lw (def s) (times4 i) (use a) -- mem[m1]=m2
+         ]
+       , defs = Just s
+       }
+  V.Nop ->
+    IF { uses = []
+       , inst = []
+       , defs = Nothing
+       }
+  V.Return r ->
+    IF { uses = [r]
+       , inst = setupReturn r loadReg
+       , defs = Nothing
+       }
+  V.Returni i ->
+    IF { uses = []
+       , inst = setupReturnImm i
+       , defs = Nothing
+       }
+  V.BeginFunction ->
+    IF { uses = []
+       , inst = fnEntry vf
+       , defs = Nothing
+       }
+  V.EndFunction ->
+    IF { uses = []
+       , inst = setupReturnVoid
+       , defs = Nothing
+       }
   
-  V.AssignI d i ->
-    [ P.Li (def d) i
-    ]
+  V.ArrAssignVV v1 v2 v3 -> 
+    IF { uses = [v1, v2, v3]
+       , inst = setupCallStack (Label "memset") (map V.CVarg [v1, v2, v3]) loadReg
+       , defs = Nothing
+       }
 
-  V.AssignV d s ->
-    [ P.Addi (def d) (use s) (Imm "0")
-    ]
+  V.ArrAssignVI v1 v2 i3 -> 
+    IF { uses = [v1, v2]
+       , inst = setupCallStack (Label "memset") [V.CVarg v1, V.CVarg v2, V.CIarg i3] loadReg
+       , defs = Nothing
+       }
 
-  -- for now, we always spill the array
---  V.ArrStr s a i ->
---    [ P.Addi (M M1) ZeroReg imm4 -- this should left shift
---    , P.Lw (M M2) secondPreg Fp
---    , P.Mult (M M1) (M M2)
---    , P.Mflo (M M1)
---    , P.Lw (M M2) (k a) Fp
---    , P.Add (M M1) (M M1) (M M2)
---    , P.Lw (M M2) firstPreg Fp
---    , P.Sw (M M2) (Imm "0") (M M1) 
---    ]
---
---  V.ArrStriv s a i ->
---    [ P.Addi (M M1) ZeroReg imm4
---    , P.Lw (M M2) (k i) Fp
---    , P.Mult (M M1) (M M2)
---    , P.Mflo (M M1)
---    , P.Lw (M M2) (k a) Fp
---    , P.Add (M M1) (M M1) (M M2)
---    , P.Addi (M M2) ZeroReg s
---    , P.Sw (M M2) (Imm "0") (M M1) 
---    ]
---
---  V.ArrStri s a i ->
---    [ P.Lw (M M1) (k a) Fp
---    , P.Lw (M M2) (k s) Fp
---    , P.Sw (M M2) (times4 i) (M M1) 
---    ]
---
---  V.ArrStrii s a i ->
---    [ P.Lw (M M1) (k a) Fp
---    , P.Addi (M M2) ZeroReg s
---    , P.Sw (M M2) (times4 i) (M M1) 
---    ]
---
---  V.ArrLoad d a i ->
---    [ P.Addi (M M1) ZeroReg imm4
---    , P.Lw (M M2) (k i) Fp
---    , P.Mult (M M1) (M M2)
---    , P.Mflo (M M1)
---    , P.Lw (M M2) (k a) Fp
---    , P.Add (M M1) (M M1) (M M2)
---    , P.Lw (M M2) imm0 (M M1)
---    , P.Sw (M M2) (k d) Fp 
---    ]
---
---  V.ArrLoadi d a i ->
---    [ P.Lw (M M1) (k a) Fp
---    , P.Lw (M M2) (times4 i) (M M1)
---    , P.Sw (M M2) (k d) Fp 
---    ]
+  V.ArrAssignII v1 i2 i3 -> 
+    IF { uses = [v1]
+       , inst = setupCallStack (Label "memset") [V.CVarg v1, V.CIarg i2, V.CIarg i3] loadReg       
+       , defs = Nothing
+       }
+
+  V.ArrAssignIV v1 i2 v3 -> 
+    IF { uses = [v1, v3]
+       , inst = setupCallStack (Label "memset") [V.CVarg v1, V.CIarg i2, V.CVarg v3] loadReg       
+       , defs = Nothing
+       }
 
   where
-    k = toImm . (M.!) (calcRegMap vf)
-    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
-    -- defPReg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr) alrs of
-    --   [ALR Nothing _] -> (M M1)
-    --   [ALR (Just preg) _] -> T preg
-    --   otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
-    -- get preg for first arg
-    usableCond lr = (unStart lr < ln || (unStart lr == ln && (unHasDef lr) == False)) && unEnd lr >= ln
-    -- usedPreg1 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == firstUsed mv) alrs of
-    --   [ALR Nothing _] -> (M M1)
-    --   [ALR (Just preg) _] -> T preg
-    --   otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
-    -- usedPreg2 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == secondUsed mv) alrs of
-    --   [ALR Nothing _] -> if firstUsed mv == secondUsed mv then (M M1) else (M M2)
-    --   [ALR (Just preg) _] -> T preg
-    --   otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
-
-    def vreg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr && unVReg lr == vreg) alrs of
-      [ALR Nothing _] -> (M M1)
-      [ALR (Just preg) _] -> T preg
-      otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
-    use vreg = case filter (\(ALR _ lr) -> usableCond lr && unVReg lr == vreg) alrs of
-      [ALR Nothing _] -> (M M1)
-      [ALR (Just preg) _] -> T preg
-      otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
-
+    -- using this may be inefficient
+    -- will be safe since we always
+    -- store new values immediately
     loadReg :: VReg -> (PReg, [P.MipsPhys])
-    loadReg vreg =
-      (M M1, [ P.Lw (M M1) (k vreg) Fp ])
+    loadReg vreg = (M M4, [ P.Lw (M M4) (k vreg) Fp ])
     times4 :: Imm -> Imm
     times4 (Imm i) = Imm (show $ (read i :: Int) * 4)
 
+--  where
+--    k = toImm . (M.!) (calcRegMap vf)
+--    alrs = (allocatePRegs . buildLiveRanges . lined . instrs $ vf)
+--    -- defPReg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr) alrs of
+--    --   [ALR Nothing _] -> (M M1)
+--    --   [ALR (Just preg) _] -> T preg
+--    --   otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
+--    -- get preg for first arg
+--    usableCond lr = (unStart lr < ln || (unStart lr == ln && (unHasDef lr) == False)) && unEnd lr >= ln
+--    -- usedPreg1 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == firstUsed mv) alrs of
+--    --   [ALR Nothing _] -> (M M1)
+--    --   [ALR (Just preg) _] -> T preg
+--    --   otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
+--    -- usedPreg2 = case filter (\(ALR _ lr) -> usableCond lr && Just (unVReg lr) == secondUsed mv) alrs of
+--    --   [ALR Nothing _] -> if firstUsed mv == secondUsed mv then (M M1) else (M M2)
+--    --   [ALR (Just preg) _] -> T preg
+--    --   otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
+--
+--    def vreg = case filter (\(ALR _ lr) -> unStart lr == ln && unHasDef lr && unVReg lr == vreg) alrs of
+--      [ALR Nothing _] -> (M M1)
+--      [ALR (Just preg) _] -> T preg
+--      otherwise -> error $ "multiple or no live ranges (with def) start at line" ++ (show ln)
+--    use vreg = case filter (\(ALR _ lr) -> usableCond lr && unVReg lr == vreg) alrs of
+--      [ALR Nothing _] -> (M M1)
+--      [ALR (Just preg) _] -> T preg
+--      otherwise -> error $ "multiple or no live ranges for first used var at line" ++ (show ln)
+--
+--    loadReg :: VReg -> (PReg, [P.MipsPhys])
+--    loadReg vreg =
+--      (M M1, [ P.Lw (M M1) (k vreg) Fp ])
+--    times4 :: Imm -> Imm
+--    times4 (Imm i) = Imm (show $ (read i :: Int) * 4)
+--

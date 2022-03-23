@@ -42,7 +42,7 @@ runBackend (ProgArgs alc inpt outpt) = do
 
       asmProg = case alc of
                   Naive -> naiveProgramSelection tigerIrProg
-                  Intra -> error "TODO"
+                  Intra -> greedyProgramSelection tigerIrProg
 
       asmProgStr = pr asmProg
   

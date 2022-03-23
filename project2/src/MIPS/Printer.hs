@@ -230,6 +230,8 @@ instance Print TmpReg where
 instance Print MReg where
   pr M1 = "$t8"
   pr M2 = "$t9"
+  pr M3 = "$s0"
+  pr M4 = "$s1"
 
 instance Print ArgReg where
   pr A0 = "$a0"

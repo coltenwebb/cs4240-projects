@@ -43,6 +43,8 @@ executable backend
         TigerIR.Parser.Reader
         TigerIR.Program
         TigerIR.Types
+        MIPS.Liveness.MipsCFG
+        MIPS.Liveness.Liveness
 
   build-depends: base ^>=4.14.3.0
                  , containers ^>=0.6.5.1
