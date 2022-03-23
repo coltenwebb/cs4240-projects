@@ -8,6 +8,7 @@ import TigerIR.Program
 import MIPS.Types.Operand
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
+import MIPS.Intrinsics (loadSyscall, SpimSyscall(Sbrk))
 
 import Data.List (foldl1', foldl')
 
@@ -58,6 +59,21 @@ fnEntry fn =
   else [ P.Addi Sp Sp (toImm offst) ]
   where
     offst = OffsetIdx 0 .- netLocalVarSize fn
+
+allocArrays :: Function a -> RegMap -> [P.MipsPhys]
+allocArrays fn rmap =
+  flip concatMap (localVars fn) $ \lvar ->
+    case lvar of
+      LocalV _ -> []
+      LocalA (Array _ (ArraySize sz)) ->
+        [ loadSyscall Sbrk
+        -- (Sane) Assumption: We can load the size of each array
+        -- into the 16-bit imm,
+        -- Actually, does Li do it for you?
+        , P.Li (A A0) (Imm (show sz))
+        , P.Syscall
+        , P.Sw V0 (toImm (rmap M.! toVReg lvar)) Fp
+        ]
 
 {-
 hi addr
@@ -121,9 +137,7 @@ calcRegMap fn =
 
     f2 :: (RegMap, OffsetIdx) -> LocalVar -> (RegMap, OffsetIdx)
     f2 (rm, offst) lv =
-      (rm <> M.singleton (toVReg lv) currRegOffst, decrPtr currRegOffst)
-      where
-        currRegOffst = (offst .- localVarSize lv) .+ OffsetSize 1
+      (rm <> M.singleton (toVReg lv) offst, decrPtr offst)
 
     pvs :: Parameters
     pvs = parameters fn
@@ -131,17 +145,16 @@ calcRegMap fn =
     lvs :: LocalVars
     lvs = localVars fn
 
--- Because if type is an array, passed by reference
+-- All params and variables are the same size,
+-- array vars are references to memory
 paramVarSize :: OffsetSize
 paramVarSize = OffsetSize 1
 
-localVarSize :: LocalVar -> OffsetSize
-localVarSize iv = case iv of
-  LocalV (Variable _) -> OffsetSize 1
-  LocalA (Array _ (ArraySize k)) -> OffsetSize k
+localVarSize ::  OffsetSize
+localVarSize = OffsetSize 1
 
 netLocalVarSize :: Function a -> OffsetSize
-netLocalVarSize fn = foldl1' (^+) (map localVarSize lvs)
+netLocalVarSize fn = paramVarSize .* length lvs
   where
     lvs :: LocalVars
     lvs = localVars fn
