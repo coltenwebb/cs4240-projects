@@ -255,7 +255,7 @@ virtToPhysMIPS vf mv = case mv of
 
   V.Returni i -> setupReturnImm i
 
-  V.BeginFunction -> fnEntry vf
+  V.BeginFunction -> fnEntry vf rm
 
   V.EndFunction -> setupReturnVoid
 

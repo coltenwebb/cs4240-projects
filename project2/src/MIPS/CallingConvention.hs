@@ -47,18 +47,18 @@ toImm (OffsetIdx i) = Imm (show (i * 4))
 
 
 -- Stack/Fp setup upon entry into function
-fnEntry :: Function a -> [P.MipsPhys]
-fnEntry fn =
-  if name fn == FunctionName (Label "main")
-  then 
-  -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
-  -- calling convention since fp is zero-initialized
-    [ P.Add Fp Sp ZeroReg
-    , P.Addi Sp Sp (toImm offst)
-    ]
-  else [ P.Addi Sp Sp (toImm offst) ]
+fnEntry :: Function a -> RegMap -> [P.MipsPhys]
+fnEntry fn rmap = spInit ++ allocArrays fn rmap
   where
-    offst = OffsetIdx 0 .- netLocalVarSize fn
+    stackOffst = OffsetIdx 0 .- netLocalVarSize fn
+    spInit = if name fn == FunctionName (Label "main")
+      then 
+      -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
+      -- calling convention since fp is zero-initialized
+        [ P.Add Fp Sp ZeroReg
+        , P.Addi Sp Sp (toImm stackOffst)
+        ]
+      else [ P.Addi Sp Sp (toImm stackOffst) ]
 
 allocArrays :: Function a -> RegMap -> [P.MipsPhys]
 allocArrays fn rmap =
