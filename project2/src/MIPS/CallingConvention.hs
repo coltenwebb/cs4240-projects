@@ -2,10 +2,12 @@ module MIPS.CallingConvention where
 
 import qualified Data.Map as M
 import Data.Maybe
+import Control.Monad (when, forM_)
 
 import TigerIR.Program
 
 import MIPS.Types.Operand
+import MIPS.RegisterAllocator.Monad.Class
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
 
@@ -46,16 +48,16 @@ toImm (OffsetIdx i) = Imm (show (i * 4))
 
 
 -- Stack/Fp setup upon entry into function
-fnEntry :: Function a -> [P.MipsPhys]
-fnEntry fn =
-  if name fn == FunctionName (Label "main")
-  then 
+fnEntry :: MonadMipsEmitter m => Function a -> m ()
+fnEntry fn = do
   -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
   -- calling convention since fp is zero-initialized
-    [ P.Add Fp Sp ZeroReg
-    , P.Addi Sp Sp (toImm offst)
-    ]
-  else [ P.Addi Sp Sp (toImm offst) ]
+  when (name fn == FunctionName (Label "main")) $
+    emit [ P.Add Fp Sp ZeroReg ]
+  
+  -- Move stack pointer to accomodate local vars
+  emit [ P.Addi Sp Sp (toImm offst) ]
+
   where
     offst = OffsetIdx 0 .- netLocalVarSize fn
 
@@ -179,88 +181,75 @@ hi addr
 lo addr
 -}
 setupCallStack
-  :: Label
+  :: MonadAllocator m
+  => Label
   -> [V.CallArg]
-  -- load value of virtual reg. onto physical reg
-  -> (VReg -> (PReg, [P.MipsPhys]))
-  -> [P.MipsPhys]
-setupCallStack fn args loadReg =
+  -> m ()
+--  -- load value of virtual reg. onto physical reg
+--  -> (VReg -> (PReg, [P.MipsPhys]))
+--  -> [P.MipsPhys]
+setupCallStack fn args = do
   -- Save registers
-  [ P.Sw   (T T0)  (Imm "-4")  Sp
-  , P.Sw   (T T1)  (Imm "-8")  Sp
-  , P.Sw   (T T2)  (Imm "-12") Sp
-  , P.Sw   (T T3)  (Imm "-16") Sp
-  , P.Sw   (T T4)  (Imm "-20") Sp
-  , P.Sw   (T T5)  (Imm "-24") Sp
-  , P.Sw   (T T6)  (Imm "-28") Sp
-  , P.Sw   (T T7)  (Imm "-32") Sp
-  , P.Sw   RetAddr (Imm "-36") Sp
-  , P.Sw   Fp      (Imm "-40") Sp
-  , P.Addi Sp      Sp         (Imm "-40")
-  ]
-  ++
+  emit
+    [ P.Sw   (T T0)  (Imm "-4")  Sp
+    , P.Sw   (T T1)  (Imm "-8")  Sp
+    , P.Sw   (T T2)  (Imm "-12") Sp
+    , P.Sw   (T T3)  (Imm "-16") Sp
+    , P.Sw   (T T4)  (Imm "-20") Sp
+    , P.Sw   (T T5)  (Imm "-24") Sp
+    , P.Sw   (T T6)  (Imm "-28") Sp
+    , P.Sw   (T T7)  (Imm "-32") Sp
+    , P.Sw   RetAddr (Imm "-36") Sp
+    , P.Sw   Fp      (Imm "-40") Sp
+    , P.Addi Sp      Sp         (Imm "-40")
+    ]
+ 
   pushArgs
-  ++
-  [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
-  , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
-  , P.Jal fn                                        -- Call subroutine
 
-  -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
-  , P.Add Sp Fp ZeroReg
-  ]
-  ++
+  emit
+    [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
+    , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
+    , P.Jal fn                                        -- Call subroutine
+
+    -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
+    , P.Add Sp Fp ZeroReg
+    ]
+  
   -- Callee returned, teardown / restoring registers
-  [ P.Addi Sp Sp (Imm "40")
-  , P.Lw   Fp      (Imm "-40") Sp
-  , P.Lw   RetAddr (Imm "-36") Sp
-  , P.Lw   (T T7)  (Imm "-32") Sp
-  , P.Lw   (T T6)  (Imm "-28") Sp
-  , P.Lw   (T T5)  (Imm "-24") Sp
-  , P.Lw   (T T4)  (Imm "-20") Sp
-  , P.Lw   (T T3)  (Imm "-16") Sp
-  , P.Lw   (T T2)  (Imm "-12") Sp
-  , P.Lw   (T T1)  (Imm "-8")  Sp
-  , P.Lw   (T T0)  (Imm "-4")  Sp
-  ]
+  emit
+    [ P.Addi Sp Sp (Imm "40")
+    , P.Lw   Fp      (Imm "-40") Sp
+    , P.Lw   RetAddr (Imm "-36") Sp
+    , P.Lw   (T T7)  (Imm "-32") Sp
+    , P.Lw   (T T6)  (Imm "-28") Sp
+    , P.Lw   (T T5)  (Imm "-24") Sp
+    , P.Lw   (T T4)  (Imm "-20") Sp
+    , P.Lw   (T T3)  (Imm "-16") Sp
+    , P.Lw   (T T2)  (Imm "-12") Sp
+    , P.Lw   (T T1)  (Imm "-8")  Sp
+    , P.Lw   (T T0)  (Imm "-4")  Sp
+    ]
   where
-    pushArgs :: [P.MipsPhys]
-    pushArgs = flip concatMap (zip [1..] args) $ \(argno, arg) ->
-      let offset = Imm . show . (*(-4)) $ argno
-      in
-        -- NOTE: Sp and Fp are the same at this point in time
-        case arg of
-          V.CVarg vreg ->
-            let (preg, loadInstrs) = loadReg vreg
-            in loadInstrs ++ [P.Sw preg offset Sp]
-          V.CIarg i ->
-            [ P.Li (M M1) i
-            , P.Sw (M M1) offset Sp
-            ]
-
-setupGoto :: Label -> [P.MipsPhys]
-setupGoto lab = [P.J lab]
+    pushArgs :: MonadAllocator m => m ()
+    pushArgs = forM_ (zip [1..] args) $ \(argno, arg) -> do
+      let offset = Imm . show . (* (-4)) $ argno
+      -- IMPORTANT NOTE: Sp and Fp are the same at this point in time
+      case arg of
+        V.CVarg vreg ->
+          regs_x vreg $ \preg -> emit [ P.Sw preg offset Sp ]
+        V.CIarg i ->
+          regs_tmp $ \tmp -> emit [ P.Li tmp i, P.Sw tmp offset Sp ]
+  
+setupGoto :: MonadMipsEmitter m => Label -> m ()
+setupGoto lab = emit [P.J lab]
 
 -- Setup instructions to return to caller
-setupReturn
-  :: VReg
-  -> (VReg -> (PReg, [P.MipsPhys]))
-  -> [P.MipsPhys]
-setupReturn retVal loadReg =
-      let (preg, ins) = loadReg retVal
-      in
-        ins ++
-          [ P.Add Retval preg ZeroReg
-          , P.Jr RetAddr
-          ]
+setupReturn :: MonadAllocator m => VReg -> m ()
+setupReturn retVal = regs_x retVal $ \r -> 
+  emit [ P.Add Retval r ZeroReg , P.Jr RetAddr ]
 
-setupReturnImm
-  :: Imm
-  -> [P.MipsPhys]
-setupReturnImm retImm =
-  [ P.Li Retval retImm
-  , P.Jr RetAddr
-  ]
+setupReturnImm :: MonadMipsEmitter m => Imm -> m ()
+setupReturnImm retImm = emit [ P.Li Retval retImm , P.Jr RetAddr ]
 
-
-setupReturnVoid :: [P.MipsPhys]
-setupReturnVoid = [P.Jr RetAddr]
+setupReturnVoid :: MonadMipsEmitter m => m ()
+setupReturnVoid = emit [P.Jr RetAddr]

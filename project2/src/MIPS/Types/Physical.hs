@@ -22,8 +22,9 @@ data MipsPhys
   | Bne   PReg PReg Label
   | Bgtz  PReg Label
   | Blez  PReg Label
-  | Lw    PReg Imm PReg
-  | Sw    PReg Imm PReg
+  | Lw    PReg Imm  PReg
+  | Sw    PReg Imm  PReg
+  | Sll   PReg PReg Imm
   | Label Label
   | Jal   Label
   | Jr    PReg

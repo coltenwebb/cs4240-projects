@@ -43,10 +43,10 @@ data MipsVirtual
   -- Same convention as TigerIR
   -- array_store, a, arr, 0
   -- arr[0] := a
-  | ArrStr   VReg VReg VReg
-  | ArrStri  VReg VReg Imm
-  | ArrStrii Imm VReg Imm 
-  | ArrStriv Imm VReg VReg
+  | ArrStrVV  VReg VReg VReg
+  | ArrStrVI  VReg VReg Imm
+  | ArrStrII  Imm VReg Imm 
+  | ArrStrIV  Imm VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
   | ArrLoad  VReg VReg VReg
