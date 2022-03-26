@@ -49,15 +49,13 @@ data MipsVirtual
   | ArrStrIV  Imm VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
-  | ArrLoad  VReg VReg VReg
-  | ArrLoadi VReg VReg Imm
+  | ArrLoadV VReg VReg VReg
+  | ArrLoadI VReg VReg Imm
   -- assign, X, 100, 10
   -- type ArrayInt = array [100] of int;
   -- var X : ArrayInt := 10
-  | ArrAssignVV   VReg VReg VReg
-  | ArrAssignVI   VReg VReg Imm
-  | ArrAssignII   VReg Imm  Imm
-  | ArrAssignIV   VReg Imm  VReg
+  | ArrAssignI   VReg Imm  Imm
+  | ArrAssignV   VReg Imm  VReg
   | Nop                           -- [P]
   | Return   VReg                 -- [P]
   | Returni  Imm                  -- [P]
