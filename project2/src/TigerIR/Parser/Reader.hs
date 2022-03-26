@@ -198,12 +198,12 @@ parseInstruction =
       GOTO -> T.Goto <$> gotoOp
 
       -- Branch ops
-      BREQ  -> T.BranchOperation T.Breq  <$> branchOperands
-      BRNEQ -> T.BranchOperation T.Brneq <$> branchOperands
-      BRLT  -> T.BranchOperation T.Brlt  <$> branchOperands
-      BRGT  -> T.BranchOperation T.Brgt  <$> branchOperands
-      BRLEQ -> T.BranchOperation T.Brleq <$> branchOperands
-      BRGEQ -> T.BranchOperation T.Brgeq <$> branchOperands
+      BREQ  -> branchOperands T.Breq  
+      BRNEQ -> branchOperands T.Brneq 
+      BRLT  -> branchOperands T.Brlt  
+      BRGT  -> branchOperands T.Brgt  
+      BRLEQ -> branchOperands T.Brleq 
+      BRGEQ -> branchOperands T.Brgeq 
 
       -- RETURN
       RETURN -> T.Return <$> returnOperand
@@ -279,7 +279,7 @@ parseInstruction =
     gotoOp = T.Label <$> parseIdentifier
 
     -- Section 7.4
-    branchOperands = do
+    branchOperands brop = do
       lab <- T.Label <$> parseIdentifier
       commaSep
       o2 <- parseConstOrVarOperand
@@ -288,16 +288,16 @@ parseInstruction =
 
       case (o2, o3) of
         (VariableOperand v2, VariableOperand v3)
-          -> return $ T.BrOpsVV lab (Shim.v2v v2) (Shim.v2v v3)
+          -> return $ T.BranchOperation brop lab (T.BrOpsVV (Shim.v2v v2) (Shim.v2v v3))
 
         (ConstantOperand c2 IntType, VariableOperand v3)
-          -> return $ T.BrOpsIV lab (Shim.c2i c2) (Shim.v2v v3)
+          -> return $ T.BranchOperation brop lab (T.BrOpsIV (Shim.c2i c2) (Shim.v2v v3))
 
         (ConstantOperand c2 IntType, ConstantOperand c3 IntType)
-          -> return $ T.BrOpsII lab (Shim.c2i c2) (Shim.c2i c3)
+          -> return $ T.BranchOperation brop lab (T.BrOpsII (Shim.c2i c2) (Shim.c2i c3))
 
         (VariableOperand v2, ConstantOperand c3 IntType)
-          -> return $ T.BrOpsVI lab (Shim.v2v v2) (Shim.c2i c3)
+          -> return $ T.BranchOperation brop lab (T.BrOpsVI (Shim.v2v v2) (Shim.c2i c3))
 
         _ -> fail $ "Unsupported branch operands: " ++ show o2 ++ " " ++ show o3
 
@@ -408,17 +408,11 @@ parseInstruction =
       val <- parseConstOrVarOperand
 
       oprnds <- case (count, val) of 
-        (VariableOperand v1, VariableOperand v2)
-          -> return $ T.ArrAssignAVV (Shim.a2a arr) (Shim.v2v v1) (Shim.v2v v2)
-
         (ConstantOperand c IntType, VariableOperand v)
           -> return $ T.ArrAssignAIV (Shim.a2a arr) (Shim.c2i c) (Shim.v2v v)
 
         (ConstantOperand c1 IntType, ConstantOperand c2 IntType)
           -> return $ T.ArrAssignAII (Shim.a2a arr) (Shim.c2i c1) (Shim.c2i c2)
-
-        (VariableOperand v, ConstantOperand c IntType)
-          -> return $ T.ArrAssignAVI (Shim.a2a arr) (Shim.v2v v) (Shim.c2i c)
 
         _ -> error $
           "invalid args to array_store"

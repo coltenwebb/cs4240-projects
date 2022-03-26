@@ -31,7 +31,7 @@ instance Show TigerIrProgram where
   show (Program funcs) = concatMap (\f -> show f ++ "\n") funcs
 
 instrSelectionPass :: (a -> b) -> Function a -> Function b
-instrSelectionPass f fn = fn { instrs = map f (instrs fn) } 
+instrSelectionPass f fn = fn { instrs = map f (instrs fn) }
 
 instrSelectionPassFlatten :: (a -> [b]) -> Function a -> Function b
 instrSelectionPassFlatten f fn = fn { instrs = concatMap f (instrs fn) }

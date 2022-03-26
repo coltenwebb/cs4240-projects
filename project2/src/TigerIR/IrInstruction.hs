@@ -22,7 +22,7 @@ spaceBtwn strs = init $ concatMap (++ " ") strs
 data IrInstruction
   = AssignVar         AssignVarOperands
   | BinaryOperation   BinOp BinOperands
-  | BranchOperation   BrOp BrOperands
+  | BranchOperation   BrOp Label BrOperands
   | Return            RetvarOperand
   | BeginFunction
   | EndFunction
@@ -36,19 +36,19 @@ data IrInstruction
 
 instance Show IrInstruction where
   show inst = case inst of
-    AssignVar avo           -> fmtIr ["    assign", show avo]
-    BinaryOperation bo bo'  -> fmtIr ["   ", show bo, show bo']
-    BranchOperation bo bo'  -> fmtIr ["   ", show bo, show bo']
-    Return ro               -> fmtIr ["    return", show ro]
-    Call fn fas             -> fmtIr ["    call", show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
-    Callr vari fn fas       -> fmtIr ["    callr", show vari, show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
-    Goto la                 -> fmtIr ["    goto", show la]
-    ArrStore aso            -> fmtIr ["    store", show aso]
-    ArrLoad alo             -> fmtIr ["    load", show alo]
-    AssignArr aao           -> fmtIr ["    assign", show aao]
-    LabelIns la             -> show la ++ ":"
-    BeginFunction           -> ""
-    EndFunction             -> ""
+    AssignVar avo             -> fmtIr ["    assign", show avo]
+    BinaryOperation bo bo'    -> fmtIr ["   ", show bo, show bo']
+    BranchOperation bo lb bo' -> fmtIr ["   ", show bo, show lb, show bo']
+    Return ro                 -> fmtIr ["    return", show ro]
+    Call fn fas               -> fmtIr ["    call", show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
+    Callr vari fn fas         -> fmtIr ["    callr", show vari, show fn, if null fas then "" else concatMap (\a -> show a ++ " ") fas]
+    Goto la                   -> fmtIr ["    goto", show la]
+    ArrStore aso              -> fmtIr ["    store", show aso]
+    ArrLoad alo               -> fmtIr ["    load", show alo]
+    AssignArr aao             -> fmtIr ["    assign", show aao]
+    LabelIns la               -> show la ++ ":"
+    BeginFunction             -> ""
+    EndFunction               -> ""
 
 data AssignVarOperands
   = AssignVarOpsDV DestVar Variable
@@ -105,17 +105,16 @@ instance Show BinOperands where
 
 
 data BrOperands
-  = BrOpsVV Label Variable Variable
-  | BrOpsVI Label Variable Imm
-  | BrOpsIV Label Imm      Variable
-  | BrOpsII Label Imm      Imm
+  = BrOpsVV Variable Variable
+  | BrOpsVI Variable Imm
+  | BrOpsIV Imm      Variable
+  | BrOpsII Imm      Imm
 instance Show BrOperands where
   show brops = case brops of
-    BrOpsVV la vari vari' -> spaceBtwn [show la, show vari, show vari']
-    BrOpsVI la vari imm   -> spaceBtwn [show la, show vari, show imm]
-    BrOpsIV la imm vari   -> spaceBtwn [show la, show imm, show vari]
-    BrOpsII la imm imm'   -> spaceBtwn [show la, show imm, show imm']
-
+    BrOpsVV vari vari' -> spaceBtwn [show vari, show vari']
+    BrOpsVI vari imm   -> spaceBtwn [show vari, show imm]
+    BrOpsIV imm vari   -> spaceBtwn [show imm, show vari]
+    BrOpsII imm imm'   -> spaceBtwn [show imm, show imm']
 
 
 data ArrStoreOperands
@@ -143,8 +142,6 @@ instance Show ArrLoadOperands where
     ArrLoadDAI vari ar imm    -> spaceBtwn [show vari, show ar, show imm]
     ArrLoadDAV vari ar vari'  -> spaceBtwn [show vari, show ar, show vari']
 
-
-
 data ArrAssignOperands
   -- Array X implicit
   -- assign, X, 100, 10
@@ -152,16 +149,10 @@ data ArrAssignOperands
   -- var X : ArrayInt := 10
   = ArrAssignAII Array Imm Imm
   | ArrAssignAIV Array Imm Variable
-  | ArrAssignAVI Array Variable Imm
-  | ArrAssignAVV Array Variable Variable
 instance Show ArrAssignOperands where
   show aaops = case aaops of
     ArrAssignAII ar imm imm'    -> spaceBtwn [show ar, show imm, show imm']
     ArrAssignAIV ar imm vari    -> spaceBtwn [show ar, show imm, show vari]
-    ArrAssignAVI ar vari imm    -> spaceBtwn [show ar, show vari, show imm]
-    ArrAssignAVV ar vari vari'  -> spaceBtwn [show ar, show vari, show vari']
-
-
 
 data RetvarOperand
   = Retvar Variable

@@ -9,11 +9,10 @@ import TigerIR.IrInstruction
 type VirtualFunction = Function MipsVirtual
 type VirtualProgram  = Program  MipsVirtual
 
--- [P] denotes pseudo instr (incomplete atm, some pseudo not annotated)
+-- [P] denotes pseudo instr
 -- pushin [P]
 data MipsVirtual
-  = AssignI  VReg Imm         
-  | AssignV  VReg VReg
+  = Assign   VReg VReg
   | Li       VReg Imm          -- [P]
   -- Commutative bin-ops
   | Addi     VReg VReg Imm  
@@ -32,10 +31,11 @@ data MipsVirtual
   | DivVI    VReg VReg Imm
   | DivIV    VReg Imm  VReg
 
-  | Bri      Cmp  VReg Imm  Label
-  | Br       Cmp  VReg VReg Label
-  | Lw       VReg Imm VReg
-  | Sw       VReg Imm VReg
+  | BrVI     BrOp VReg Imm  Label
+  | BrVV     BrOp VReg VReg Label
+  | BrIV     BrOp Imm  VReg Label
+  | BrII     BrOp Imm  Imm  Label
+
   | Label    Label
   | Goto     Label
   | Call     Label [CallArg]      -- [P]
@@ -61,7 +61,5 @@ data MipsVirtual
   | Returni  Imm                  -- [P]
   | BeginFunction                 -- [P] for initialization
   | EndFunction                   -- [P] void return
-
-data Cmp = Eq | Neq | Lt | Gt | Geq | Leq deriving (Show)
 
 data CallArg = CVarg VReg | CIarg Imm

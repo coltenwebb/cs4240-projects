@@ -9,6 +9,7 @@ import MIPS.Types.Operand
 
 import Control.Monad.Writer.Class
 import Data.DList as D
+import MIPS.Types.Operand (VReg)
 
 type MipsPhysDList = D.DList P.MipsPhys
 
@@ -44,14 +45,6 @@ class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
     -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
     -> m ()
 
-  -- dest d, reg holding imm val, reg x
-  regs_dix
-    :: VReg -> Imm -> VReg
-    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
-    -> m ()
-  regs_dix d i x = regs_dxi d x i
-  
-  
   -- reg x, reg y, register to hold tmp value
   regs_xy_tmp
     :: VReg -> VReg
@@ -61,8 +54,7 @@ class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
   -- reg x, reg y, reg z, register to hold tmp value
   regs_xyz_tmp
     :: VReg -> VReg -> VReg
-    -> (forall m'. MonadMipsEmitter m' =>
-       PReg -> PReg -> PReg -> PReg -> m' ())
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> PReg -> m' ())
     -> m ()
   
   -- dest d 
@@ -93,3 +85,68 @@ class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
     :: VReg -> Imm
     -> m ()
 
+  -- Reg X, Load two immediate values to tmp
+  regs_xii
+    :: VReg -> Imm -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
+    -> m ()
+
+  -- dest d, reg x, reg y, tmp register to hold intermediate value
+  regs_dxy_tmp
+    :: VReg -> VReg -> VReg
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> PReg -> m' ())
+    -> m ()
+  
+  -- Reg x, Reg y, Imm i, Tmp
+  regs_xyi_tmp
+    :: VReg -> VReg -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> PReg -> m' ())
+    -> m ()
+
+  -- Reg x, Imm i
+  regs_xi
+    :: VReg -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> m'())
+    -> m ()
+  
+  -- Two registers to hold two immediate values
+  regs_ii
+    :: Imm -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> m'())
+    -> m ()
+  
+  -- Two registers to hold two immediate values, one tmp
+  regs_ii_tmp
+    :: Imm -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m'())
+    -> m ()
+  
+  -- Reg x, Imm value i, and one tmp
+  regs_xi_tmp
+    :: VReg -> Imm
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m'())
+    -> m ()
+
+  ----------------------------- 
+  -- End of Minimal Definition
+  -----------------------------
+
+  -- dest d, reg holding imm val, reg x
+  regs_dix
+    :: VReg -> Imm -> VReg
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
+    -> m ()
+  regs_dix d i x = regs_dxi d x i
+
+  regs_ix_tmp
+    :: Imm -> VReg
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
+    -> m ()
+  regs_ix_tmp i v = regs_xi_tmp v i
+
+  regs_ix
+    :: Imm -> VReg
+    -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> m' ())
+    -> m ()
+  regs_ix i x = regs_xi x i
+  

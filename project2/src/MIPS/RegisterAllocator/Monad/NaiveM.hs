@@ -11,93 +11,167 @@ import qualified MIPS.Types.Virtual as V
 
 import Control.Monad.Writer
 import Control.Monad.RWS.Lazy
+import Data.DList as D
 
 import qualified Data.Map as M
-import MIPS.RegisterAllocator.Monad.Class
 
 type NaiveM = RWS RegMap MipsPhysDList ()
 instance MonadMipsEmitter NaiveM
 
 -- assuming that RegMap was generated correctly,
--- i.e. contains every valid VReg, in our use of (M.!)
-getOffsetImm :: VReg -> NaiveM Imm
-getOffsetImm v = reader (toImm . (M.! v))
+-- i.e. contains every valid VReg, in our use of lookup
+-- In the case of Nothing, it means that it was a "pseudo"-vreg,
+-- such as vreg to hold imm value or branch calculation value
+getOffsetImm :: VReg -> NaiveM (Maybe Imm)
+getOffsetImm v = reader (fmap toImm . M.lookup v)
 
 loadVRegFromStack :: VReg -> PReg -> NaiveM ()
 loadVRegFromStack vreg preg = do
   offsetImm <- getOffsetImm vreg
-  emit [ P.Lw preg offsetImm Fp ]
+  case offsetImm of
+    Just offst -> emit [ P.Lw preg offst Fp ]
+    Nothing    -> pure () -- not actually stored on stack
 
 saveVRegToStack :: VReg -> PReg -> NaiveM ()
 saveVRegToStack vreg preg = do
   offsetImm <- getOffsetImm vreg
-  emit [ P.Sw preg offsetImm Fp ]
+  case offsetImm of
+    Just offst -> emit [ P.Sw preg offst Fp ]
+    Nothing    -> pure () -- again, not actually stored on stack
+
+loadImmediate :: Imm -> PReg -> NaiveM ()
+loadImmediate imm preg = emit [ P.Li preg imm ]
+
+runNaiveM :: NaiveM a -> RegMap -> [P.MipsPhys]
+runNaiveM nm regmap = D.toList pinsts
+  where
+    (_, _, pinsts) = runRWS nm regmap ()
 
 instance MonadAllocator NaiveM where
   regs_dxy d x y callback = do
-    let (d', x', y') = (M M1, M M1, M M2)
+    let (d', x', y') = (T T1, T T1, T T2)
 
     loadVRegFromStack x x'
     loadVRegFromStack y y'
     callback d' x' y'
     saveVRegToStack d d'
-  
+
   regs_dx d x callback = do
-    let (d', x') = (M M1, M M1)
+    let (d', x') = (T T1, T T1)
 
     loadVRegFromStack x x'
     callback d' x'
     saveVRegToStack d d'
 
   regs_xy x y callback = do
-    let (x', y') = (M M1, M M2)
+    let (x', y') = (T T1, T T2)
 
     loadVRegFromStack x x'
     loadVRegFromStack y y'
     callback x' y'
-  
+
   regs_dxi d x i callback = do
-    let (d', x', i') = (M M1, M M1, M M2)
+    let (d', x', i') = (T T1, T T1, T T2)
 
     loadVRegFromStack x x'
-    emit [ P.Li i' i ]
+    loadImmediate i i'
     callback d' x' i'
     saveVRegToStack d d'
-  
+
   regs_xy_tmp x y callback = do
     -- T registers aren't used in naive
-    let (x', y', tmp) = (M M1, M M2, T T0)
+    let (x', y', tmp) = (T T1, T T2, T T3)
 
     loadVRegFromStack x x'
     loadVRegFromStack y y'
     callback x' y' tmp
-  
+
   regs_d d callback = do
-    let d' = M M1
+    let d' = T T1
 
     callback d'
     saveVRegToStack d d'
 
+  regs_xyi x y i callback = do
+    let (x', y', i') = (T T1, T T2, T T3)
+
+    loadVRegFromStack x x'
+    loadVRegFromStack y y'
+    loadImmediate i i'
+    callback x' y' i'
+
   regs_x x callback = do
-    let x' = M M1
+    let x' = T T1
 
     loadVRegFromStack x x'
     callback x'
 
-  regs_xyz_tmp callback = do
-    let (x', y', z', tmp) = (M M1, M M2, M M3, M M4)
+  regs_xyz_tmp x y z callback = do
+    let (x', y', z', tmp) = (T T1, T T2, T T3, T T4)
 
     loadVRegFromStack x x'
     loadVRegFromStack y y'
     loadVRegFromStack z z'
     callback x' y' z' tmp
-  
+
   regs_tmp callback = do
-    let tmp = M M1
+    let tmp = T T1
     callback tmp
-  
+
   regs_assign_di d i = do
-    let tmp = M M1
-    
-    emit [ P.Li tmp i ]
+    let tmp = T T1
+
+    loadImmediate i tmp
     saveVRegToStack d tmp
+
+  regs_xii x i1 i2 callback = do
+    let (x', i1', i2') = (T T1, T T2, T T3)
+
+    loadVRegFromStack x x'
+    loadImmediate i1 i1'
+    loadImmediate i2 i2'
+    callback x' i1' i2'
+
+  regs_dxy_tmp d x y callback = do
+    let (d', x', y', tmp) = (T T1, T T2, T T3, T T4)
+
+    loadVRegFromStack x x'
+    loadVRegFromStack y y'
+    callback d' x' y' tmp
+    saveVRegToStack d d'
+
+  regs_xyi_tmp x y i callback = do
+    let (x', y', i', tmp) = (T T1, T T2, T T3, T T4)
+
+    loadVRegFromStack x x'
+    loadVRegFromStack y y'
+    loadImmediate i i'
+    callback x' y' i' tmp
+
+  regs_xi x i callback = do
+    let (x', i') = (T T1, T T2)
+
+    loadVRegFromStack x x'
+    loadImmediate i i'
+    callback x' i'
+  
+  regs_xi_tmp x i callback = do
+    let (x', i', tmp) = (T T1, T T2, T T3)
+
+    loadVRegFromStack x x'
+    loadImmediate i i'
+    callback x' i' tmp
+  
+  regs_ii i1 i2 callback = do
+    let (i1', i2') = (T T1, T T2)
+
+    loadImmediate i1 i1'
+    loadImmediate i2 i2'
+    callback i1' i2'
+  
+  regs_ii_tmp i1 i2 callback = do
+    let (i1', i2', tmp) = (T T1, T T2, T T3)
+
+    loadImmediate i1 i1'
+    loadImmediate i2 i2'
+    callback i1' i2' tmp
