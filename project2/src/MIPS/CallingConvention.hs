@@ -199,17 +199,21 @@ setupCallStack
   -> [P.MipsPhys]
 setupCallStack fn args loadReg =
   -- Save registers
-  [ P.Sw   (T T0)  (Imm "-4")  Sp
-  , P.Sw   (T T1)  (Imm "-8")  Sp
-  , P.Sw   (T T2)  (Imm "-12") Sp
-  , P.Sw   (T T3)  (Imm "-16") Sp
-  , P.Sw   (T T4)  (Imm "-20") Sp
-  , P.Sw   (T T5)  (Imm "-24") Sp
-  , P.Sw   (T T6)  (Imm "-28") Sp
-  , P.Sw   (T T7)  (Imm "-32") Sp
-  , P.Sw   RetAddr (Imm "-36") Sp
-  , P.Sw   Fp      (Imm "-40") Sp
-  , P.Addi Sp      Sp         (Imm "-40")
+  -- [ P.Sw   (T T0)  (Imm "-4")  Sp
+  -- , P.Sw   (T T1)  (Imm "-8")  Sp
+  -- , P.Sw   (T T2)  (Imm "-12") Sp
+  -- , P.Sw   (T T3)  (Imm "-16") Sp
+  -- , P.Sw   (T T4)  (Imm "-20") Sp
+  -- , P.Sw   (T T5)  (Imm "-24") Sp
+  -- , P.Sw   (T T6)  (Imm "-28") Sp
+  -- , P.Sw   (T T7)  (Imm "-32") Sp
+  -- , P.Sw   RetAddr (Imm "-36") Sp
+  -- , P.Sw   Fp      (Imm "-40") Sp
+  -- , P.Addi Sp      Sp         (Imm "-40")
+  -- ]
+  [ P.Sw RetAddr (Imm "-4") Sp
+  , P.Sw Fp (Imm "-8") Sp
+  , P.Addi Sp Sp (Imm "-8")
   ]
   ++
   pushArgs
@@ -221,20 +225,25 @@ setupCallStack fn args loadReg =
   -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
   , P.Add Sp Fp ZeroReg
   ]
-  ++
-  -- Callee returned, teardown / restoring registers
-  [ P.Addi Sp Sp (Imm "40")
-  , P.Lw   Fp      (Imm "-40") Sp
-  , P.Lw   RetAddr (Imm "-36") Sp
-  , P.Lw   (T T7)  (Imm "-32") Sp
-  , P.Lw   (T T6)  (Imm "-28") Sp
-  , P.Lw   (T T5)  (Imm "-24") Sp
-  , P.Lw   (T T4)  (Imm "-20") Sp
-  , P.Lw   (T T3)  (Imm "-16") Sp
-  , P.Lw   (T T2)  (Imm "-12") Sp
-  , P.Lw   (T T1)  (Imm "-8")  Sp
-  , P.Lw   (T T0)  (Imm "-4")  Sp
+  ++ 
+  [ P.Addi Sp Sp (Imm "8")
+  , P.Lw Fp (Imm "-8") Sp 
+  , P.Lw RetAddr (Imm "-4") Sp 
   ]
+  -- ++
+  -- -- Callee returned, teardown / restoring registers
+  -- [ P.Addi Sp Sp (Imm "40")
+  -- , P.Lw   Fp      (Imm "-40") Sp
+  -- , P.Lw   RetAddr (Imm "-36") Sp
+  -- , P.Lw   (T T7)  (Imm "-32") Sp
+  -- , P.Lw   (T T6)  (Imm "-28") Sp
+  -- , P.Lw   (T T5)  (Imm "-24") Sp
+  -- , P.Lw   (T T4)  (Imm "-20") Sp
+  -- , P.Lw   (T T3)  (Imm "-16") Sp
+  -- , P.Lw   (T T2)  (Imm "-12") Sp
+  -- , P.Lw   (T T1)  (Imm "-8")  Sp
+  -- , P.Lw   (T T0)  (Imm "-4")  Sp
+  -- ]
   where
     pushArgs :: [P.MipsPhys]
     pushArgs = flip concatMap (zip [1..] args) $ \(argno, arg) ->
