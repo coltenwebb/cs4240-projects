@@ -17,14 +17,18 @@ intrinsicFunctions = [ puti, putc, getc, geti ]
 
 -- https://pages.cs.wisc.edu/~larus/SPIM/spim_documentation.pdf
 -- syscall nums pg. 8
-data SpimSyscall = PrintInt | PrintChar | ReadInt | ReadChar
+data SpimSyscall = PrintInt | PrintChar | ReadInt | ReadChar | Sbrk
 
 syscallNum :: SpimSyscall -> Imm
 syscallNum s = case s of
   PrintInt -> Imm "1"
   PrintChar -> Imm "11"
   ReadInt -> Imm "5"
+  Sbrk -> Imm "9"
   ReadChar -> Imm "12"
+
+loadSyscall :: SpimSyscall -> P.MipsPhys
+loadSyscall sc = P.Li SyscallCode (syscallNum sc)
 
 -- Print the integer i to standard output.
 -- void puti(int i)
@@ -35,7 +39,7 @@ puti = Function
   [ParamV (Variable "i")]
   [] -- No local vars
   [ P.Lw (A A0) (Imm "0") Sp  -- arg i
-  , P.Li SyscallCode (syscallNum PrintInt)
+  , loadSyscall PrintInt
   , P.Syscall
   , P.Jr RetAddr
   ]
@@ -52,7 +56,7 @@ putc = Function
   [ParamV (Variable "i")]
   [] -- No local vars
   [ P.Lw (A A0) (Imm "0") Sp    -- arg c
-  , P.Li SyscallCode (syscallNum PrintChar)
+  , loadSyscall PrintChar
   , P.Syscall
   , P.Jr RetAddr
   ]
@@ -69,7 +73,7 @@ getc = Function
   True -- No return value
   []   -- No params
   []   -- No local var
-  [ P.Li SyscallCode (syscallNum ReadChar)
+  [ loadSyscall ReadChar
   , P.Syscall
   , P.Add Retval V0 ZeroReg     -- store char into retval
   , P.Jr RetAddr
@@ -82,7 +86,7 @@ geti = Function
   False -- No return value
   [] -- No params
   [] -- No local var
-  [ P.Li SyscallCode (syscallNum ReadInt)
+  [ loadSyscall ReadInt
   , P.Syscall
   , P.Add Retval V0 ZeroReg -- Result stored in $v0
   , P.Jr RetAddr

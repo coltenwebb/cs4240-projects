@@ -8,6 +8,7 @@ import TigerIR.Program
 import MIPS.Types.Operand
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
+import MIPS.Intrinsics (loadSyscall, SpimSyscall(Sbrk))
 
 import Data.List (foldl1', foldl')
 
@@ -46,18 +47,33 @@ toImm (OffsetIdx i) = Imm (show (i * 4))
 
 
 -- Stack/Fp setup upon entry into function
-fnEntry :: Function a -> [P.MipsPhys]
-fnEntry fn =
-  if name fn == FunctionName (Label "main")
-  then 
-  -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
-  -- calling convention since fp is zero-initialized
-    [ P.Add Fp Sp ZeroReg
-    , P.Addi Sp Sp (toImm offst)
-    ]
-  else [ P.Addi Sp Sp (toImm offst) ]
+fnEntry :: Function a -> RegMap -> [P.MipsPhys]
+fnEntry fn rmap = spInit ++ allocArrays fn rmap
   where
-    offst = OffsetIdx 0 .- netLocalVarSize fn
+    stackOffst = OffsetIdx 0 .- netLocalVarSize fn
+    spInit = if name fn == FunctionName (Label "main")
+      then 
+      -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
+      -- calling convention since fp is zero-initialized
+        [ P.Add Fp Sp ZeroReg
+        , P.Addi Sp Sp (toImm stackOffst)
+        ]
+      else [ P.Addi Sp Sp (toImm stackOffst) ]
+
+allocArrays :: Function a -> RegMap -> [P.MipsPhys]
+allocArrays fn rmap =
+  flip concatMap (localVars fn) $ \lvar ->
+    case lvar of
+      LocalV _ -> []
+      LocalA (Array _ (ArraySize sz)) ->
+        [ loadSyscall Sbrk
+        -- (Sane) Assumption: We can load the size of each array
+        -- into the 16-bit imm,
+        -- Actually, does Li do it for you?
+        , P.Li (A A0) (Imm (show sz))
+        , P.Syscall
+        , P.Sw V0 (toImm (rmap M.! toVReg lvar)) Fp
+        ]
 
 {-
 hi addr
@@ -121,9 +137,7 @@ calcRegMap fn =
 
     f2 :: (RegMap, OffsetIdx) -> LocalVar -> (RegMap, OffsetIdx)
     f2 (rm, offst) lv =
-      (rm <> M.singleton (toVReg lv) currRegOffst, decrPtr currRegOffst)
-      where
-        currRegOffst = (offst .- localVarSize lv) .+ OffsetSize 1
+      (rm <> M.singleton (toVReg lv) offst, decrPtr offst)
 
     pvs :: Parameters
     pvs = parameters fn
@@ -131,17 +145,16 @@ calcRegMap fn =
     lvs :: LocalVars
     lvs = localVars fn
 
--- Because if type is an array, passed by reference
+-- All params and variables are the same size,
+-- array vars are references to memory
 paramVarSize :: OffsetSize
 paramVarSize = OffsetSize 1
 
-localVarSize :: LocalVar -> OffsetSize
-localVarSize iv = case iv of
-  LocalV (Variable _) -> OffsetSize 1
-  LocalA (Array _ (ArraySize k)) -> OffsetSize k
+localVarSize ::  OffsetSize
+localVarSize = OffsetSize 1
 
 netLocalVarSize :: Function a -> OffsetSize
-netLocalVarSize fn = foldl1' (^+) (map localVarSize lvs)
+netLocalVarSize fn = paramVarSize .* length lvs
   where
     lvs :: LocalVars
     lvs = localVars fn
@@ -186,17 +199,21 @@ setupCallStack
   -> [P.MipsPhys]
 setupCallStack fn args loadReg =
   -- Save registers
-  [ P.Sw   (T T0)  (Imm "-4")  Sp
-  , P.Sw   (T T1)  (Imm "-8")  Sp
-  , P.Sw   (T T2)  (Imm "-12") Sp
-  , P.Sw   (T T3)  (Imm "-16") Sp
-  , P.Sw   (T T4)  (Imm "-20") Sp
-  , P.Sw   (T T5)  (Imm "-24") Sp
-  , P.Sw   (T T6)  (Imm "-28") Sp
-  , P.Sw   (T T7)  (Imm "-32") Sp
-  , P.Sw   RetAddr (Imm "-36") Sp
-  , P.Sw   Fp      (Imm "-40") Sp
-  , P.Addi Sp      Sp         (Imm "-40")
+  -- [ P.Sw   (T T0)  (Imm "-4")  Sp
+  -- , P.Sw   (T T1)  (Imm "-8")  Sp
+  -- , P.Sw   (T T2)  (Imm "-12") Sp
+  -- , P.Sw   (T T3)  (Imm "-16") Sp
+  -- , P.Sw   (T T4)  (Imm "-20") Sp
+  -- , P.Sw   (T T5)  (Imm "-24") Sp
+  -- , P.Sw   (T T6)  (Imm "-28") Sp
+  -- , P.Sw   (T T7)  (Imm "-32") Sp
+  -- , P.Sw   RetAddr (Imm "-36") Sp
+  -- , P.Sw   Fp      (Imm "-40") Sp
+  -- , P.Addi Sp      Sp         (Imm "-40")
+  -- ]
+  [ P.Sw RetAddr (Imm "-4") Sp
+  , P.Sw Fp (Imm "-8") Sp
+  , P.Addi Sp Sp (Imm "-8")
   ]
   ++
   pushArgs
@@ -208,20 +225,25 @@ setupCallStack fn args loadReg =
   -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
   , P.Add Sp Fp ZeroReg
   ]
-  ++
-  -- Callee returned, teardown / restoring registers
-  [ P.Addi Sp Sp (Imm "40")
-  , P.Lw   Fp      (Imm "-40") Sp
-  , P.Lw   RetAddr (Imm "-36") Sp
-  , P.Lw   (T T7)  (Imm "-32") Sp
-  , P.Lw   (T T6)  (Imm "-28") Sp
-  , P.Lw   (T T5)  (Imm "-24") Sp
-  , P.Lw   (T T4)  (Imm "-20") Sp
-  , P.Lw   (T T3)  (Imm "-16") Sp
-  , P.Lw   (T T2)  (Imm "-12") Sp
-  , P.Lw   (T T1)  (Imm "-8")  Sp
-  , P.Lw   (T T0)  (Imm "-4")  Sp
+  ++ 
+  [ P.Addi Sp Sp (Imm "8")
+  , P.Lw Fp (Imm "-8") Sp 
+  , P.Lw RetAddr (Imm "-4") Sp 
   ]
+  -- ++
+  -- -- Callee returned, teardown / restoring registers
+  -- [ P.Addi Sp Sp (Imm "40")
+  -- , P.Lw   Fp      (Imm "-40") Sp
+  -- , P.Lw   RetAddr (Imm "-36") Sp
+  -- , P.Lw   (T T7)  (Imm "-32") Sp
+  -- , P.Lw   (T T6)  (Imm "-28") Sp
+  -- , P.Lw   (T T5)  (Imm "-24") Sp
+  -- , P.Lw   (T T4)  (Imm "-20") Sp
+  -- , P.Lw   (T T3)  (Imm "-16") Sp
+  -- , P.Lw   (T T2)  (Imm "-12") Sp
+  -- , P.Lw   (T T1)  (Imm "-8")  Sp
+  -- , P.Lw   (T T0)  (Imm "-4")  Sp
+  -- ]
   where
     pushArgs :: [P.MipsPhys]
     pushArgs = flip concatMap (zip [1..] args) $ \(argno, arg) ->

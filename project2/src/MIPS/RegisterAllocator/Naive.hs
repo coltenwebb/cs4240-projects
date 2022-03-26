@@ -255,7 +255,7 @@ virtToPhysMIPS vf mv = case mv of
 
   V.Returni i -> setupReturnImm i
 
-  V.BeginFunction -> fnEntry vf
+  V.BeginFunction -> fnEntry vf rm
 
   V.EndFunction -> setupReturnVoid
 
@@ -283,7 +283,7 @@ virtToPhysMIPS vf mv = case mv of
     imm0 = Imm "0"
 
     times4 :: Imm -> Imm
-    times4 (Imm i) = Imm (show $ (read i :: Int) * 4)
+    times4 (Imm i) = Imm (show $ (read i :: Int) * (-4))
 
     loadReg :: VReg -> (PReg, [P.MipsPhys])
     loadReg vreg =

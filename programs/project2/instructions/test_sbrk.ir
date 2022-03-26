@@ -1,0 +1,20 @@
+#start_function
+void main():
+int-list: a[3], t0
+float-list:
+  callr, t0, geti
+  array_store, t0, a, 0
+  callr, t0, geti
+  array_store, t0, a, 1
+  callr, t0, geti
+  array_store, t0, a, 2
+
+  array_load, t0, a, 0
+  call, puti, t0
+  array_load, t0, a, 1
+  call, puti, t0
+  array_load, t0, a, 2
+  call, puti, t0
+
+  call, putc, 10
+#end_function
