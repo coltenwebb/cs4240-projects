@@ -558,7 +558,7 @@ intermediateForm vf use def k mv = case mv of
   V.ArrStr s a i ->
     IF { uses = [s, a, i]
        , inst =
-         [ P.Addi (M M4) ZeroReg (Imm "4") -- this should left shift
+         [ P.Addi (M M4) ZeroReg (Imm "-4") -- this should left shift
          , P.Mult (M M4) (use i)
          , P.Mflo (M M4) -- m1=4*i
          , P.Add (M M4) (M M4) (use a)
@@ -569,7 +569,7 @@ intermediateForm vf use def k mv = case mv of
   V.ArrStriv s a i ->
     IF { uses = [a, i]
        , inst =
-         [ P.Addi (M M4) ZeroReg (Imm "4")
+         [ P.Addi (M M4) ZeroReg (Imm "-4")
          , P.Mult (M M4) (use i)
          , P.Mflo (M M4)
          , P.Add (M M4) (M M4) (use a)
@@ -597,7 +597,7 @@ intermediateForm vf use def k mv = case mv of
   V.ArrLoad s a i ->
     IF { uses = [a, i]
        , inst =
-         [ P.Addi (M M4) ZeroReg (Imm "4")
+         [ P.Addi (M M4) ZeroReg (Imm "-4")
          , P.Mult (M M4) (use i)
          , P.Mflo (M M4)
          , P.Add (M M4) (M M4) (use a)
@@ -629,7 +629,7 @@ intermediateForm vf use def k mv = case mv of
        }
   V.BeginFunction ->
     IF { uses = []
-       , inst = fnEntry vf
+       , inst = fnEntry vf rm
        , defs = Nothing
        }
   V.EndFunction ->
@@ -669,7 +669,9 @@ intermediateForm vf use def k mv = case mv of
     loadReg :: VReg -> (PReg, [P.MipsPhys])
     loadReg vreg = (M M4, [ P.Lw (M M4) (k vreg) Fp ])
     times4 :: Imm -> Imm
-    times4 (Imm i) = Imm (show $ (read i :: Int) * 4)
+    times4 (Imm i) = Imm (show $ (read i :: Int) * (-4))
+    rm :: RegMap
+    rm = calcRegMap vf
 
 --  where
 --    k = toImm . (M.!) (calcRegMap vf)
