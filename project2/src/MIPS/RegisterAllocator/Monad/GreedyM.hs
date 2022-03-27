@@ -68,48 +68,75 @@ instance MonadAllocator GreedyM where
     y' <- allocReg     y (M M3)
 
     callback d' x' y'
-
     saveVRegToStack d d'
 
   regs_dx d x callback = do
-    let (d', x') = (T T1, T T1)
+    d' <- allocDestReg d (M M1)
+    x' <- allocReg     x (M M2)
 
-    loadVRegFromStack x x'
     callback d' x'
     saveVRegToStack d d'
 
   regs_xy x y callback = do
-    let (x', y') = (T T1, T T2)
+    x' <- allocReg x (M M1)
+    y' <- allocReg y (M M2)
+
+    callback x' y'
+    
+  regs_dxi d x i callback = do
+    d' <- allocDestReg d (M M1)
+    x' <- allocReg     x (M M2)
+    let i' = M M3
+    loadImmediate i i'
+
+    callback d' x' i'
+    saveVRegToStack d d' 
+    
+  regs_xy_tmp x y callback = do
+    x'       <- allocReg x (M M1)
+    y'       <- allocReg y (M M2)
+    let tmp' = M M3
 
     loadVRegFromStack x x'
     loadVRegFromStack y y'
-    callback x' y'
+    callback x' y' tmp'
 
-  regs_dxi d x i callback = do
-    let (d', x', i') = (T T1, T T1, T T2)
+  regs_d d callback = do
+    d' <- allocDestReg d (M M1)
 
-    loadVRegFromStack x x'
-    loadImmediate i i'
-    callback d' x' i'
+    callback d'
     saveVRegToStack d d'
 
-  regs_xy_tmp x y callback = do
-    -- T registers aren't used in naive
-    let (x', y', tmp) = (T T1, T T2, T T3)
+  regs_xyi x y i callback = do
+    x' <- allocReg x (M M1)
+    y' <- allocReg y (M M2)
+    let i' = M M3
+    loadImmediate i i'
 
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
-    callback x' y' tmp
+    callback x' y' i'
+   
+  regs_xyi x y i callback = do 
+    x' <- allocReg (M M1)
+    y' <- allocReg (M M2)
+    let i' = M M3 
+    loadImmediate i i'
+    callback x' y' i'
 
-  regs_d d callback = return ()
+  regs_x x callback = do
+    x' <- allocReg x (M M1)
+    callback x'
 
-  regs_xyi x y i callback = return ()
+  regs_xyz_tmp x y z callback = do
+    x' <- allocReg (M M1)
+    y' <- allocReg (M M2)
+    z' <- allocReg (M M3)
+    let tmp = M M4
 
-  regs_xyz_tmp x y z callback = return ()
+    callback x' y' z' tmp
 
-  regs_x x callback = return ()
-
-  regs_tmp callback = return ()
+  regs_tmp callback = do
+    let tmp = M M1
+    callback tmp
 
   regs_assign_di d i = do
     d' <- allocDestReg d (M M1)
