@@ -110,14 +110,6 @@ instance MonadAllocator GreedyM where
   regs_xyi x y i callback = do
     x' <- allocReg x (M M1)
     y' <- allocReg y (M M2)
-    let i' = M M3
-    loadImmediate i i'
-
-    callback x' y' i'
-   
-  regs_xyi x y i callback = do 
-    x' <- allocReg (M M1)
-    y' <- allocReg (M M2)
     let i' = M M3 
     loadImmediate i i'
     callback x' y' i'
@@ -127,9 +119,9 @@ instance MonadAllocator GreedyM where
     callback x'
 
   regs_xyz_tmp x y z callback = do
-    x' <- allocReg (M M1)
-    y' <- allocReg (M M2)
-    z' <- allocReg (M M3)
+    x' <- allocReg x (M M1)
+    y' <- allocReg y (M M2)
+    z' <- allocReg z (M M3)
     let tmp = M M4
 
     callback x' y' z' tmp
