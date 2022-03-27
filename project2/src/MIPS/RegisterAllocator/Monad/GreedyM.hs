@@ -36,28 +36,40 @@ tryTmpReg vreg = do
 -- Attempt to allocate register, if not colored,
 -- use the given spillover reg
 -- Bool: reg is spilled (for if we need to save)
-allocReg :: VReg -> PReg -> GreedyM (PReg, Bool)
+allocReg :: VReg -> PReg -> GreedyM PReg
 allocReg vreg spillover = do
   reg <- tryTmpReg vreg
   case reg of
-    Just d' -> pure (T d', False)
+    Just x -> pure $ T x
     Nothing -> do
       loadVRegFromStack vreg spillover
-      pure (spillover, True)
+      pure spillover
+
+-- Does not actually load from stack, since
+-- the preg could be currently in use until
+-- the end of the instr. i.e due to line_num+/-
+allocDestReg :: VReg -> PReg -> GreedyM PReg
+allocDestReg  vreg spillover = do
+  reg <- tryTmpReg vreg
+  case reg of
+    Just x  -> pure $ T x
+    Nothing -> pure spillover
 
 instance MonadMipsEmitter GreedyM
 
 instance MonadAllocator GreedyM where
+  -- if (M.!) fails, it means we screwed up the regmap,
+  -- same as in NaiveM oof
   getStackOffsetImm v = reader (\(mp, _) -> toImm (mp M.! v))
 
   regs_dxy d x y callback = do
-    (d', spilled) <- allocReg d (M M1)
-    (x', _)       <- allocReg x (M M1)
-    (y', _)       <- allocReg y (M M1)
+    d' <- allocDestReg d (M M1)
+    x' <- allocReg     x (M M2)
+    y' <- allocReg     y (M M3)
 
     callback d' x' y'
 
-    when spilled $ saveVRegToStack d d'
+    saveVRegToStack d d'
 
   regs_dx d x callback = do
     let (d', x') = (T T1, T T1)
@@ -89,94 +101,63 @@ instance MonadAllocator GreedyM where
     loadVRegFromStack y y'
     callback x' y' tmp
 
-  regs_d d callback = do
-    let d' = T T1
+  regs_d d callback = return ()
 
-    callback d'
-    saveVRegToStack d d'
+  regs_xyi x y i callback = return ()
 
-  regs_xyi x y i callback = do
-    let (x', y', i') = (T T1, T T2, T T3)
+  regs_xyz_tmp x y z callback = return ()
 
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
-    loadImmediate i i'
-    callback x' y' i'
+  regs_x x callback = return ()
 
-  regs_x x callback = do
-    let x' = T T1
-
-    loadVRegFromStack x x'
-    callback x'
-
-  regs_xyz_tmp x y z callback = do
-    let (x', y', z', tmp) = (T T1, T T2, T T3, T T4)
-
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
-    loadVRegFromStack z z'
-    callback x' y' z' tmp
-
-  regs_tmp callback = do
-    let tmp = T T1
-    callback tmp
+  regs_tmp callback = return ()
 
   regs_assign_di d i = do
-    let tmp = T T1
-
-    loadImmediate i tmp
-    saveVRegToStack d tmp
+    d' <- allocDestReg d (M M1)
+    loadImmediate i d'
+    saveVRegToStack d d'
 
   regs_xii x i1 i2 callback = do
-    let (x', i1', i2') = (T T1, T T2, T T3)
-
-    loadVRegFromStack x x'
+    x' <- allocReg x (M M1)
+    let (i1', i2') = (M M2, M M3)
     loadImmediate i1 i1'
     loadImmediate i2 i2'
     callback x' i1' i2'
 
   regs_dxy_tmp d x y callback = do
-    let (d', x', y', tmp) = (T T1, T T2, T T3, T T4)
-
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
+    d' <- allocDestReg d (M M1)
+    x' <- allocReg     x (M M2)
+    y' <- allocReg     y (M M3)
+    let tmp = M M4
     callback d' x' y' tmp
     saveVRegToStack d d'
 
   regs_xyi_tmp x y i callback = do
-    let (x', y', i', tmp) = (T T1, T T2, T T3, T T4)
-
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
+    x' <- allocReg x (M M1)
+    y' <- allocReg y (M M2)
+    let (i', tmp) = (M M3, M M4)
     loadImmediate i i'
     callback x' y' i' tmp
 
   regs_xi x i callback = do
-    let (x', i') = (T T1, T T2)
-
-    loadVRegFromStack x x'
+    x' <- allocReg x (M M1)
+    let i' = M M2
     loadImmediate i i'
     callback x' i'
 
   regs_xi_tmp x i callback = do
-    let (x', i', tmp) = (T T1, T T2, T T3)
-
-    loadVRegFromStack x x'
+    x' <- allocReg x (M M1)
+    let (i', tmp) = (M M2, M M3)
     loadImmediate i i'
     callback x' i' tmp
 
   regs_ii i1 i2 callback = do
-    let (i1', i2') = (T T1, T T2)
-
+    let (i1', i2') = (M M1, M M2)
     loadImmediate i1 i1'
     loadImmediate i2 i2'
     callback i1' i2'
 
   regs_ii_tmp i1 i2 callback = do
-    let (i1', i2', tmp) = (T T1, T T2, T T3)
-
+    let (i1', i2', tmp) = (M M1, M M2, M M3)
     loadImmediate i1 i1'
     loadImmediate i2 i2'
     callback i1' i2' tmp
-
-

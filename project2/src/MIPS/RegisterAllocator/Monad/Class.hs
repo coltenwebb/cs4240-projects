@@ -9,7 +9,6 @@ import MIPS.Types.Operand
 
 import Control.Monad.Writer.Class
 import Data.DList as D
-import MIPS.Types.Operand (VReg)
 
 type MipsPhysDList = D.DList P.MipsPhys
 

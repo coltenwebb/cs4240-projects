@@ -121,7 +121,7 @@ liveRangePrioList = sortOn (Data.Ord.Down . useCount)
 adjOccupiedRegs :: LiveRangeGraph -> LiveRange -> ColoringState (S.Set TmpReg)
 adjOccupiedRegs lrg lr = do
   currColoring <- get
-  let adjLrs = S.toList $ lrg M.! lr
+  let adjLrs = maybe [] S.toList (M.lookup lr lrg)
       occupied = mapMaybe (`M.lookup` currColoring) adjLrs
 
   return $ S.fromList occupied
@@ -168,7 +168,7 @@ buildColorLookup lrc = execState m mempty
       forM_ colorings $ \(lr, tmpReg) -> do
         let (LiveRange vreg (BBL bgn) (BBL end) _) = lr
             newEntries = M.fromList [(BBL i, tmpReg) | i <- [bgn..end]]
-        
+
         -- union with existing entries
         modify $ M.insertWith M.union vreg newEntries
 
