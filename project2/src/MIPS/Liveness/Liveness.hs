@@ -180,7 +180,7 @@ data ALR = ALR { unATmpReg :: Maybe TmpReg, unALR :: LiveRange } deriving Show
 
 allocatePReg :: LiveRange -> [ALR] -> Maybe TmpReg
 allocatePReg lr alrs 
-  = listToMaybe $ [T0 .. T7] \\ mapMaybe unATmpReg (conflictingALRs lr alrs) 
+  = listToMaybe $ [T0, T1, T2, T3, T4, T5, T6, T7, S0, S1, S2, S3, S4, S5, S6, S7] \\ mapMaybe unATmpReg (conflictingALRs lr alrs) 
 conflictingALRs lr = filter (isConflicting lr) 
 isConflicting lr (ALR _ olr) = not $ unStart lr > unEnd olr || unEnd lr < unStart olr
 

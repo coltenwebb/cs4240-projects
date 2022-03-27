@@ -38,8 +38,10 @@ data PReg
 
 data TmpReg
   = T0 | T1 | T2 | T3
-  | T4 | T5 | T6 | T7 
-  deriving (Show, Eq, Enum)
+  | T4 | T5 | T6 | T7  
+  | S0 | S1 | S2 | S3 
+  | S4 | S5 | S6 | S7
+  deriving (Show, Eq, Enum) 
 
 data ArgReg
   = A0 | A1 | A2 | A3

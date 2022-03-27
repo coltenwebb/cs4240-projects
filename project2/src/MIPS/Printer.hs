@@ -226,6 +226,15 @@ instance Print TmpReg where
   pr T5 = "$t5"
   pr T6 = "$t6"
   pr T7 = "$t7"
+  pr S0 = "$s0"
+  pr S1 = "$s1"
+  pr S2 = "$s2"
+  pr S3 = "$s3"
+  pr S4 = "$s4"
+  pr S5 = "$s5"
+  pr S6 = "$s6"
+  pr S7 = "$s7"
+
 
 instance Print MReg where
   pr M1 = "$t8"

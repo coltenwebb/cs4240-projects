@@ -1,0 +1,34 @@
+#start_function
+void main():
+int-list: a
+float-list:
+  assign, a, -1
+  assign, a, 10
+  assign, a, a 
+
+  add, a, a, 1 
+  call, puti, a 
+  call, putc, 10
+  add, a, a, -1
+  call, puti, a 
+  call, putc, 10
+  add, a, 1, a 
+  call, puti, a 
+  call, putc, 10
+  add, a, -1, a 
+  call, puti, a 
+  call, putc, 10
+  add, a, a, a 
+  call, puti, a 
+  call, putc, 10
+
+  assign, a, 10 
+  sub, a, a, 1
+  sub, a, 1, a 
+  sub, a, a, a 
+  sub, a, 1, 1 
+
+  
+
+
+#end_function

@@ -1,5 +1,10 @@
 import os 
 
+START = "#start_function"
+MAIN = "void main():"
+INT_LIST = "int-list:"
+FLOAT_LIST = "float-list:"
+
 def organize_programs_dir():
   fuzz_tests_dir = "./programs/fuzz_tests"
   os.mkdir(fuzz_tests_dir)
@@ -15,6 +20,11 @@ def organize_programs_dir():
       open(new_testfile_path, 'w').write(content)
       counter += 1
 
+def generate_binop_tests():
+  testfile_path = "programs/project2/instructions/binops.ir"
+  
+  
+  
 def main():
   organize_programs_dir()
         
