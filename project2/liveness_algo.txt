@@ -35,4 +35,9 @@ for instr in basic_block:
   
   prev_defs[vdef] = instr.curr_line_number()
 
+# after for loop
+for each remaining use(vdef) in prev_uses:
+   insert_prev_range(vdef ,prev_def[vdef], prev_use[vdef], use_counter[vdef])
+   
+
     

@@ -13,8 +13,9 @@ import Control.Monad.RWS.Lazy
 import Data.DList as D
 import qualified Data.Map as M
 
+type CurrRegMapping = M.Map TmpReg VReg
 type GreedyM =
-  RWS (RegMap, ColorLookup) MipsPhysDList BasicBlockLine
+  RWS (RegMap, ColorLookup) MipsPhysDList (BasicBlockLine, CurrRegMapping)
 
 -- IMPORTANT!!!1!111!: This must be run on the scope of
 -- a single Basic Block only, because it depends on an internal
@@ -23,14 +24,19 @@ runGreedyM :: GreedyM a -> RegMap -> ColorLookup -> [P.MipsPhys]
 runGreedyM greedy rm cl = D.toList pinsts
   where
     -- IMPORTANT 2!!!: BBL is 1-indexed, see Greedy.Graph
-    (_, _, pinsts) = runRWS greedy (rm, cl) (BBL 1)
+    (_, _, pinsts) = runRWS greedy (rm, cl) (BBL 1, mempty)
 
 incrBBL :: GreedyM ()
-incrBBL = modify (\(BBL n) -> BBL (n+1))
+incrBBL = modify (\(BBL n, k) -> (BBL (n+1), k))
+
+getCurrRegMapping :: TmpReg -> GreedyM (Maybe VReg)
+getCurrRegMapping tr = do
+  crm <- snd <$> get
+  return $ M.lookup tr crm
 
 tryTmpReg :: VReg -> GreedyM (Maybe TmpReg)
 tryTmpReg vreg = do
-  currBBL <- get
+  currBBL <- fst <$> get
   reader (\(_, cl) -> lookupColor cl vreg currBBL)
 
 -- Attempt to allocate register, if not colored,
@@ -40,7 +46,11 @@ allocReg :: VReg -> PReg -> GreedyM PReg
 allocReg vreg spillover = do
   reg <- tryTmpReg vreg
   case reg of
-    Just x -> pure $ T x
+    Just t -> do
+      currVreg <- getCurrRegMapping t
+      when (currVreg /= Just vreg) $ loadVRegFromStack vreg (T t)
+      pure $ T t
+
     Nothing -> do
       loadVRegFromStack vreg spillover
       pure spillover
@@ -55,6 +65,16 @@ allocDestReg  vreg spillover = do
     Just x  -> pure $ T x
     Nothing -> pure spillover
 
+markMapping :: VReg -> PReg -> GreedyM ()
+markMapping vreg preg = do
+  case preg of
+    T tmpReg -> modify (\(bbl, mp) -> (bbl, M.insert tmpReg vreg mp))
+    _        -> pure ()
+
+saveVRegToStackAndMark :: VReg -> PReg -> GreedyM ()
+saveVRegToStackAndMark v p = 
+  saveVRegToStack v p >> markMapping v p
+
 instance MonadMipsEmitter GreedyM
 
 instance MonadAllocator GreedyM where
@@ -68,14 +88,14 @@ instance MonadAllocator GreedyM where
     y' <- allocReg     y (M M3)
 
     callback d' x' y'
-    saveVRegToStack d d'
+    saveVRegToStackAndMark d d'
 
   regs_dx d x callback = do
     d' <- allocDestReg d (M M1)
     x' <- allocReg     x (M M2)
 
     callback d' x'
-    saveVRegToStack d d'
+    saveVRegToStackAndMark d d'
 
   regs_xy x y callback = do
     x' <- allocReg x (M M1)
@@ -90,22 +110,20 @@ instance MonadAllocator GreedyM where
     loadImmediate i i'
 
     callback d' x' i'
-    saveVRegToStack d d' 
+    saveVRegToStackAndMark d d' 
     
   regs_xy_tmp x y callback = do
     x'       <- allocReg x (M M1)
     y'       <- allocReg y (M M2)
     let tmp' = M M3
 
-    loadVRegFromStack x x'
-    loadVRegFromStack y y'
     callback x' y' tmp'
 
   regs_d d callback = do
     d' <- allocDestReg d (M M1)
 
     callback d'
-    saveVRegToStack d d'
+    saveVRegToStackAndMark d d'
 
   regs_xyi x y i callback = do
     x' <- allocReg x (M M1)
@@ -133,7 +151,7 @@ instance MonadAllocator GreedyM where
   regs_assign_di d i = do
     d' <- allocDestReg d (M M1)
     loadImmediate i d'
-    saveVRegToStack d d'
+    saveVRegToStackAndMark d d'
 
   regs_xii x i1 i2 callback = do
     x' <- allocReg x (M M1)
@@ -148,7 +166,7 @@ instance MonadAllocator GreedyM where
     y' <- allocReg     y (M M3)
     let tmp = M M4
     callback d' x' y' tmp
-    saveVRegToStack d d'
+    saveVRegToStackAndMark d d'
 
   regs_xyi_tmp x y i callback = do
     x' <- allocReg x (M M1)

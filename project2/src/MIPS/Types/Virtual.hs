@@ -61,8 +61,9 @@ data MipsVirtual
   | Returni  Imm                  -- [P]
   | BeginFunction                 -- [P] for initialization
   | EndFunction                   -- [P] void return
+  deriving Show
 
-data CallArg = CVarg VReg | CIarg Imm
+data CallArg = CVarg VReg | CIarg Imm deriving Show
 
 getDef :: MipsVirtual -> Maybe VReg
 getDef mv = case mv of

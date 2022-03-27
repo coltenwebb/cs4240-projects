@@ -14,8 +14,11 @@ import Data.List (sortOn)
 import qualified Data.Ord
 import Data.Maybe
 
-newtype BasicBlockLine = BBL Int deriving (Ord, Eq, Num)
-newtype UseCount       = UC  Int deriving (Ord, Eq, Num)
+
+import Debug.Trace
+
+newtype BasicBlockLine = BBL Int deriving (Ord, Eq, Num, Show)
+newtype UseCount       = UC  Int deriving (Ord, Eq, Num, Show)
 
 data LiveRange = LiveRange
   { defVar :: VReg
@@ -24,7 +27,7 @@ data LiveRange = LiveRange
   -- live range ends on the last use before next def
   , useEnd   :: BasicBlockLine
   , useCount :: UseCount
-  } deriving (Ord, Eq)
+  } deriving (Ord, Eq, Show)
 
 interferes :: LiveRange -> LiveRange -> Bool
 interferes
@@ -89,6 +92,20 @@ iterBbIns (bbl, mv) = do
       earliestDefMap <- earliestDef <$> get
       modify (\bs -> bs { earliestDef = M.insert defVReg bbl earliestDefMap })
 
+-- insert remaining live ranges
+handleFinish :: BuildStateM ()
+handleFinish = do
+  prevUseMap <- prevUse <$> get
+  let vregs = M.keys prevUseMap
+  forM_ vregs $ \vreg -> do
+    defLine <- M.findWithDefault (BBL (-1)) vreg . earliestDef <$> get
+    useLine <- M.findWithDefault defLine    vreg . prevUse     <$> get
+    useCnt  <- M.findWithDefault (UC 0)     vreg . useCounter  <$> get
+    
+    let newLR = LiveRange vreg defLine useLine useCnt
+    currRs  <- currRanges <$> get
+    modify (\bs -> bs { currRanges = newLR : currRs })
+
 buildLiveRanges :: BasicBlockMips -> [LiveRange]
 buildLiveRanges bbm = currRanges $ execState iterAllIns initState
   where
@@ -99,6 +116,7 @@ buildLiveRanges bbm = currRanges $ execState iterAllIns initState
     iterAllIns = do
       let bblMips = zip (map BBL [1..]) mv
       mapM_ iterBbIns bblMips
+      handleFinish
 
 --------------------------------------
 -- Graph building and allocation logic
@@ -179,7 +197,7 @@ lookupColor cl vr bbl =
     Just mp -> M.lookup bbl mp
 
 runGreedyColoring :: BasicBlockMips -> ColorLookup
-runGreedyColoring bbm = colorLookup
+runGreedyColoring bbm = traceShow colorLookup colorLookup
   where
     liveRanges        = buildLiveRanges bbm
     liveRangeGraph    = buildLiveRangeGraph liveRanges

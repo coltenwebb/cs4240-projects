@@ -9,6 +9,8 @@ import qualified MIPS.Types.Virtual as V
 import qualified MIPS.Types.Physical as P
 import TigerIR.Program as T
 
+import Debug.Trace
+
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
 physFnSelection vf = vf { T.instrs = pinsts }
   where
@@ -18,7 +20,8 @@ physFnSelection vf = vf { T.instrs = pinsts }
     vinstrs = T.instrs vf
 
     virtBblks :: [BasicBlockMips]
-    virtBblks = splitIntoBasicBlocks vinstrs
+    virtBblks = let k = splitIntoBasicBlocks vinstrs
+                in traceShow k k
 
     bbSel :: BasicBlockMips -> [P.MipsPhys]
     bbSel = basicBlockSelection vf regmap
@@ -34,5 +37,6 @@ basicBlockSelection vf rm bbm = pinsts
   where
     bbIns       = BB.instrs bbm
     colorLookup = runGreedyColoring bbm
-    greedyM     = mapM_ (virtToEmitPhysMIPS vf) bbIns
+    greedyM     = mapM_
+      (\x -> virtToEmitPhysMIPS vf x >> incrBBL) bbIns
     pinsts      = runGreedyM greedyM rm colorLookup
