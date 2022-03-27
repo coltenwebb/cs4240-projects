@@ -21,8 +21,3 @@ labelRewriteFnPass :: TigerIrFunction -> TigerIrFunction
 labelRewriteFnPass tigerFn = tigerFn { instrs = instrs' }
   where
     instrs' = map (labelRewriteInstrPass tigerFn) (instrs tigerFn)
-
-labelRewriteProgPass :: TigerIrProgram -> TigerIrProgram
-labelRewriteProgPass (Program fns) = Program fns'
-  where
-    fns' = map labelRewriteFnPass fns

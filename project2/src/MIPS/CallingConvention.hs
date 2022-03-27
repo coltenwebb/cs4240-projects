@@ -10,6 +10,7 @@ import MIPS.Types.Operand
 import MIPS.RegisterAllocator.Monad.Class
 import qualified MIPS.Types.Physical as P
 import qualified MIPS.Types.Virtual  as V
+import MIPS.Intrinsics
 
 import Data.List (foldl1', foldl')
 
@@ -48,7 +49,7 @@ toImm (OffsetIdx i) = Imm (show (i * 4))
 
 
 -- Stack/Fp setup upon entry into function
-fnEntry :: MonadMipsEmitter m => Function a -> m ()
+fnEntry :: MonadAllocator m => Function a -> m ()
 fnEntry fn = do
   -- Fp <- Sp a bit of a necessary hack, bc. we are using our own
   -- calling convention since fp is zero-initialized
@@ -58,8 +59,25 @@ fnEntry fn = do
   -- Move stack pointer to accomodate local vars
   emit [ P.Addi Sp Sp (toImm offst) ]
 
+  -- Alloc arrays via sbrk
+  allocArrays fn
+
   where
     offst = OffsetIdx 0 .- netLocalVarSize fn
+
+{- HLINT ignore "Use lambda-case" -}
+allocArrays :: MonadAllocator m => Function a -> m ()
+allocArrays fn =
+  forM_ (localVars fn) $ \lvar ->
+    case lvar of
+      LocalV _ -> pure ()
+      LocalA (Array v (ArraySize sz)) -> do
+        offst <- getStackOffsetImm (VReg v)
+        emit [ loadSyscall Sbrk
+             , P.Li (A A0) (Imm (show sz))
+             , P.Syscall
+             , P.Sw V0 offst Fp
+             ]
 
 {-
 hi addr
@@ -123,9 +141,7 @@ calcRegMap fn =
 
     f2 :: (RegMap, OffsetIdx) -> LocalVar -> (RegMap, OffsetIdx)
     f2 (rm, offst) lv =
-      (rm <> M.singleton (toVReg lv) currRegOffst, decrPtr currRegOffst)
-      where
-        currRegOffst = (offst .- localVarSize lv) .+ OffsetSize 1
+      (rm <> M.singleton (toVReg lv) offst, decrPtr offst)
 
     pvs :: Parameters
     pvs = parameters fn
@@ -133,17 +149,17 @@ calcRegMap fn =
     lvs :: LocalVars
     lvs = localVars fn
 
--- Because if type is an array, passed by reference
+-- All params and variables are the same size,
+-- array vars are references to memory
 paramVarSize :: OffsetSize
 paramVarSize = OffsetSize 1
 
-localVarSize :: LocalVar -> OffsetSize
-localVarSize iv = case iv of
-  LocalV (Variable _) -> OffsetSize 1
-  LocalA (Array _ (ArraySize k)) -> OffsetSize k
+-- array vars also refs in local var
+localVarSize :: OffsetSize
+localVarSize = OffsetSize 1
 
 netLocalVarSize :: Function a -> OffsetSize
-netLocalVarSize fn = foldl1' (^+) (map localVarSize lvs)
+netLocalVarSize fn = paramVarSize .* length lvs
   where
     lvs :: LocalVars
     lvs = localVars fn
@@ -191,17 +207,9 @@ setupCallStack
 setupCallStack fn args = do
   -- Save registers
   emit
-    [ P.Sw   (T T0)  (Imm "-4")  Sp
-    , P.Sw   (T T1)  (Imm "-8")  Sp
-    , P.Sw   (T T2)  (Imm "-12") Sp
-    , P.Sw   (T T3)  (Imm "-16") Sp
-    , P.Sw   (T T4)  (Imm "-20") Sp
-    , P.Sw   (T T5)  (Imm "-24") Sp
-    , P.Sw   (T T6)  (Imm "-28") Sp
-    , P.Sw   (T T7)  (Imm "-32") Sp
-    , P.Sw   RetAddr (Imm "-36") Sp
-    , P.Sw   Fp      (Imm "-40") Sp
-    , P.Addi Sp      Sp         (Imm "-40")
+    [ P.Sw   RetAddr (Imm "-4") Sp
+    , P.Sw   Fp      (Imm "-8") Sp
+    , P.Addi Sp      Sp         (Imm "-8")
     ]
  
   pushArgs
@@ -210,24 +218,14 @@ setupCallStack fn args = do
     [ P.Add  Fp Sp ZeroReg -- Fp cannot be moved until args pushed
     , P.Addi Sp Sp (Imm (show (- (4 * length args)))) -- Move sp after pushing args
     , P.Jal fn                                        -- Call subroutine
-
-    -- , P.Addi Sp Sp (Imm (show (4 * length args)))     -- Undo Move sp
     , P.Add Sp Fp ZeroReg
     ]
   
   -- Callee returned, teardown / restoring registers
   emit
-    [ P.Addi Sp Sp (Imm "40")
-    , P.Lw   Fp      (Imm "-40") Sp
-    , P.Lw   RetAddr (Imm "-36") Sp
-    , P.Lw   (T T7)  (Imm "-32") Sp
-    , P.Lw   (T T6)  (Imm "-28") Sp
-    , P.Lw   (T T5)  (Imm "-24") Sp
-    , P.Lw   (T T4)  (Imm "-20") Sp
-    , P.Lw   (T T3)  (Imm "-16") Sp
-    , P.Lw   (T T2)  (Imm "-12") Sp
-    , P.Lw   (T T1)  (Imm "-8")  Sp
-    , P.Lw   (T T0)  (Imm "-4")  Sp
+    [ P.Addi Sp Sp (Imm "8")
+    , P.Lw   Fp      (Imm "-8") Sp
+    , P.Lw   RetAddr (Imm "-4") Sp
     ]
   where
     pushArgs :: MonadAllocator m => m ()

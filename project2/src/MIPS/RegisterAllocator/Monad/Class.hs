@@ -18,6 +18,22 @@ class (MonadWriter MipsPhysDList m) => MonadMipsEmitter m where
   emit = tell . D.fromList
 
 class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
+
+  getStackOffsetImm :: VReg -> m Imm
+
+  loadVRegFromStack :: VReg -> PReg -> m ()
+  loadVRegFromStack vreg preg = do
+    offsetImm <- getStackOffsetImm vreg
+    emit [ P.Lw preg offsetImm Fp ]
+
+  saveVRegToStack :: VReg -> PReg -> m ()
+  saveVRegToStack vreg preg = do
+    offsetImm <- getStackOffsetImm vreg
+    emit [ P.Sw preg offsetImm Fp ]
+
+  loadImmediate :: Imm -> PReg -> m ()
+  loadImmediate imm preg = emit [ P.Li preg imm ]
+  
   -- Get corresponding physical registers from virtual registers,
   -- then apply callback that emits corresponding instructions.
 

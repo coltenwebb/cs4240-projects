@@ -4,9 +4,11 @@ import MIPS.Types.Physical (PhysicalProgram)
 import TigerIR.Program
 import MIPS.Selection (virtFnSelection)
 import qualified MIPS.RegisterAllocator.Naive as N (physFnSelection)
-import TigerIR.LabelRewriter (labelRewriteProgPass)
+import TigerIR.LabelRewriter (labelRewriteFnPass)
 
 naiveProgramSelection :: TigerIrProgram -> PhysicalProgram
-naiveProgramSelection = programSelectionPass f . labelRewriteProgPass
+naiveProgramSelection = programSelectionPass f
   where
-    f = N.physFnSelection . virtFnSelection
+    f = N.physFnSelection
+      . virtFnSelection
+      . labelRewriteFnPass

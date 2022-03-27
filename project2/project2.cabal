@@ -25,8 +25,6 @@ executable backend
   main-is: Main.hs
   
   other-modules:
-    TigerIR.Parser.Reader
-    MIPS.Backend
     TigerIR.Parser.Legacy.Function
     TigerIR.Parser.Legacy.Instruction
     TigerIR.Parser.Legacy.Program
@@ -36,10 +34,14 @@ executable backend
     TigerIR.Program 
     TigerIR.Types
     TigerIR.LabelRewriter
+    TigerIR.Parser.Reader
     MIPS.RegisterAllocator.Naive
     MIPS.RegisterAllocator.Monad.Class
     MIPS.RegisterAllocator.Monad.NaiveM
+    MIPS.RegisterAllocator.Monad.GreedyM
     MIPS.RegisterAllocator.Allocation
+    MIPS.RegisterAllocator.Greedy.Graph
+    MIPS.RegisterAllocator.Greedy.MipsCFG
     MIPS.Types.Operand
     MIPS.Types.Physical
     MIPS.Types.Virtual
@@ -47,6 +49,7 @@ executable backend
     MIPS.Intrinsics
     MIPS.Printer
     MIPS.Selection
+    MIPS.Backend
 
   build-depends: base ^>=4.14.3.0
                  , containers ^>=0.6.5.1
@@ -75,7 +78,10 @@ library
     MIPS.RegisterAllocator.Naive
     MIPS.RegisterAllocator.Monad.Class
     MIPS.RegisterAllocator.Monad.NaiveM
+    MIPS.RegisterAllocator.Monad.GreedyM
     MIPS.RegisterAllocator.Allocation
+    MIPS.RegisterAllocator.Greedy.Graph
+    MIPS.RegisterAllocator.Greedy.MipsCFG
     MIPS.Types.Operand
     MIPS.Types.Physical
     MIPS.Types.Virtual

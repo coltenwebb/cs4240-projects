@@ -142,7 +142,7 @@ virtToEmitPhysMIPS fn mv = case mv of
     T.Brleq -> regs_ii_tmp ai bi $ \a' b' tmp ->
       emit [ P.Sub tmp a' b', P.Blez tmp lbl ]
   
-  V.Label lab -> emit [ P.Label lab ]
+  V.LabelIns lab -> emit [ P.Label lab ]
 
   V.Goto lab -> setupGoto lab
 

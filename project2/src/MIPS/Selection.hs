@@ -102,7 +102,7 @@ instructionSelection ins = case ins of
     T.ArrAssignAIV (Array arr _) i v ->
       V.ArrAssignV (VReg arr) i (VReg v)
 
-  T.LabelIns label -> V.Label label
+  T.LabelIns label -> V.LabelIns label
 
 
 handleCommutativeBinOp

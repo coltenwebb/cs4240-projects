@@ -4,7 +4,7 @@ import MIPS.Types.Operand
 import Data.Maybe
 
 import TigerIR.Program
-import TigerIR.IrInstruction
+import TigerIR.IrInstruction (BrOp(..))
 
 type VirtualFunction = Function MipsVirtual
 type VirtualProgram  = Program  MipsVirtual
@@ -36,7 +36,7 @@ data MipsVirtual
   | BrIV     BrOp Imm  VReg Label
   | BrII     BrOp Imm  Imm  Label
 
-  | Label    Label
+  | LabelIns Label
   | Goto     Label
   | Call     Label [CallArg]      -- [P]
   | Callr    VReg Label [CallArg] -- [P]
@@ -63,3 +63,99 @@ data MipsVirtual
   | EndFunction                   -- [P] void return
 
 data CallArg = CVarg VReg | CIarg Imm
+
+getDef :: MipsVirtual -> Maybe VReg
+getDef mv = case mv of
+  Assign d _     -> Just d
+  Li     d _     -> Just d
+  Addi   d _ _   -> Just d
+  Add    d _ _   -> Just d
+  Mult   d _ _   -> Just d
+  Multi  d _ _   -> Just d
+  Andi   d _ _   -> Just d 
+  And    d _ _   -> Just d   
+  Ori    d _ _   -> Just d  
+  Or     d _ _   -> Just d 
+  Sub    d _ _   -> Just d 
+  SubVI  d _ _   -> Just d 
+  SubIV  d _ _   -> Just d 
+  Div    d _ _   -> Just d 
+  DivVI  d _ _   -> Just d 
+  DivIV  d _ _   -> Just d 
+
+  BrVI      {}   -> Nothing
+  BrVV      {}   -> Nothing
+  BrIV      {}   -> Nothing
+  BrII      {}   -> Nothing
+
+  LabelIns   _   -> Nothing
+  Goto       _   -> Nothing
+  Call      {}   -> Nothing
+  Callr  d _ _   -> Just d
+
+  ArrStrVV  {}   -> Nothing  
+  ArrStrVI  {}   -> Nothing 
+  ArrStrII  {}   -> Nothing 
+  ArrStrIV  {}   -> Nothing 
+
+  ArrLoadV d _ _ -> Just d
+  ArrLoadI d _ _ -> Just d
+
+  ArrAssignI  {} -> Nothing
+  ArrAssignV  {} -> Nothing
+  Nop            -> Nothing
+  Return      _  -> Nothing
+  Returni     _  -> Nothing
+  BeginFunction  -> Nothing
+  EndFunction    -> Nothing
+  
+getUses :: MipsVirtual -> [VReg]
+getUses mv = case mv of
+  Assign _ a       -> [a]
+  Li     {}        -> []
+  Addi   _ a _     -> [a]
+  Add    _ a b     -> [a,b]
+  Mult   _ a b     -> [a,b]
+  Multi  _ a _     -> [a]
+  Andi   _ a _     -> [a]
+  And    _ a b     -> [a,b]
+  Ori    _ a _     -> [a]
+  Or     _ a b     -> [a,b]
+  Sub    _ a b     -> [a,b]
+  SubVI  _ a _     -> [a]
+  SubIV  _ _ a     -> [a]
+  Div    _ a b     -> [a,b]
+  DivVI  _ a _     -> [a]
+  DivIV  _ _ a     -> [a]
+
+  BrVI _ a _ _     -> [a]
+  BrVV _ a b _     -> [a,b]
+  BrIV _ _ a _     -> [a]
+  BrII {}          -> []
+
+  LabelIns   _     -> []
+  Goto       _     -> []
+  Call    _ cas    -> getCallArgUses cas
+  Callr a _ cas    -> a : getCallArgUses cas
+
+  ArrStrVV a b c   -> [a,b,c]
+  ArrStrVI a b _   -> [a,b]
+  ArrStrII _ a _   -> [a]
+  ArrStrIV _ a b   -> [a,b]
+
+  ArrLoadV a b c   -> [a,b,c]
+  ArrLoadI a b _   -> [a,b]
+
+  ArrAssignI a _ _ -> [a]
+  ArrAssignV a _ b -> [b]
+  Nop              -> []
+  Return     a     -> [a]
+  Returni    _     -> []
+  BeginFunction    -> []
+  EndFunction      -> []
+  where
+    getCallArgUses :: [CallArg] -> [VReg]
+    getCallArgUses cas = flip concatMap cas $ \ca ->
+      case ca of
+        CVarg vr -> [vr]
+        CIarg _  -> []

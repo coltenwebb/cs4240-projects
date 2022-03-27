@@ -34,16 +34,16 @@ data PReg
   | M MReg
   | A ArgReg
   | V0  -- where result of read_int syscall is stored
-  deriving Show
+  deriving (Show, Ord, Eq)
 
 data TmpReg
   = T0 | T1 | T2 | T3
   | T4 | T5 | T6 | T7
-  deriving Show
+  deriving (Show, Ord, Eq, Enum)
 
 data ArgReg
   = A0 | A1 | A2 | A3
-  deriving Show
+  deriving (Show, Ord, Eq)
 
 -- The M registers will be reserved for holding the values of spilled
 -- registers when they are used in an instruction.
@@ -54,4 +54,4 @@ data ArgReg
 -- m1 <- addi m1, m2
 -- sw k1, $addr_of_v1
 data MReg = M1 | M2
-  deriving Show
+  deriving (Show, Ord, Eq)

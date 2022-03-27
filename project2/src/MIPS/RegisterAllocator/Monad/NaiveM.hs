@@ -12,35 +12,10 @@ import qualified MIPS.Types.Virtual as V
 import Control.Monad.Writer
 import Control.Monad.RWS.Lazy
 import Data.DList as D
-
 import qualified Data.Map as M
 
 type NaiveM = RWS RegMap MipsPhysDList ()
 instance MonadMipsEmitter NaiveM
-
--- assuming that RegMap was generated correctly,
--- i.e. contains every valid VReg, in our use of lookup
--- In the case of Nothing, it means that it was a "pseudo"-vreg,
--- such as vreg to hold imm value or branch calculation value
-getOffsetImm :: VReg -> NaiveM (Maybe Imm)
-getOffsetImm v = reader (fmap toImm . M.lookup v)
-
-loadVRegFromStack :: VReg -> PReg -> NaiveM ()
-loadVRegFromStack vreg preg = do
-  offsetImm <- getOffsetImm vreg
-  case offsetImm of
-    Just offst -> emit [ P.Lw preg offst Fp ]
-    Nothing    -> pure () -- not actually stored on stack
-
-saveVRegToStack :: VReg -> PReg -> NaiveM ()
-saveVRegToStack vreg preg = do
-  offsetImm <- getOffsetImm vreg
-  case offsetImm of
-    Just offst -> emit [ P.Sw preg offst Fp ]
-    Nothing    -> pure () -- again, not actually stored on stack
-
-loadImmediate :: Imm -> PReg -> NaiveM ()
-loadImmediate imm preg = emit [ P.Li preg imm ]
 
 runNaiveM :: NaiveM a -> RegMap -> [P.MipsPhys]
 runNaiveM nm regmap = D.toList pinsts
@@ -48,6 +23,10 @@ runNaiveM nm regmap = D.toList pinsts
     (_, _, pinsts) = runRWS nm regmap ()
 
 instance MonadAllocator NaiveM where
+  -- assuming that RegMap was generated correctly,
+  -- i.e. contains every valid VReg, in our use of lookup
+  getStackOffsetImm v = reader (\mp -> toImm (mp M.! v))
+
   regs_dxy d x y callback = do
     let (d', x', y') = (T T1, T T1, T T2)
 
@@ -154,21 +133,21 @@ instance MonadAllocator NaiveM where
     loadVRegFromStack x x'
     loadImmediate i i'
     callback x' i'
-  
+
   regs_xi_tmp x i callback = do
     let (x', i', tmp) = (T T1, T T2, T T3)
 
     loadVRegFromStack x x'
     loadImmediate i i'
     callback x' i' tmp
-  
+
   regs_ii i1 i2 callback = do
     let (i1', i2') = (T T1, T T2)
 
     loadImmediate i1 i1'
     loadImmediate i2 i2'
     callback i1' i2'
-  
+
   regs_ii_tmp i1 i2 callback = do
     let (i1', i2', tmp) = (T T1, T T2, T T3)
 
