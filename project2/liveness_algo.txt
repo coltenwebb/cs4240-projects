@@ -1,0 +1,38 @@
+# everything is saved immediately, so no partial live ranges at the end
+# 
+# line 1 def x, use a b
+#   -- state  last def map (x: 1+, everything else is 0+)
+#   -- state  last use map (a is 1-, b is 1-, everything else is nothing)
+#         
+# line 2 def y, use x a  -- state 
+#   -- state last def map (x: 1+, y is 2+, everything else is nothing)
+#   -- state last use map (a is 2-, x is 2-, b is 1-, everything else is nothing)
+#   -- accum uses (x, 1, a 2)
+# 
+# line 3 def x, use b a -- state
+#   -- stae last def map, we see x is def-ed again,
+#   but not in the use, insert live range (last def of x, last use of x
+# 
+# liveRange 1 (x, 1+, 3-)
+#     | 
+# liveRange 2 ()
+
+for instr in basic_block:
+   idef = instr.get_def()
+   uses = instr.get_uses()
+
+   for use in uses:
+     counter[use] += 1
+     prev_use[use] = instr.curr_line_number()
+
+   if idef not in uses:
+     # disjoint live range, beginning of a new live range
+     # prev range: (vdef, last def of vdef, last use of vdef, accum uses)
+     insert_prev_range(...)
+     counter[vdef] = 0 # reset use counter
+     prev_uses[vdef] = Nothing
+  # else continuing live range, smth like op x, x, a
+  
+  prev_defs[vdef] = instr.curr_line_number()
+
+    
