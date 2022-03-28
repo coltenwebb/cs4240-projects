@@ -43,10 +43,10 @@ data MipsVirtual
   -- Same convention as TigerIR
   -- array_store, a, arr, 0
   -- arr[0] := a
-  | ArrStrVV  VReg VReg VReg
-  | ArrStrVI  VReg VReg Imm
-  | ArrStrII  Imm VReg Imm 
-  | ArrStrIV  Imm VReg VReg
+  | ArrStrVAV  VReg VReg VReg
+  | ArrStrVAI  VReg VReg Imm
+  | ArrStrIAI  Imm  VReg Imm 
+  | ArrStrIAV  Imm  VReg VReg
   -- array_load, a, arr, 0
   -- a := arr[0]
   | ArrLoadV VReg VReg VReg
@@ -54,8 +54,10 @@ data MipsVirtual
   -- assign, X, 100, 10
   -- type ArrayInt = array [100] of int;
   -- var X : ArrayInt := 10
-  | ArrAssignI   VReg Imm  Imm
-  | ArrAssignV   VReg Imm  VReg
+  | ArrAssignAII  VReg Imm  Imm
+  | ArrAssignAIV  VReg Imm  VReg
+  | ArrAssignAVI  VReg VReg Imm
+  | ArrAssignAVV  VReg VReg VReg
   | Nop                           -- [P]
   | Return   VReg                 -- [P]
   | Returni  Imm                  -- [P]
@@ -94,21 +96,23 @@ getDef mv = case mv of
   Call      {}   -> Nothing
   Callr  d _ _   -> Just d
 
-  ArrStrVV  {}   -> Nothing  
-  ArrStrVI  {}   -> Nothing 
-  ArrStrII  {}   -> Nothing 
-  ArrStrIV  {}   -> Nothing 
+  ArrStrVAV  {}  -> Nothing  
+  ArrStrVAI  {}  -> Nothing 
+  ArrStrIAI  {}  -> Nothing 
+  ArrStrIAV  {}  -> Nothing 
 
   ArrLoadV d _ _ -> Just d
   ArrLoadI d _ _ -> Just d
 
-  ArrAssignI  {} -> Nothing
-  ArrAssignV  {} -> Nothing
-  Nop            -> Nothing
-  Return      _  -> Nothing
-  Returni     _  -> Nothing
-  BeginFunction  -> Nothing
-  EndFunction    -> Nothing
+  ArrAssignAII {} -> Nothing
+  ArrAssignAIV {} -> Nothing
+  ArrAssignAVI {} -> Nothing
+  ArrAssignAVV {} -> Nothing
+  Nop             -> Nothing
+  Return      _   -> Nothing
+  Returni     _   -> Nothing
+  BeginFunction   -> Nothing
+  EndFunction     -> Nothing
   
 getUses :: MipsVirtual -> [VReg]
 getUses mv = case mv of
@@ -139,16 +143,20 @@ getUses mv = case mv of
   Call    _ cas    -> getCallArgUses cas
   Callr a _ cas    -> a : getCallArgUses cas
 
-  ArrStrVV a b c   -> [a,b,c]
-  ArrStrVI a b _   -> [a,b]
-  ArrStrII _ a _   -> [a]
-  ArrStrIV _ a b   -> [a,b]
+  ArrStrVAV a b c  -> [a,b,c]
+  ArrStrVAI a b _  -> [a,b]
+  ArrStrIAI _ a _  -> [a]
+  ArrStrIAV _ a b  -> [a,b]
 
   ArrLoadV a b c   -> [a,b,c]
   ArrLoadI a b _   -> [a,b]
 
-  ArrAssignI a _ _ -> [a]
-  ArrAssignV a _ b -> [b]
+  ArrAssignAII a _ _ -> [a]
+  ArrAssignAIV a _ b -> [a,b]
+  ArrAssignAVI a b _ -> [a,b]
+  ArrAssignAVV a b c -> [a,b,c]
+
+
   Nop              -> []
   Return     a     -> [a]
   Returni    _     -> []

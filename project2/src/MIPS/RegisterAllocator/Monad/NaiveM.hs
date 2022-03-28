@@ -14,18 +14,24 @@ import Control.Monad.RWS.Lazy
 import Data.DList as D
 import qualified Data.Map as M
 
-type NaiveM = RWS RegMap MipsPhysDList ()
+type UniqueCounter = Int
+type NaiveM = RWS RegMap MipsPhysDList UniqueCounter
 instance MonadMipsEmitter NaiveM
 
 runNaiveM :: NaiveM a -> RegMap -> [P.MipsPhys]
 runNaiveM nm regmap = D.toList pinsts
   where
-    (_, _, pinsts) = runRWS nm regmap ()
+    (_, _, pinsts) = runRWS nm regmap 0
 
 instance MonadAllocator NaiveM where
   -- assuming that RegMap was generated correctly,
   -- i.e. contains every valid VReg, in our use of lookup
   getStackOffsetImm v = reader (\mp -> toImm (mp M.! v))
+  
+  getUniqueCounter = do
+    n <- get
+    put $ n + 1
+    return n
 
   regs_dxy d x y callback = do
     let (d', x', y') = (M M1, M M1, M M2)

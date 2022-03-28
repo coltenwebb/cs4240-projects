@@ -11,6 +11,8 @@ import TigerIR.Program as T
 
 import Debug.Trace
 
+import Control.Monad.State
+
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
 physFnSelection vf = vf { T.instrs = pinsts }
   where
@@ -23,20 +25,24 @@ physFnSelection vf = vf { T.instrs = pinsts }
     virtBblks = let k = splitIntoBasicBlocks vinstrs
                 in traceShow k k
 
-    bbSel :: BasicBlockMips -> [P.MipsPhys]
+    bbSel :: BasicBlockMips -> State UniqueCounter [P.MipsPhys]
     bbSel = basicBlockSelection vf regmap
 
-    pinsts = concatMap bbSel virtBblks
+    pinsts = concat $ evalState (mapM bbSel virtBblks) (U 0)
 
 basicBlockSelection
   :: V.VirtualFunction
   -> RegMap
   -> BasicBlockMips
-  -> [P.MipsPhys]
-basicBlockSelection vf rm bbm = pinsts
+  -> State UniqueCounter [P.MipsPhys]
+basicBlockSelection vf rm bbm = do
+  uc <- get
+  let (uc', pinsts) = runGreedyM uc greedyM rm colorLookup
+  put uc'
+  return pinsts
   where
     bbIns       = BB.instrs bbm
     colorLookup = runGreedyColoring bbm
     greedyM     = mapM_
       (\x -> virtToEmitPhysMIPS vf x >> incrBBL) bbIns
-    pinsts      = runGreedyM greedyM rm colorLookup
+

@@ -32,7 +32,9 @@ class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
 
   loadImmediate :: Imm -> PReg -> m ()
   loadImmediate imm preg = emit [ P.Li preg imm ]
-  
+
+  getUniqueCounter :: m Int
+
   -- Get corresponding physical registers from virtual registers,
   -- then apply callback that emits corresponding instructions.
 

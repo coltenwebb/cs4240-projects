@@ -149,10 +149,14 @@ data ArrAssignOperands
   -- var X : ArrayInt := 10
   = ArrAssignAII Array Imm Imm
   | ArrAssignAIV Array Imm Variable
+  | ArrAssignAVI Array Variable Imm
+  | ArrAssignAVV Array Variable Variable
 instance Show ArrAssignOperands where
   show aaops = case aaops of
     ArrAssignAII ar imm imm'    -> spaceBtwn [show ar, show imm, show imm']
     ArrAssignAIV ar imm vari    -> spaceBtwn [show ar, show imm, show vari]
+    ArrAssignAVI arr vari imm   -> spaceBtwn [show arr, show vari, show imm]
+    ArrAssignAVV arr var1 var2  -> spaceBtwn [show arr, show var1, show var2]
 
 data RetvarOperand
   = Retvar Variable

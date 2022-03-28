@@ -162,28 +162,28 @@ virtToEmitPhysMIPS fn mv = case mv of
   V.Assign d s -> regs_dx d s $ \d' s' ->
     emit [ P.Add d' s' ZeroReg ]
   
-  V.ArrStrVV valR arr offstR -> regs_xyz_tmp valR arr offstR $
+  V.ArrStrVAV valR arr offstR -> regs_xyz_tmp valR arr offstR $
     \val' arr' offst' tmp -> emit
       [ P.Sll  tmp  offst'   (Imm "2")       -- tmp <- offst' << 2 (offst' * 4)
       , P.Add  tmp  tmp       arr'           -- tmp <- tmp + arr'  (ptr. arithm)
       , P.Sw   val' (Imm "0") tmp            -- mem[tmp+0] = val'
       ]
 
-  V.ArrStrIV valI arr offstR -> regs_xyi_tmp arr offstR valI $
+  V.ArrStrIAV valI arr offstR -> regs_xyi_tmp arr offstR valI $
     \arr' offstR' val' tmp -> emit           -- same logic as V.ArrStr above
       [ P.Sll tmp  offstR'   (Imm "2")
       , P.Add tmp  tmp       arr'
       , P.Sw  val' (Imm "0") tmp
       ]
   
-  V.ArrStrVI valR arr offstI -> regs_xyi arr valR (immTimes4 offstI) $
+  V.ArrStrVAI valR arr offstI -> regs_xyi arr valR (immTimes4 offstI) $
     \arr' val' offst4I' -> emit
     -- It is safe to overwrite here because offst' is for imm value
       [ P.Add offst4I' offst4I' arr'
       , P.Sw  val'    (Imm "0") offst4I'
       ]
   
-  V.ArrStrII valI arr offstI -> regs_xii arr valI (immTimes4 offstI) $
+  V.ArrStrIAI valI arr offstI -> regs_xii arr valI (immTimes4 offstI) $
     \arr' val' offst4I' -> emit
       [ P.Add offst4I' offst4I'  arr'
       , P.Sw  val'   (Imm "0") offst4I'
@@ -202,17 +202,19 @@ virtToEmitPhysMIPS fn mv = case mv of
       , P.Lw d' (Imm "0") offst4I'
       ]
   
-  V.ArrAssignV arr (Imm size) valR -> regs_xy arr valR $
-    \arr' val' -> do
-      let n = (read size :: Int)
-      forM_ [0..n-1] $ \i ->
-        emit [ P.Sw val' (Imm (show (i*4))) arr' ]
+  V.ArrAssignAIV arr immSize valR ->
+    regs_xy arr valR (arrAssignFixedSize immSize)
   
-  V.ArrAssignI arr (Imm size) valI -> regs_xi arr valI $
-    \arr' val' -> do -- same as V.ArrAssignV
-      let n = (read size :: Int)
-      forM_ [0..n-1] $ \i ->
-        emit [ P.Sw val' (Imm (show (i*4))) arr' ]
+  V.ArrAssignAII arr immSize valI ->
+    regs_xi arr valI (arrAssignFixedSize immSize)
+  
+  V.ArrAssignAVI arr varSize valI -> do
+    uniq <- getUniqueCounter
+    regs_xyi_tmp arr varSize valI $ arrAssignVariableSize fn uniq
+
+  V.ArrAssignAVV arr varSize valR -> do
+    uniq <- getUniqueCounter
+    regs_xyz_tmp arr varSize valR $ arrAssignVariableSize fn uniq
   
   V.Nop -> pure ()
 
@@ -227,3 +229,47 @@ virtToEmitPhysMIPS fn mv = case mv of
   where
     immTimes4 :: Imm -> Imm
     immTimes4 (Imm i) = Imm . show . (* 4) $ (read i :: Int)
+
+    arrAssignFixedSize
+      :: MonadMipsEmitter m
+      => Imm
+      -> PReg -> PReg
+      -> m ()
+    arrAssignFixedSize (Imm size) arr' val' = do
+      let n = (read size :: Int)
+      forM_ [0..n-1] $ \i ->
+        emit [ P.Sw val' (Imm (show (i*4))) arr']
+
+    arrAssignVariableSize
+      :: MonadMipsEmitter m
+      => Function a
+      -> Int -- Unique counter
+      -> PReg -> PReg -> PReg -> PReg
+      -> m ()
+    arrAssignVariableSize fn uniq arr size val tmp = emit
+      [ P.Label memsetLabel
+      , P.Sll tmp size (Imm "2")     -- tmp <- arr + size * 4
+      , P.Add tmp arr  tmp
+
+      , P.Label memsetBreak
+      , P.Beq arr tmp memsetEnd      -- while (arr != tmp)
+      , P.Sw val (Imm "0") arr       --     *arr = val
+      , P.Addi arr arr (Imm "4")     --     arr += 4
+      , P.J memsetBreak
+      
+      , P.Label memsetEnd
+      , P.Sll tmp size (Imm "2")     -- tmp <- size * 4
+      , P.Sub arr arr tmp            -- arr <- arr - tmp
+      ]
+      where
+        FunctionName (Label fnName) = name fn
+
+        -- See LabelRewriter.hs, first underscore to prevent collisions
+        prefix = "_" ++ fnName ++ show uniq ++ "_"
+       
+        rewriteLabel :: Label -> Label
+        rewriteLabel (Label original) = Label (prefix ++ original)
+
+        memsetLabel = rewriteLabel (Label "memset")
+        memsetBreak = rewriteLabel (Label "memset_break")
+        memsetEnd   = rewriteLabel (Label "memset_end")

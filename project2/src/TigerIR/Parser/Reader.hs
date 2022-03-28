@@ -402,7 +402,7 @@ parseInstruction =
       (VariableOperand arr) <- parseVariableOperand
 
       commaSep
-      count <- parseIntOperand
+      count <- parseConstOrVarOperand
 
       commaSep
       val <- parseConstOrVarOperand
@@ -413,6 +413,12 @@ parseInstruction =
 
         (ConstantOperand c1 IntType, ConstantOperand c2 IntType)
           -> return $ T.ArrAssignAII (Shim.a2a arr) (Shim.c2i c1) (Shim.c2i c2)
+
+        (VariableOperand v1, ConstantOperand c2 IntType)
+          -> return $ T.ArrAssignAVI (Shim.a2a arr) (Shim.v2v v1) (Shim.c2i c2)
+        
+        (VariableOperand v1, VariableOperand v2)
+          -> return $ T.ArrAssignAVV (Shim.a2a arr) (Shim.v2v v1) (Shim.v2v v2)
 
         _ -> error $
           "invalid args to array_store"
