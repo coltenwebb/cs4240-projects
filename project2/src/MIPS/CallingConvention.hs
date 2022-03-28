@@ -83,7 +83,7 @@ allocArrays fn =
 hi addr
         ----------------------
                 ...
-            saved registers     PREVIOUS STACK FRAME
+         PREVIOUS STACK FRAME
                 ...
         ----------------------
   fp ->        old_fp
@@ -102,21 +102,6 @@ hi addr
         ---------------------- *********************
 
 lo addr
-
-case if local var is an array
-hi
-        ----------------------
-          prev local vars...
-        ----------------------
-              arr[2]
-        ----------------------
-              arr[1]
-        ----------------------
-              arr[0]           <-- Where RegMap[arr] points to
-        ----------------------
-               ...
-        ---------------------- 
-lo
 
 -}
 calcRegMap :: Function a -> RegMap
@@ -171,15 +156,10 @@ netParamSize fn = paramVarSize .* length pvs
     pvs = parameters fn
 
 {-
+
 hi addr 
   old_sp ->
         ---------------------- *******************
-                t0
-        ----------------------
-                ...
-        ----------------------
-                t7
-        ----------------------
                 $ra
         ----------------------
   fp ->         $old_fp         <- old_sp - 40

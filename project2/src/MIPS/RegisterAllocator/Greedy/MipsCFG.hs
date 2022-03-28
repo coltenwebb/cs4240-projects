@@ -10,25 +10,21 @@ import Data.List as L (foldl', reverse, head, intercalate)
 class Mips a where
   isBranching :: a -> Bool
   isLabel     :: a -> Bool
-  isReturnOp  :: a -> Bool
-  isGotoOp    :: a -> Bool
 
 instance Mips MipsVirtual where
   isBranching BrVI {}     = True
   isBranching BrVV {}     = True
   isBranching BrIV {}     = True
   isBranching BrII {}     = True
-  isBranching _           =  False 
+  isBranching Goto {}     = True
+  isBranching Call {}     = True
+  isBranching Callr {}    = True
+  isBranching Return {}   = True
+  isBranching Returni {}  = True
+  isBranching _           = False
 
-  isLabel V.LabelIns {}   = True 
-  isLabel _               = False 
-
-  isReturnOp V.Return {}  = True 
-  isReturnOp V.Returni {} = True 
-  isReturnOp _            = False 
-
-  isGotoOp V.Goto {}      = True 
-  isGotoOp _              = False
+  isLabel V.LabelIns {}   = True
+  isLabel _               = False
 
 
 data BasicBlockGeneral a = BasicBlock
