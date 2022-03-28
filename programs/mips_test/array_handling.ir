@@ -1,0 +1,47 @@
+#start_function
+void f(int[5] x, int[5] y, int[5] z):
+int-list: i, tx, ty, tz
+float-list:
+    assign, i, 0
+start_loop:
+    brgeq, end_loop, i, 5
+    array_load, tx, x, i
+    array_load, ty, y, i
+    add, tz, tx, ty
+    array_store, tz, z, i
+    add, i, i, 1
+    goto, start_loop
+end_loop:
+#end_function
+
+#start_function
+void main():
+int-list: i, t, x[5], y[5], z[5]
+float-list:
+    assign, i, 5
+start_x_init:
+    brlt, end_x_init, i, 0
+    sub, t, 5, i
+    assign, x, i, t
+    sub, i, i, 1
+    goto, start_x_init
+end_x_init:
+    assign, i, 5
+start_y_init:
+    brlt, end_y_init, i, 0
+    assign, y, i, i
+    sub, i, i, 1
+    goto, start_y_init
+end_y_init:
+    call, f, x, y, z
+    assign, i, 0
+start_print:
+    brgeq, end_print, i, 5
+    array_load, t, z, i
+    call, puti, t
+    assign, t, 10
+    call, putc, t
+    add, i, i, 1
+    goto, start_print
+end_print:
+#end_function
