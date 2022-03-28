@@ -74,7 +74,8 @@ allocArrays fn =
       LocalA (Array v (ArraySize sz)) -> do
         offst <- getStackOffsetImm (VReg v)
         emit [ loadSyscall Sbrk
-             , P.Li (A A0) (Imm (show sz))
+              -- Arrays are 32-bit!!!! Hence size * 4
+             , P.Li (A A0) (Imm (show (sz * 4)))
              , P.Syscall
              , P.Sw V0 offst Fp
              ]
