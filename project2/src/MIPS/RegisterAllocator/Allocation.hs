@@ -206,13 +206,13 @@ virtToEmitPhysMIPS fn mv = case mv of
     \arr' val' -> do
       let n = (read size :: Int)
       forM_ [0..n-1] $ \i ->
-        emit [ P.Sw val' (Imm (show i)) arr' ]
+        emit [ P.Sw val' (Imm (show (i*4))) arr' ]
   
   V.ArrAssignI arr (Imm size) valI -> regs_xi arr valI $
     \arr' val' -> do -- same as V.ArrAssignV
       let n = (read size :: Int)
       forM_ [0..n-1] $ \i ->
-        emit [ P.Sw val' (Imm (show i)) arr' ]
+        emit [ P.Sw val' (Imm (show (i*4))) arr' ]
   
   V.Nop -> pure ()
 
