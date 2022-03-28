@@ -153,17 +153,20 @@ class (MonadMipsEmitter m, Monad m) => MonadAllocator m where
     :: VReg -> Imm -> VReg
     -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
     -> m ()
-  regs_dix d i x = regs_dxi d x i
+  regs_dix d i x callback = regs_dxi d x i $
+    \d' x' i' -> callback d' i' x'
 
   regs_ix_tmp
     :: Imm -> VReg
     -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> PReg -> m' ())
     -> m ()
-  regs_ix_tmp i v = regs_xi_tmp v i
+  regs_ix_tmp i v callback = regs_xi_tmp v i $
+    \v' i' -> callback i' v'
 
   regs_ix
     :: Imm -> VReg
     -> (forall m'. MonadMipsEmitter m' => PReg -> PReg -> m' ())
     -> m ()
-  regs_ix i x = regs_xi x i
+  regs_ix i x callback = regs_xi x i $
+    \x' i' -> callback i' x'
   
