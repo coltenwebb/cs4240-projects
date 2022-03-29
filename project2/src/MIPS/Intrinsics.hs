@@ -30,21 +30,6 @@ syscallNum s = case s of
 loadSyscall :: SpimSyscall -> P.MipsPhys
 loadSyscall sc = P.Li SyscallCode (syscallNum sc)
 
--- Technically not an intrinsic, but needed
--- for array assign logic
---memset :: P.PhysicalFunction
---memset = Function
---  (FunctionName (Label "memset"))
---  False
---  [ ParamV (Variable "val")
---  , ParamV (Variable "arr_ptr")
---  , ParamV (Variable "offset")
---  ]
---  [] -- No local vars
---  [ 
---
---  ]
-
 -- Print the integer i to standard output.
 -- void puti(int i)
 puti :: P.PhysicalFunction

@@ -197,7 +197,7 @@ lookupColor cl vr bbl =
     Just mp -> M.lookup bbl mp
 
 runGreedyColoring :: BasicBlockMips -> ColorLookup
-runGreedyColoring bbm = traceShow colorLookup colorLookup
+runGreedyColoring bbm = colorLookup
   where
     liveRanges        = buildLiveRanges bbm
     liveRangeGraph    = buildLiveRangeGraph liveRanges

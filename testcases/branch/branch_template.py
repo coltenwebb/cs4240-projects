@@ -1,7 +1,4 @@
 # expected: t for taken, n for not taken
-from tkinter import W
-
-
 def template(opc, a, b, c, d):
     s = f"""#start_function
 void main():

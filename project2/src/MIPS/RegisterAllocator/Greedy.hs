@@ -9,8 +9,6 @@ import qualified MIPS.Types.Virtual as V
 import qualified MIPS.Types.Physical as P
 import TigerIR.Program as T
 
-import Debug.Trace
-
 import Control.Monad.State
 
 physFnSelection :: V.VirtualFunction -> P.PhysicalFunction
@@ -22,8 +20,7 @@ physFnSelection vf = vf { T.instrs = pinsts }
     vinstrs = T.instrs vf
 
     virtBblks :: [BasicBlockMips]
-    virtBblks = let k = splitIntoBasicBlocks vinstrs
-                in traceShow k k
+    virtBblks = splitIntoBasicBlocks vinstrs
 
     bbSel :: BasicBlockMips -> State UniqueCounter [P.MipsPhys]
     bbSel = basicBlockSelection vf regmap

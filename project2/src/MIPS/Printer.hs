@@ -151,7 +151,7 @@ instance Print P.MipsPhys where
   pr (P.Andi r1 r2 im) = fmtMIPS "andi" [pr r1, pr r2, pr im]
   pr (P.And r1 r2 r3)  = fmtMIPS "and"  [pr r1, pr r2, pr r3]
   pr (P.Ori r1 r2 im)  = fmtMIPS "ori"  [pr r1, pr r2, pr im]
-  pr (P.Or r1 r2 r3)   = fmtMIPS "or"   [pr r1, pr r2, pr r2]
+  pr (P.Or r1 r2 r3)   = fmtMIPS "or"   [pr r1, pr r2, pr r3]
   pr (P.Beq r1 r2 lab) = fmtMIPS "beq"  [pr r1, pr r2, pr lab]
   pr (P.Bne r1 r2 lab) = fmtMIPS "bne"  [pr r1, pr r2, pr lab]
   pr (P.Bgtz r lab)    = fmtMIPS "bgtz" [pr  r, pr lab]
